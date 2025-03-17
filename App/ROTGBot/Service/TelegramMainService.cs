@@ -20,7 +20,7 @@ namespace ROTGBot.Service
         IRepository<ROTGBot.Db.Model.NewsMessage> newsMessageRepo,
         IRepository<ROTGBot.Db.Model.Groups> groupsRepo) : ITelegramMainService
     {
-        private const string botToken = "7802404850:AAFNQst8GQjwPQRTjtzpUwK147fdMSV6FCc";
+        private const string botToken = "Token";
         private ILogger<TelegramMainService> _logger = logger;
         private IRepository<ROTGBot.Db.Model.User> _userRepo = userRepo;
         private IRepository<ROTGBot.Db.Model.Role> _roleRepo = roleRepo;
