@@ -13,8 +13,11 @@ namespace ROTGBot.Db.Model
         [ColumnName("description")]
         public string? Description { get; set; }
         [ColumnName("tglogin")]
-        public string? TGLogin { get; set; }               
-        
+        public string? TGLogin { get; set; }
+        [ColumnName("isnotify")]
+        public bool IsNotify { get; set; }
+        [ColumnName("chatid")]
+        public long ChatId { get; set; }
     }
 
     [TableName("role")]
@@ -50,6 +53,14 @@ namespace ROTGBot.Db.Model
         public Guid UserId { get; set; }
         [ColumnName("type")]
         public string Type { get; set; } = "news";
+        [ColumnName("groupid")]
+        public long? GroupId { get; set; }
+        [ColumnName("threadid")]
+        public long? ThreadId { get; set; }
+
+        [ColumnName("createddate")]
+        [ColumnType("timestamp")]
+        public DateTime CreatedDate { get; set; }
     }
 
     [TableName("groups")]
@@ -77,5 +88,24 @@ namespace ROTGBot.Db.Model
         
         [ColumnName("valuetext")]
         public string? TextValue { get; set; }
+    }
+
+    [TableName("newsbutton")]
+    public class NewsButton : Entity
+    {       
+        [ColumnName("chatid")]
+        public long ChatId { get; set; }
+        [ColumnName("chatname")]
+        public string ChatName { get; set; }
+        [ColumnName("threadid")]
+        public long? ThreadId { get; set; }
+        [ColumnName("threadname")]
+        public string? ThreadName { get; set; }
+        [ColumnName("tosend")]
+        public bool ToSend { get; set; }
+        [ColumnName("buttonnumber")]
+        public int ButtonNumber { get; set; }
+        [ColumnName("buttonname")]
+        public string? ButtonName { get; set; }
     }
 }

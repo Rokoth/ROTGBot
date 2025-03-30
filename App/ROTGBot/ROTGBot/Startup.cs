@@ -74,6 +74,7 @@ namespace ROTGBot
             services.AddScoped<IRepository<Db.Model.News>, Repository<Db.Model.News>>();
             services.AddScoped<IRepository<Db.Model.NewsMessage>, Repository<Db.Model.NewsMessage>>();
             services.AddScoped<IRepository<Db.Model.Groups>, Repository<Db.Model.Groups>>();
+            services.AddScoped<IRepository<Db.Model.NewsButton>, Repository<Db.Model.NewsButton>>();
 
             services.AddDataServices();           
 

@@ -2,6 +2,8 @@
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq.Dynamic.Core.Tokenizer;
 using System.Threading;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
@@ -18,16 +20,18 @@ namespace ROTGBot.Service
         IRepository<ROTGBot.Db.Model.UserRole> userRoleRepo,
         IRepository<ROTGBot.Db.Model.News> newsRepo,
         IRepository<ROTGBot.Db.Model.NewsMessage> newsMessageRepo,
-        IRepository<ROTGBot.Db.Model.Groups> groupsRepo) : ITelegramMainService
+        IRepository<ROTGBot.Db.Model.Groups> groupsRepo,
+        IRepository<ROTGBot.Db.Model.NewsButton> newsButtonRepo) : ITelegramMainService
     {
-        private const string botToken = "Token";
-        private ILogger<TelegramMainService> _logger = logger;
-        private IRepository<ROTGBot.Db.Model.User> _userRepo = userRepo;
-        private IRepository<ROTGBot.Db.Model.Role> _roleRepo = roleRepo;
-        private IRepository<ROTGBot.Db.Model.UserRole> _userRoleRepo = userRoleRepo;
-        private IRepository<ROTGBot.Db.Model.News> _newsRepo = newsRepo;
-        private IRepository<ROTGBot.Db.Model.NewsMessage> _newsMessageRepo = newsMessageRepo;
-        private IRepository<ROTGBot.Db.Model.Groups> _groupsRepo = groupsRepo;
+        private const string botToken = "token";
+        private readonly ILogger<TelegramMainService> _logger = logger;
+        private readonly IRepository<ROTGBot.Db.Model.User> _userRepo = userRepo;
+        private readonly IRepository<ROTGBot.Db.Model.Role> _roleRepo = roleRepo;
+        private readonly IRepository<ROTGBot.Db.Model.UserRole> _userRoleRepo = userRoleRepo;
+        private readonly IRepository<ROTGBot.Db.Model.News> _newsRepo = newsRepo;
+        private readonly IRepository<ROTGBot.Db.Model.NewsMessage> _newsMessageRepo = newsMessageRepo;
+        private readonly IRepository<ROTGBot.Db.Model.Groups> _groupsRepo = groupsRepo;
+        private readonly IRepository<ROTGBot.Db.Model.NewsButton> _newsButtonRepo = newsButtonRepo;
 
         public async Task<int> Execute(int offset)
         {
@@ -39,18 +43,25 @@ namespace ROTGBot.Service
             {
                 foreach (var update in updates)
                 {
-                    _logger.LogInformation("Update: {name}. {message}", update.Message?.Chat.Username, update.Message?.Text);                    
-                    if (update.Message != null)
+                    try
                     {
-                        await HandleMessage(client, update.Message, cancellationToken);
+                        _logger.LogInformation("Update: {name}. {message}", update.Message?.Chat.Username, update.Message?.Text);
+                        if (update.Message != null)
+                        {
+                            await HandleMessage(client, update.Message, cancellationToken);
+                        }
+                        else if (update.CallbackQuery != null)
+                        {
+                            await HandleCallback(client, update.CallbackQuery, cancellationToken);
+                        }
+                        else if (update.MyChatMember != null)
+                        {
+                            await HandleMyChatMember(client, update.MyChatMember, cancellationToken);
+                        }                        
                     }
-                    else if (update.CallbackQuery != null)
+                    catch (Exception ex)
                     {
-                        await HandleCallback(client, update.CallbackQuery, cancellationToken);
-                    }
-                    else if (update.MyChatMember != null)
-                    {
-                        await HandleMyChatMember(client, update.MyChatMember, cancellationToken);
+                        _logger.LogError(ex, "Ошибка при обработке события");                        
                     }
                 }
                 return updates.Last().UpdateId + 1;
@@ -85,15 +96,55 @@ namespace ROTGBot.Service
             if(message.From != null)
             {
                 string addMessage = "";
-                var user = await GetUser(message.From, cancellationToken);
-                addMessage += $"Привет, {user.Name}!";
+                var user = await GetUser(message.From, message.Chat.Id, cancellationToken);
+                var roles = await GetUserRoles(user, cancellationToken);
+
+                if(roles.Any(s => s == "administrator"))
+                {
+                    if(message.IsTopicMessage == true)
+                    {
+                        var chatId = message.Chat.Id;
+                        var threadId = message.MessageThreadId;
+
+                        var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
+                        {
+                            Selector = s => s.ChatId == chatId && s.ThreadId == threadId
+                        }, cancellationToken);
+
+                        var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>() { 
+                            Selector = s => s.IsDeleted == false
+                        }, cancellationToken);
+
+
+                        if (exists.Count == 0)
+                        {
+                            var forumTopic = message.ForumTopicCreated ?? message.ReplyToMessage?.ForumTopicCreated;
+
+                            if (forumTopic != null)
+                            {
+                                await _newsButtonRepo.AddAsync(new NewsButton()
+                                {
+                                    ChatId = chatId,
+                                    ChatName = message.Chat.Title ?? $"{message.Chat.FirstName} {message.Chat.LastName}",
+                                    Id = Guid.NewGuid(),
+                                    IsDeleted = false,
+                                    ThreadId = threadId,
+                                    ThreadName = forumTopic.Name,
+                                    ToSend = false,
+                                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1
+                                }, true, cancellationToken);
+                            }                            
+                        }                        
+                    }
+                }
+                                
                 var userNews = await GetCurrentNews(user, cancellationToken);
 
                 if (message.Text == "/start")
                 {
                     if (userNews != null)
                     {
-                        await SendUserRemember(client, message.Chat.Id, userNews, GetReplyParameters(message.MessageId));
+                        await SendUserRemember(client, message.Chat.Id, userNews, GetReplyParameters(message.MessageId), cancellationToken);
                     }
                     else
                     {
@@ -111,10 +162,11 @@ namespace ROTGBot.Service
                         TextValue = message.Text
                     }, true, cancellationToken);
                 }
-                //else
-                //{
-                //    await SendTestConnectionMessage(client, message, addMessage, GetReplyParameters(message.MessageId), cancellationToken);
-                //}
+                else if(message.IsTopicMessage != true)
+                {
+                    addMessage += $"Привет, {user.Name}! Для работы нажмите кнопку меню - Старт или введите /start";
+                    await SendTestConnectionMessage(client, message, addMessage, GetReplyParameters(message.MessageId), cancellationToken);
+                }
             }
             else
             {
@@ -130,7 +182,7 @@ namespace ROTGBot.Service
             }, cancellationToken)).FirstOrDefault(s => s.State == "create");
         }
 
-        private async Task<Db.Model.User> GetUser(User tguser, CancellationToken cancellationToken)
+        private async Task<Db.Model.User> GetUser(User tguser, long chatId, CancellationToken cancellationToken)
         {
             var user = (await _userRepo.GetAsync(new Db.Model.Filter<Db.Model.User>()
             {
@@ -146,7 +198,8 @@ namespace ROTGBot.Service
                     IsDeleted = false,
                     Name = $"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
                     TGLogin = tguser.Username,
-                    TGId = tguser.Id
+                    TGId = tguser.Id,
+                    ChatId = chatId
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
@@ -159,7 +212,11 @@ namespace ROTGBot.Service
                     UserId = user.Id
                 }, true, cancellationToken);
             }
-
+            else
+            {
+                user.ChatId = chatId;
+                await _userRepo.UpdateAsync(user, true, cancellationToken);
+            }
             return user;
         }
 
@@ -172,7 +229,7 @@ namespace ROTGBot.Service
                 return false;
             }
 
-            var user = await GetUser(callbackQuery.From, token);
+            var user = await GetUser(callbackQuery.From, chatId.Value, token);
             var roles = await GetUserRoles(user, token);
             var replyPrams = GetReplyParameters(callbackQuery.Message?.MessageId);
             if (roles.Length == 0)
@@ -184,6 +241,8 @@ namespace ROTGBot.Service
             var data = callbackQuery.Data;
             if (data == null) return false;
             Guid? newsId = null;
+            int? buttonNumber = null;
+            int offset = 0;
             if (data.StartsWith("ApproveNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId1))
             {
                 data = "ApproveNews";
@@ -196,16 +255,30 @@ namespace ROTGBot.Service
                 newsId = newsId2;
             }
 
+            if (data.StartsWith("SendNewsChoice_") && int.TryParse(data.Split("_")[1], out int buttonNumber2))
+            {
+                data = "SendNewsChoice";
+                buttonNumber = buttonNumber2;
+            }
+
+            if (data.StartsWith("ApproveNewsChoice_") && int.TryParse(data.Split("_")[1], out int offset1))
+            {
+                data = "ApproveNewsChoice";
+                offset = offset1;
+            }
+
             return data switch
             {
+                "SwitchNotify" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "moderator",
+                                        (cl, chId, rpl, userNews, tk) => SendSwitchNotifyHandle(cl, chId, user, rpl, tk), token),
                 "SendNewsChoice" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "user",
-                                        (cl, chId, rpl, userNews, tk) => SendNewsChoiceHandle(cl, chId, user, userNews, rpl, tk), token),
+                                        (cl, chId, rpl, userNews, tk) => SendNewsChoiceHandle(cl, chId, user, userNews, buttonNumber.Value, rpl, tk), token),
                 "SendNews" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "user",
                                         (cl, chId, rpl, userNews, tk) => SendNewsHandle(cl, chId, userNews, rpl, tk), token),
                 "DeleteNews" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "user",
                                         (cl, chId, rpl, userNews, tk) => DeleteNewsHandle(cl, chId, userNews, rpl, tk), token),
                 "ApproveNewsChoice" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "moderator",
-                                        (cl, chId, rpl, userNews, tk) => SendNewsChoiceApproveHandle(cl, chId, rpl, tk), token),
+                                        (cl, chId, rpl, userNews, tk) => SendNewsChoiceApproveHandle(cl, chId, offset, rpl, tk), token),
                 "ApproveNews" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "moderator",
                                         (cl, chId, rpl, userNews, tk) => SendNewsApproveHandle(cl, chId, newsId.Value, rpl, tk), token),
                 "DeclineNews" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "moderator",
@@ -214,6 +287,8 @@ namespace ROTGBot.Service
                                         (cl, chId, rpl, userNews, tk) => SendAddAdminChoiceHandle(cl, chId, user, userNews, rpl, tk), token),
                 "AddModeratorChoice" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
                                         (cl, chId, rpl, userNews, tk) => SendAddModeratorChoiceHandle(cl, chId, user, userNews, rpl, tk), token),
+                "EditButtonChoice" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
+                                        (cl, chId, rpl, userNews, tk) => SendEditButtonChoiceHandle(cl, chId, user, userNews, rpl, tk), token),
                 "AddAdmin" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
                                         (cl, chId, rpl, userNews, tk) => AddAdminHandle(cl, chId, userNews, rpl, tk), token),
                 "AddAdminDecline" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
@@ -222,7 +297,10 @@ namespace ROTGBot.Service
                                         (cl, chId, rpl, userNews, tk) => AddModeratorHandle(cl, chId, userNews, rpl, tk), token),
                 "AddModeratorDecline" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
                                         (cl, chId, rpl, userNews, tk) => AddModeratorDeclineHandle(cl, chId, userNews, rpl, tk), token),
-
+                "EditButton" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
+                                        (cl, chId, rpl, userNews, tk) => EditButtonHandle(cl, chId, userNews, rpl, tk), token),
+                "EditButtonDecline" => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "administrator",
+                                        (cl, chId, rpl, userNews, tk) => EditButtonDeclineHandle(cl, chId, userNews, rpl, tk), token),
                 _ => await SendWithCheckRights(client, user, chatId.Value, roles, replyPrams, callbackQuery.Id, "user",
                                         (cl, chId, rpl, userNews, tk) => SendUserNotImplemented(cl, chId, rpl), token),
             };
@@ -291,6 +369,18 @@ namespace ROTGBot.Service
             }
         }
 
+        private async Task EditButtonHandle(TelegramBotClient client, long chatId, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await EditButtonAccepted(client, chatId, userNews, replyPrams, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(client, chatId, replyPrams);
+            }
+        }
+
         private async Task AddModeratorHandle(TelegramBotClient client, long chatId, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
         {
             if (userNews != null)
@@ -312,6 +402,18 @@ namespace ROTGBot.Service
             else
             {
                 await AddAdminMessageNotFound(client, chatId, replyPrams);
+            }
+        }
+
+        private async Task EditButtonDeclineHandle(TelegramBotClient client, long chatId, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(client, chatId, userNews, replyPrams, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(client, chatId, replyPrams);
             }
         }
 
@@ -353,15 +455,37 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsChoiceApproveHandle(TelegramBotClient client, long chatId, ReplyParameters? replyPrams, CancellationToken token)
+        private async Task SendNewsChoiceApproveHandle(TelegramBotClient client, long chatId, int offset, ReplyParameters? replyPrams, CancellationToken token)
         {
-            var userNews = (await _newsRepo.GetAsync(new Filter<News>()
+            var existsPrev = false;
+            var existsNext = false;
+            var userNewses = (await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s=> s.State == "accepted" && s.Type == "news"
-            }, token)).OrderBy(s => s.Id).FirstOrDefault();
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            var allCount = userNewses.Count();
+
+            if (offset > 0 && allCount > 1)
+            {
+                existsPrev = true;
+            }
+
+            if(offset + 1 > allCount)
+            {
+                offset = allCount - 1;
+            }
+
+            if(offset < allCount - 1)
+            {
+                existsNext = true;
+            }
+
+            var userNews = userNewses.Skip(offset).FirstOrDefault();
+
             if (userNews != null)
             {
-                await SendNewsMessageForApprove(client, chatId, userNews, replyPrams, token);
+                await SendNewsMessageForApprove(client, chatId, userNews, existsPrev, existsNext, offset, replyPrams, token);
             }
             else
             {
@@ -369,23 +493,33 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsChoiceHandle(TelegramBotClient client, long chatId, Db.Model.User user, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
+        private async Task SendNewsChoiceHandle(TelegramBotClient client, long chatId, Db.Model.User user, News? userNews, int buttonNumber, ReplyParameters? replyPrams, CancellationToken token)
         {
             if (userNews != null)
             {
-                await SendNewsMessageForUserRemember(client, chatId, replyPrams);
+                await SendUserRemember(client, chatId, userNews, replyPrams, token);
             }
             else
             {
-                await SendNewsMessageForUser(client, chatId, user, replyPrams, token);
+                await SendNewsMessageForUser(client, chatId, buttonNumber, user, replyPrams, token);
             }
+        }
+
+        private async Task SendSwitchNotifyHandle(TelegramBotClient client, long chatId, Db.Model.User user, ReplyParameters? replyPrams, CancellationToken token)
+        {
+            user.IsNotify = !user.IsNotify;
+            await _userRepo.UpdateAsync(user, true, token);
+
+
+            await client.SendMessageAsync(chatId, $"Уведомления {(user.IsNotify? "включены":"выключены")}",
+                replyParameters: replyPrams, cancellationToken: token);
         }
 
         private async Task SendAddAdminChoiceHandle(TelegramBotClient client, long chatId, Db.Model.User user, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
         {
             if (userNews != null)
             {
-                await SendAddAdminForUserRemember(client, chatId, replyPrams);
+                await SendUserRemember(client, chatId, userNews, replyPrams, token);
             }
             else
             {
@@ -397,13 +531,25 @@ namespace ROTGBot.Service
         {
             if (userNews != null)
             {
-                await SendAddModeratorForUserRemember(client, chatId, replyPrams);
+                await SendUserRemember(client, chatId, userNews, replyPrams, token);
             }
             else
             {
                 await SendAddModeratorForUser(client, chatId, user, replyPrams, token);
             }
         }
+
+        private async Task SendEditButtonChoiceHandle(TelegramBotClient client, long chatId, Db.Model.User user, News? userNews, ReplyParameters? replyPrams, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(client, chatId, userNews, replyPrams, token);
+            }
+            else
+            {
+                await SendEditButtonForUser(client, chatId, user, replyPrams, token);
+            }
+        }                
 
         private static ReplyParameters? GetReplyParameters(int? messageId)
         {
@@ -423,12 +569,26 @@ namespace ROTGBot.Service
 
             if (!messages.Any())
             {                
-                await client.SendMessageAsync(chatId, "Новость создана некорректно, отправьте не менее одного сообщения", cancellationToken: token);
+                await client.SendMessageAsync(chatId, "Обращение создано некорректно, отправьте не менее одного сообщения", cancellationToken: token);
                 return;
             }
             userNews.State = "accepted";
             await _newsRepo.UpdateAsync(userNews, true, token);
-            await client.SendMessageAsync(chatId, "Новость принята в обработку", cancellationToken: token, replyParameters: replyParameters);
+            await client.SendMessageAsync(chatId, "Обращение принято в обработку", cancellationToken: token, replyParameters: replyParameters);
+
+            var notifyModerators = await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => !s.IsDeleted && s.IsNotify
+            }, token);
+
+            foreach(var moder in notifyModerators)
+            {
+                var roles = await GetUserRoles(moder, token);
+                if(roles?.Any(s => s == "moderator") == true)
+                {
+                    await SendNewsMessageForApprove(client, moder.ChatId, userNews, false, false, 0, replyParameters, token);
+                }
+            }
         }
 
         private async Task AddAdminAccepted(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyParameters, CancellationToken token)
@@ -476,19 +636,92 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Администраторы добавлены", cancellationToken: token, replyParameters: replyParameters);
         }
 
-        private async Task AddAdminModeratorDeclined(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyParameters, CancellationToken token)
+        private async Task EditButtonAccepted(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyParameters, CancellationToken token)
         {
             var messages = (await _newsMessageRepo.GetAsync(new Filter<NewsMessage>()
             {
                 Selector = s => s.NewsId == userNews.Id
             }, token));
 
-            if (!messages.Any())
+            if (messages.Count == 0)
             {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", cancellationToken: token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", cancellationToken: token);
                 return;
             }
 
+            var buttons = new List<string>();
+
+            foreach (var message in messages.Where(s => s.TextValue != null))
+            {
+                var values = message.TextValue.Split(["\r\n", ";"],
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Where(s => s != null && s != string.Empty);
+                buttons.AddRange(values);
+            }
+
+            var numbers = new List<ButtonSetting>();
+            foreach (var item in buttons)
+            {
+                var itemElements = item.Split(":").Select(s => s.Trim()).ToArray();
+                if (int.TryParse(itemElements[0], out int num))
+                {
+                    string? name = null;
+                    if(itemElements.Length > 1)
+                    {
+                        name = itemElements[1];
+                    }
+                    numbers.Add(new ButtonSetting()
+                    {
+                        Number = num, Name = name
+                    });
+                }
+            }
+
+            if (numbers.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", cancellationToken: token);
+                return;
+            }
+
+            var groupped = numbers.GroupBy(s => s.Number);
+            if(groupped.Any(s => s.Count() > 1))
+            {
+                await client.SendMessageAsync(chatId, "Для некоторых кнопок отправлено больше одной настройки, перезапустите настройку", cancellationToken: token);
+                return;
+            }
+
+            var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
+            {
+                Selector = s => !s.IsDeleted
+            }, token);
+            
+            foreach(var button in allButtons)
+            {
+                var newItem = numbers.FirstOrDefault(s => s.Number == button.ButtonNumber);
+                if(newItem != null)
+                {
+                    button.ToSend = true;
+                    button.ButtonName = newItem.Name;
+                    await _newsButtonRepo.UpdateAsync(button, true, token);
+                }
+                else if(button.ToSend)
+                {
+                    button.ToSend = false;
+                    await _newsButtonRepo.UpdateAsync(button, true, token);
+                }
+            }
+
+            userNews.State = "approved";
+            await _newsRepo.UpdateAsync(userNews, true, token);
+            await client.SendMessageAsync(chatId, "Кнопки сохранены", cancellationToken: token, replyParameters: replyParameters);
+        }
+
+        private async Task AddAdminModeratorDeclined(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyParameters, CancellationToken token)
+        {
+            var messages = (await _newsMessageRepo.GetAsync(new Filter<NewsMessage>()
+            {
+                Selector = s => s.NewsId == userNews.Id
+            }, token));
+                        
             userNews.State = "declined";
             await _newsRepo.UpdateAsync(userNews, true, token);
             await client.SendMessageAsync(chatId, "Задание отменено", cancellationToken: token, replyParameters: replyParameters);
@@ -542,12 +775,17 @@ namespace ROTGBot.Service
 
         private static async Task SendNewsMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
-            await client.SendMessageAsync(chatId, "Нет неподтвержденных новостей", replyParameters: replyParameters);
+            await client.SendMessageAsync(chatId, "Нет неподтвержденных обращений", replyParameters: replyParameters);
         }
 
         private static async Task AddAdminMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление администратора", replyParameters: replyParameters);
+        }
+
+        private static async Task EditButtonMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на добавление кнопок", replyParameters: replyParameters);
         }
 
         private static async Task AddModeratorMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
@@ -570,47 +808,65 @@ namespace ROTGBot.Service
             userNews.State = "deleted";
             userNews.IsDeleted = true;
             await _newsRepo.UpdateAsync(userNews, true, token);
-            await client.SendMessageAsync(chatId, "Новость удалена", cancellationToken: token, replyParameters: replyParameters);
+            await client.SendMessageAsync(chatId, "Обращение удалено", cancellationToken: token, replyParameters: replyParameters);
         }
 
         private static async Task DeleteNewsMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
-            await client.SendMessageAsync(chatId, "Нет неподтвержденных новостей", replyParameters: replyParameters);
+            await client.SendMessageAsync(chatId, "Нет неподтвержденных обращений", replyParameters: replyParameters);
         }
 
         private static async Task ApproveNewsMessageNotFound(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
-            await client.SendMessageAsync(chatId, "Нет неотправленных новостей", replyParameters: replyParameters);
+            await client.SendMessageAsync(chatId, "Нет неотправленных обращений", replyParameters: replyParameters);
         }
 
-        private async Task SendNewsMessageForUser(TelegramBotClient client, long chatId, Db.Model.User user, ReplyParameters? replyParameters, CancellationToken token)
+        private async Task SendNewsMessageForUser(TelegramBotClient client, long chatId, int buttonNumber, Db.Model.User user, ReplyParameters? replyParameters, CancellationToken token)
         {
+            var button = (await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
+            {
+                Selector = s => s.ButtonNumber == buttonNumber
+            }, token)).FirstOrDefault();
+
+            if(button == null || button.IsDeleted || !button.ToSend)
+            {
+                await client.SendMessageAsync(chatId, "Недействительное направление обращения, выберите другое", 
+                    replyParameters: replyParameters, cancellationToken: token);
+                return;
+            }
+
             await _newsRepo.AddAsync(new News()
             {
                 IsDeleted = false,
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
                 State = "create",
-                Title = "Новая новость",
+                Title = "Новое обращение",
                 ChatId = chatId,
-                Description = "Новая новость",
-                Type = "news"
+                Description = "Новое обращение",
+                Type = "news",
+                GroupId = button.ChatId,
+                ThreadId = button.ThreadId,
+                CreatedDate = DateTime.Now
             }, true, token);
-
-            var button1 = new InlineKeyboardButton("Отправить")
-            {
-                CallbackData = "SendNews"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>() 
+                       
+            var sendButtons = new List<List<InlineKeyboardButton>>(){new()
                 {
-                    new()
+                    new InlineKeyboardButton("Отправить обращение")
                     {
-                        button1
+                        CallbackData = "SendNews"
+                    },
+                    new InlineKeyboardButton("Отменить")
+                    {
+                        CallbackData = "DeleteNews"
                     }
-                });
+                }
+            };
+                        
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-            await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений и нажмите кнопку Отправить", replyMarkup: replyMarkup, replyParameters: replyParameters, cancellationToken: token);
+            await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений и нажмите кнопку Отправить", replyMarkup: replyMarkup, 
+                replyParameters: replyParameters, cancellationToken: token);
         }
 
         private async Task SendAddAdminForUser(TelegramBotClient client, long chatId, Db.Model.User user, ReplyParameters? replyPrams, CancellationToken token)
@@ -624,7 +880,8 @@ namespace ROTGBot.Service
                 Title = "Добавление администратора",
                 ChatId = chatId,
                 Description = "Добавление администратора",
-                Type = "addadmin"
+                Type = "addadmin",
+                CreatedDate = DateTime.Now
             }, true, token);
 
             var button1 = new InlineKeyboardButton("Добавить")
@@ -656,7 +913,8 @@ namespace ROTGBot.Service
                 Title = "Добавление модератора",
                 ChatId = chatId,
                 Description = "Добавление модератора",
-                Type = "addmoderator"
+                Type = "addmoderator",
+                CreatedDate = DateTime.Now
             }, true, token);
 
             var button1 = new InlineKeyboardButton("Добавить")
@@ -677,7 +935,117 @@ namespace ROTGBot.Service
                 replyParameters: replyPrams, cancellationToken: token);
         }
 
-        private async Task SendNewsMessageForApprove(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyPrams, CancellationToken token)
+        private async Task SendEditButtonForUser(TelegramBotClient client, long chatId, Db.Model.User user, ReplyParameters? replyPrams, CancellationToken token)
+        {
+            var availableButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>() { Selector = s => s.IsDeleted == false }, token);
+            if(availableButtons.Count != 0)
+            {
+                await _newsRepo.AddAsync(new News()
+                {
+                    IsDeleted = false,
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    State = "create",
+                    Title = "Изменение кнопок",
+                    ChatId = chatId,
+                    Description = "Изменение кнопок",
+                    Type = "editbutton",
+                    CreatedDate = DateTime.Now
+                }, true, token);
+
+                var button1 = new InlineKeyboardButton("Сохранить")
+                {
+                    CallbackData = "EditButton"
+                };
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button1, button2
+                    }
+                    });
+
+
+                var buttonsView = string.Join("\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+
+                await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте по шаблону ({{номер}} или {{номер:Наименование кнопки}}) одну " +
+                    "или несколько настроек (настройки разделяются либо знаком \";\", либо переносом строки, либо отправляются в отдельном сообщении)" +
+                    " и нажмите кнопку Сохранить. \nПодключенные кнопки, которые вы не укажете, будут отключены. Если нужных групп или тем нет в списке - " +
+                    "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). \nПользователь, отправляющий сообщения, должен быть администратором бота.",
+                    replyMarkup: replyMarkup,
+                    replyParameters: replyPrams, cancellationToken: token);
+            }
+            else
+            {                
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",                   
+                    replyParameters: replyPrams, cancellationToken: token);
+            }
+
+               
+        }
+
+        private async Task SendEditButtonForAdminRemember(TelegramBotClient client, long chatId, ReplyParameters? replyParameters, CancellationToken token)
+        {
+            var availableButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>() { Selector = s => s.IsDeleted == false }, token);
+            if (availableButtons.Count != 0)
+            {
+                var button1 = new InlineKeyboardButton("Сохранить")
+                {
+                    CallbackData = "EditButton"
+                };
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button1, button2
+                    }
+                    });
+
+                var buttonsView = string.Join("\r\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя." +
+                    " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну или несколько настроек (настройки разделяются либо знаком \";\"" +
+                    "либо переносом строки либо отправляются в отдельном сообщении)" +
+                    " и нажмите кнопку Сохранить, либо Отменить для отмены изменения кнопок",
+                    replyMarkup: replyMarkup, replyParameters: replyParameters);
+            }
+            else
+            {               
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя, но нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
+                     replyMarkup: replyMarkup, replyParameters: replyParameters, cancellationToken: token);
+            }
+        }
+               
+
+        private async Task SendNewsMessageForApprove(TelegramBotClient client, long chatId, News userNews, 
+            bool existsPrev, bool existsNext, int currentOffset, ReplyParameters? replyPrams, CancellationToken token)
         {
             var messages = (await _newsMessageRepo.GetAsync(new Filter<NewsMessage>()
             {
@@ -686,8 +1054,8 @@ namespace ROTGBot.Service
 
             if(!messages.Any())
             {
-                await client.SendMessageAsync(chatId, "Новость для подтверждения создана некорректно, будет удалена", replyParameters: replyPrams, cancellationToken: token);
-                await client.SendMessageAsync(userNews.ChatId, "Новость создана некорректно, будет удалена", cancellationToken: token);
+                await client.SendMessageAsync(chatId, "Обращение для подтверждения создана некорректно, будет удалена", replyParameters: replyPrams, cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, "Обращение создана некорректно, будет удалена", cancellationToken: token);
                 userNews.State = "deleted";
                 userNews.IsDeleted = true;
                 await _newsRepo.UpdateAsync(userNews, true, token);
@@ -701,43 +1069,79 @@ namespace ROTGBot.Service
             {
                 CallbackData = $"DeclineNews_{userNews.Id}"
             };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                            new()
-                            {
-                                button1, button2
-                            }
-                });
+            var button3 = new InlineKeyboardButton("Предыдущее обращение")
+            {
+                CallbackData = $"ApproveNewsChoice_{currentOffset - 1}"
+            };
+            var button4 = new InlineKeyboardButton("Следующее обращение")
+            {
+                CallbackData = $"ApproveNewsChoice_{currentOffset + 1}"
+            };
 
-            await client.SendMessageAsync(chatId, "Новость для подтверждения:", replyMarkup: replyMarkup, replyParameters: replyPrams, cancellationToken: token);
-            await client.ForwardMessagesAsync(chatId, userNews.ChatId, messages, cancellationToken: token);
+            List<InlineKeyboardButton> moveButtons = [];
+
+            if (existsPrev) moveButtons.Add(button3);
+            if (existsNext) moveButtons.Add(button4);
+
+            var buttons = new List<List<InlineKeyboardButton>>()
+            {
+                new()
+                {
+                    button1, button2
+                }
+            };
+
+            if (moveButtons.Count != 0)
+            {
+                buttons.Add(moveButtons);
+            }
+
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(buttons);
+
+            var userButton = (await _newsButtonRepo.GetAsync(new Filter<NewsButton>() {
+                Selector = s => s.ThreadId == userNews.ThreadId && s.ChatId == userNews.GroupId
+            }, token)).FirstOrDefault();
+
+            if(userButton == null)
+            {
+                await client.SendMessageAsync(chatId, "Обращение для подтверждения создано некорректно, будет удалена", replyParameters: replyPrams, cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, "Обращение создано некорректно, будет удалена", cancellationToken: token);
+                userNews.State = "deleted";
+                userNews.IsDeleted = true;
+                await _newsRepo.UpdateAsync(userNews, true, token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Обращение для подтверждения в раздел \"{userButton.ChatName} : {userButton.ThreadName} ({userButton.ButtonName})\"", replyMarkup: replyMarkup, replyParameters: replyPrams, cancellationToken: token);
+                await client.ForwardMessagesAsync(chatId, userNews.ChatId, messages, cancellationToken: token);
+            }                
         }
 
         private async Task SendNewsMessageApproved(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyPrams, CancellationToken token)
         {
             userNews.State = "approved";           
-            await _newsRepo.UpdateAsync(userNews, true, token);
+            await _newsRepo.UpdateAsync(userNews, true, token);                       
 
-            await client.SendMessageAsync(chatId, "Новость подтверждена", replyParameters: replyPrams, cancellationToken: token);
-            await client.SendMessageAsync(userNews.ChatId, "Новость подтверждена", replyParameters: replyPrams, cancellationToken: token);
-
-            var toSendGroups = await _groupsRepo.GetAsync(new Filter<Groups>() { 
-                Selector = s=> s.SendNews
-            }, token);
-
-            var messages = (await _newsMessageRepo.GetAsync(new Filter<NewsMessage>()
+            if(userNews.GroupId.HasValue)
             {
-                Selector = s => s.NewsId == userNews.Id
-            }, token)).Select(s => (int)s.TGMessageId);
+                await client.SendMessageAsync(chatId, "Обращение подтверждена", replyParameters: replyPrams, cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, "Обращение подтверждена", replyParameters: replyPrams, cancellationToken: token);
 
-            if(messages.Any())
-            {
-                foreach (var group in toSendGroups)
+                var messages = (await _newsMessageRepo.GetAsync(new Filter<NewsMessage>()
                 {
-                    await client.ForwardMessagesAsync(group.ChatId, userNews.ChatId, messages, messageThreadId: (int?)group.ThreadId,  cancellationToken: token);                    
+                    Selector = s => s.NewsId == userNews.Id
+                }, token)).Select(s => (int)s.TGMessageId);
+
+                if (messages.Any())
+                {
+                    await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages, messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
                 }
             }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нельзя подтвердить обращение: не задано направление. Требуется пересоздание", replyParameters: replyPrams, cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, "Нельзя подтвердить обращение: не задано направление. Требуется пересоздание", replyParameters: replyPrams, cancellationToken: token);
+            }            
         }
 
         private async Task SendNewsMessageDeclined(TelegramBotClient client, long chatId, News userNews, ReplyParameters? replyPrams, CancellationToken token)
@@ -745,17 +1149,18 @@ namespace ROTGBot.Service
             userNews.State = "declined";           
             await _newsRepo.UpdateAsync(userNews, true, token);
 
-            await client.SendMessageAsync(chatId, "Новость отклонена", replyParameters: replyPrams, cancellationToken: token);
-            await client.SendMessageAsync(userNews.ChatId, "Новость отклонена", replyParameters: replyPrams, cancellationToken: token);
+            await client.SendMessageAsync(chatId, "Обращение отклонено", replyParameters: replyPrams, cancellationToken: token);
+            await client.SendMessageAsync(userNews.ChatId, "Обращение отклонено", replyParameters: replyPrams, cancellationToken: token);
         }
 
-        private static Task SendUserRemember(TelegramBotClient client, long chatId, Db.Model.News? news, ReplyParameters? replyParameters)
+        private Task SendUserRemember(TelegramBotClient client, long chatId, Db.Model.News? news, ReplyParameters? replyParameters, CancellationToken token)
         {
             return (news?.Type) switch
             {
                 "news" => SendNewsMessageForUserRemember(client, chatId, replyParameters),
-                "addadmin" => SendNewsMessageForUserRemember(client, chatId, replyParameters),
-                "addmoderator" => SendNewsMessageForUserRemember(client, chatId, replyParameters),
+                "addadmin" => SendAddAdminForAdminRemember(client, chatId, replyParameters),
+                "addmoderator" => SendAddModeratorForAdminRememeber(client, chatId, replyParameters),
+                "editbutton" => SendEditButtonForAdminRemember(client, chatId, replyParameters, token),
                 _ => Task.CompletedTask,
             };
         }
@@ -778,12 +1183,12 @@ namespace ROTGBot.Service
                                 button1, button2
                             }
                 });
-            await client.SendMessageAsync(chatId, "У вас есть неподтвержденная новость." +
+            await client.SendMessageAsync(chatId, "У вас есть неподтвержденное обращение." +
                 " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки", 
                 replyMarkup: replyMarkup, replyParameters: replyParameters);
         }
 
-        private static async Task SendAddAdminForUserRemember(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
+        private static async Task SendAddAdminForAdminRemember(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
             var button1 = new InlineKeyboardButton("Добавить")
             {
@@ -806,7 +1211,9 @@ namespace ROTGBot.Service
                 replyMarkup: replyMarkup, replyParameters: replyParameters);
         }
 
-        private static async Task SendAddModeratorForUserRemember(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
+        
+
+        private static async Task SendAddModeratorForAdminRememeber(TelegramBotClient client, long chatId, ReplyParameters? replyParameters)
         {
             var button1 = new InlineKeyboardButton("Добавить")
             {
@@ -846,22 +1253,11 @@ namespace ROTGBot.Service
 
             var buttons = new List<List<InlineKeyboardButton>>();
 
-            foreach (var role in roles)
-            {
-                switch (role)
-                {
-                    case "user":
-                        buttons.Add(GetUserButtons());
-                        break;
-                    case "administrator":
-                        buttons.Add(GetAdminButtons());
-                        break;
-                    case "moderator":
-                        buttons.Add(GetModeratorButtons());
-                        break;
-                }
-            }
+            if (roles.Any(s => s == "user")) buttons.AddRange(await GetUserButtons(token));
+            if (roles.Any(s => s == "moderator")) buttons.AddRange(GetModeratorButtons(user));
+            if (roles.Any(s => s == "administrator")) buttons.AddRange(GetAdminButtons());
 
+            
             ReplyMarkup replyMarkup = new InlineKeyboardMarkup(buttons);
             await client.SendMessageAsync(chatId, "Выберите, что хотите сделать", replyMarkup: replyMarkup, cancellationToken: token);
         }
@@ -878,31 +1274,68 @@ namespace ROTGBot.Service
             return roles;
         }
 
-        private static List<InlineKeyboardButton> GetUserButtons()
+        private async Task<List<List<InlineKeyboardButton>>> GetUserButtons(CancellationToken token)
         {
-            return [ new InlineKeyboardButton("Отправить новость")
+            var buttons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
-                CallbackData = "SendNewsChoice"
-            }];
+                Selector = s => !s.IsDeleted && s.ToSend
+            }, token);
+
+            var sendButtons = new List<List<InlineKeyboardButton>>();
+
+            foreach (var button in buttons)
+            {
+                var buttonName = button.ButtonName ?? $"{button.ChatName}:{button.ThreadName}";
+                var buttonSend = new InlineKeyboardButton(buttonName)
+                {
+                    CallbackData = $"SendNewsChoice_{button.ButtonNumber}"
+                };
+                sendButtons.Add([buttonSend]);
+            }
+
+            return sendButtons;
         }
 
-        private static List<InlineKeyboardButton> GetAdminButtons()
+        private static List<List<InlineKeyboardButton>> GetAdminButtons()
         {
-            return [ new InlineKeyboardButton("Добавить администратора")
-            {
-                CallbackData = "AddAdminChoice"
-            },new InlineKeyboardButton("Добавить модератора")
-            {
-                CallbackData = "AddModeratorChoice"
-            }];
+            return
+            [
+                [
+                    new InlineKeyboardButton("Добавить администратора")
+                    {
+                        CallbackData = "AddAdminChoice"
+                    },new InlineKeyboardButton("Добавить модератора")
+                    {
+                        CallbackData = "AddModeratorChoice"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Управление кнопками пользователя")
+                    {
+                        CallbackData = "EditButtonChoice"
+                    }
+                ]
+            ];
         }
 
-        private static List<InlineKeyboardButton> GetModeratorButtons()
+        private static List<List<InlineKeyboardButton>> GetModeratorButtons(Db.Model.User user)
         {
-            return [ new InlineKeyboardButton("Подтвердить новость")
+            var switchNotify = "Включить уведомления";
+            if(user.IsNotify)
             {
-                CallbackData = "ApproveNewsChoice"
-            }];
+                switchNotify = "Отключить уведомления";
+            }            
+
+            return [ 
+                [ new InlineKeyboardButton("Получить обращение для подтверждения")
+                {
+                    CallbackData = "ApproveNewsChoice_0"
+                }],
+                [ new InlineKeyboardButton(switchNotify)
+                {
+                    CallbackData = "SwitchNotify"
+                }]
+            ];
         }
 
         public async Task SetCommands()
@@ -910,5 +1343,11 @@ namespace ROTGBot.Service
             var client = new TelegramBotClient(botToken);
             _ = await client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]));
         }
+    }
+
+    public class ButtonSetting
+    {
+        public int Number { get; set; }
+        public string? Name { get; set; }
     }
 }
