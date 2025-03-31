@@ -10,14 +10,9 @@ using ROTGBot.Service;
 
 namespace ROTGBot
 {
-    public class Startup
+    public class Startup(IConfiguration configuration)
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
-
-        public IConfiguration Configuration { get; }
+        public IConfiguration Configuration { get; } = configuration;
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -36,7 +31,7 @@ namespace ROTGBot
                 .AddAuthentication()
                 .AddJwtBearer("Token", (options) =>
                 {
-                    AuthOptions settings = Configuration.GetSection("AuthOptions").Get<AuthOptions>();
+                    var settings = (Configuration.GetSection("AuthOptions")?.Get<AuthOptions>()) ?? throw new ArgumentNullException(nameof(AuthOptions));
                     options.RequireHttpsMetadata = false;
                     options.SaveToken = true;
                     options.TokenValidationParameters = new TokenValidationParameters

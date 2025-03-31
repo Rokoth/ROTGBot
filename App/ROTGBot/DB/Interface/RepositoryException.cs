@@ -31,15 +31,6 @@ namespace ROTGBot.Db.Interface
         /// <param name="innerException"></param>
         public RepositoryException(string message, Exception innerException) : base(message, innerException)
         {
-        }
-
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        protected RepositoryException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        }                
     }
 }

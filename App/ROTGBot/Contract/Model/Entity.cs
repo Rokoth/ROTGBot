@@ -8,4 +8,5 @@ namespace ROTGBot.Contract.Model
     {
         public Guid Id { get; set; }
     }
+    
 }

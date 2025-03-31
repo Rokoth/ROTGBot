@@ -10,7 +10,7 @@ namespace ROTGBot
         {
             var configuration = builder.Build();
             var connectionString = configuration.GetConnectionString("MainConnection");
-            builder.AddConfigDbProvider(options => options.UseNpgsql(connectionString), connectionString);
+            builder.AddConfigDbProvider(options => options.UseNpgsql(connectionString), connectionString ?? throw new ArgumentNullException("connectionString"));
             return builder;
         }
 

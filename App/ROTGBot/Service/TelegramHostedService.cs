@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.Contracts;
 
 namespace ROTGBot.Service
 {
@@ -9,8 +8,8 @@ namespace ROTGBot.Service
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
-        private bool isRunning = true;
-        private CancellationTokenSource _tokenSource;
+        private readonly bool isRunning = true;
+        private readonly CancellationTokenSource _tokenSource;
         private int offset = 0;
 
         public TelegramHostedService(IServiceProvider serviceProvider)
@@ -31,13 +30,12 @@ namespace ROTGBot.Service
             while (isRunning && !_cancellationToken.IsCancellationRequested)
             {     
                 try
-                {                    
-                    var now = DateTimeOffset.Now;
+                {                                        
                     offset = await _mainService.Execute(offset);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Error in TelegramHostedService: Run: {ex.Message} {ex.StackTrace}");
+                    _logger.LogError("Error in TelegramHostedService: Run: {Message} {StackTrace}", ex.Message, ex.StackTrace);
                 }
                 await Task.Delay(1000, _cancellationToken);
             }
