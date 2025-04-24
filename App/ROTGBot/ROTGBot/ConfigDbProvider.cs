@@ -1,17 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using ROTGBot.Db.Context;
 
 namespace ROTGBot
 {
-    public class ConfigDbProvider : ConfigurationProvider
+    public class ConfigDbProvider(Action<DbContextOptionsBuilder> options) : ConfigurationProvider
     {
-        private readonly Action<DbContextOptionsBuilder> _options;       
-
-        public ConfigDbProvider(Action<DbContextOptionsBuilder> options)
-        {
-            _options = options;           
-        }
+        private readonly Action<DbContextOptionsBuilder> _options = options;
 
         public override void Load()
         {
