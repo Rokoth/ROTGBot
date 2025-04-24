@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using ROTGBot.Db.Context;
+using System.Linq.Expressions;
 
 namespace ROTGBot.Db.Repository
 {
@@ -80,8 +81,11 @@ namespace ROTGBot.Db.Repository
         private async Task<List<T>> GetAsyncInternal(Filter<T> filter, bool withDeleted, string methodName)
         {
             return await ExecuteAsync(async (context) =>
-            {                
-                var all = context.Set<T>().Where(filter.Selector);
+            {
+                Expression<Func<T, bool>> defaultSelector = s => true;
+
+                var all = context.Set<T>().Where(filter.Selector ?? defaultSelector);
+
                 if (!withDeleted) all = all.Where(s => !s.IsDeleted);
                 if (!string.IsNullOrEmpty(filter.Sort))
                 {
@@ -112,13 +116,15 @@ namespace ROTGBot.Db.Repository
         /// <returns></returns>
         public async Task<T> GetAsync(Guid id, CancellationToken token)
         {
-            return await ExecuteAsync(async (context) => {
+            var result =  await ExecuteAsync(async (context) => {
                 return await context.Set<T>()
                     .Where(s => !s.IsDeleted && s.Id == id).FirstOrDefaultAsync();
             }, "GetAsync", false);
+
+            return result ?? throw new RepositoryException("Не удалось получить Entity по Id");
         }
 
-        
+
 
         /// <summary>
         /// Метод получения модели по id (в тч удаленные)
@@ -128,10 +134,12 @@ namespace ROTGBot.Db.Repository
         /// <returns></returns>
         public async Task<T> GetAsyncDeleted(Guid id, CancellationToken token)
         {
-            return await ExecuteAsync(async (context) => {
+            var result = await ExecuteAsync(async (context) => {
                 return await context.Set<T>()
                     .Where(s => s.Id == id).FirstOrDefaultAsync();
             }, "GetAsync", false);
+
+            return result ?? throw new RepositoryException("Не удалось получить Entity по Id");
         }
 
         /// <summary>

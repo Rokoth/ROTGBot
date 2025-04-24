@@ -8,21 +8,16 @@ namespace ROTGBot.Db.Context
     /// <summary>
     /// Postgresql context
     /// </summary>
-    public class DbPgContext : DbContext
+    /// <remarks>
+    /// ctor
+    /// </remarks>
+    /// <param name="options"></param>
+    public class DbPgContext(DbContextOptions<DbPgContext> options) : DbContext(options)
     {        
         /// <summary>
         /// settings set
         /// </summary>
         public DbSet<Settings> Settings { get; set; }
-
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="options"></param>
-        public DbPgContext(DbContextOptions<DbPgContext> options) : base(options)
-        {
-
-        }
 
         /// <summary>
         /// create models
@@ -35,14 +30,16 @@ namespace ROTGBot.Db.Context
 
             modelBuilder.ApplyConfiguration(new EntityConfiguration<Settings>());
 
-            foreach (var type in Assembly.GetAssembly(typeof(Entity)).GetTypes())
+            var types = Assembly.GetAssembly(typeof(Entity))?.GetTypes();
+
+            foreach (var type in types ?? [])
             {
                 if (typeof(IEntity).IsAssignableFrom(type) && !type.IsAbstract)
                 {
                     var configType = typeof(EntityConfiguration<>).MakeGenericType(type);
                     var config = Activator.CreateInstance(configType);
-                    GetType().GetMethod(nameof(ApplyConf), BindingFlags.NonPublic | BindingFlags.Instance)
-                        .MakeGenericMethod(type).Invoke(this, new object[] { modelBuilder, config });
+                    GetType().GetMethod(nameof(ApplyConf), BindingFlags.NonPublic | BindingFlags.Instance)?
+                        .MakeGenericMethod(type).Invoke(this, [modelBuilder, config]);
 
                 }
             }

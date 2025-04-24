@@ -2,16 +2,11 @@
 
 namespace ROTGBot
 {
-    public class ConfigDbSource : IConfigurationSource
+    public class ConfigDbSource(Action<DbContextOptionsBuilder> optionsAction) : IConfigurationSource
     {
-        private readonly Action<DbContextOptionsBuilder> _optionsAction;       
+        private readonly Action<DbContextOptionsBuilder> _optionsAction = optionsAction;
 
-        public ConfigDbSource(Action<DbContextOptionsBuilder> optionsAction)
-        {
-            _optionsAction = optionsAction;            
-        }
-
-        public Microsoft.Extensions.Configuration.IConfigurationProvider Build(IConfigurationBuilder builder)
+        public IConfigurationProvider Build(IConfigurationBuilder builder)
         {           
             return new ConfigDbProvider(_optionsAction);
         }
