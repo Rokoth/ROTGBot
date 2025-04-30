@@ -138,9 +138,9 @@ namespace ROTGBot.Service
             await SetNewsStatus(id, "deleted", true, token);           
         }
 
-        public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, CancellationToken token)
+        public Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, CancellationToken token)
         {
-            await _newsRepo.AddAsync(new News()
+            return _newsRepo.AddAsync(new News()
             {
                 IsDeleted = false,
                 Id = Guid.NewGuid(),
@@ -154,6 +154,34 @@ namespace ROTGBot.Service
                 ThreadId = threadId,
                 CreatedDate = DateTime.Now
             }, true, token);
-        }        
+        }
+
+        public async Task<string> GetUserReport(Guid userId, CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>() { 
+                Selector = s => s.UserId == userId
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach(var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result += $"{byYear.Key} год:\r\n";
+
+                foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                {
+                    result += $"{byMonth.Key} месяц: отправлено {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";    
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "approved")} обращений.";
+
+            return result;
+        }
     }
 }

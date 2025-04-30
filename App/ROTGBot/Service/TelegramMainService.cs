@@ -163,6 +163,8 @@ namespace ROTGBot.Service
                                         (cl, chId,  userNews, tk) => SendNewsChoiceHandle(cl, chId, user, userNews, buttonNumber.Value,  tk), token),
                 "SendNews" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.user,
                                         (cl, chId,  userNews, tk) => SendNewsHandle(cl, chId, userNews,  tk), token),
+                "UserReport" => await SendWithCheckRights(client, user, chatId.Value, callbackQuery.Id, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => GetUserReportHandle(cl, chId, user, tk), token),
                 "DeleteNews" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.user,
                                         (cl, chId,  userNews, tk) => DeleteNewsHandle(cl, chId, userNews,  tk), token),
                 "ApproveNewsChoice" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.moderator,
@@ -241,6 +243,12 @@ namespace ROTGBot.Service
             {
                 await SendNewsMessageNotFound(client, chatId);
             }
+        }
+
+        private async Task GetUserReportHandle(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetUserReport(user.Id, token);
+            await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям\r\n: {report}", cancellationToken: token);
         }
 
         private async Task AddAdminHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
@@ -1020,6 +1028,11 @@ namespace ROTGBot.Service
                 };
                 sendButtons.Add([buttonSend]);
             }
+
+            sendButtons.Add([new InlineKeyboardButton("Отчёт по обращениям")
+                {
+                    CallbackData = "UserReport"
+                }]);
 
             return sendButtons;
         }

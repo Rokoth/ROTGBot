@@ -10,6 +10,7 @@ namespace ROTGBot.Service
         Task<News?> GetNewsById(Guid id, CancellationToken token);
         Task<List<News>> GetNewsForApprove(CancellationToken token);
         Task<List<NewsMessage>> GetNewsMessages(Guid newsId, CancellationToken token);
+        Task<string> GetUserReport(Guid id, CancellationToken token);
         Task SetNewsAccepted(Guid id, CancellationToken token);
         Task SetNewsApproved(Guid id, CancellationToken token);
         Task SetNewsDeclined(Guid id, CancellationToken token);
