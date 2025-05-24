@@ -25,5 +25,7 @@ namespace ROTGBot.Db.Model
         [ColumnName("createddate")]
         [ColumnType("timestamp")]
         public DateTime CreatedDate { get; set; }
+        [ColumnName("moderatorid")]
+        public Guid? ModeratorId { get; set; }
     }
 }

@@ -154,6 +154,7 @@ namespace ROTGBot.Service
             }
 
             var roles = user.Roles;
+            var userId = user.Id;
 
             return data switch
             {
@@ -165,14 +166,16 @@ namespace ROTGBot.Service
                                         (cl, chId,  userNews, tk) => SendNewsHandle(cl, chId, userNews,  tk), token),
                 "UserReport" => await SendWithCheckRights(client, user, chatId.Value, callbackQuery.Id, RoleEnum.user,
                                         (cl, chId, userNews, tk) => GetUserReportHandle(cl, chId, user, tk), token),
+                "ModeratorReport" => await SendWithCheckRights(client, user, chatId.Value, callbackQuery.Id, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => GetModeratorReportHandle(cl, chId, user, tk), token),
                 "DeleteNews" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.user,
                                         (cl, chId,  userNews, tk) => DeleteNewsHandle(cl, chId, userNews,  tk), token),
                 "ApproveNewsChoice" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.moderator,
                                         (cl, chId,  userNews, tk) => SendNewsChoiceApproveHandle(cl, chId, offset,  tk), token),
                 "ApproveNews" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.moderator,
-                                        (cl, chId,  userNews, tk) => SendNewsApproveHandle(cl, chId, newsId.Value,  tk), token),
+                                        (cl, chId,  userNews, tk) => SendNewsApproveHandle(cl, userId, chId, newsId.Value,  tk), token),
                 "DeclineNews" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.moderator,
-                                        (cl, chId,  userNews, tk) => SendNewsDeclineHandle(cl, chId, newsId.Value,  tk), token),
+                                        (cl, chId,  userNews, tk) => SendNewsDeclineHandle(cl, userId, chId, newsId.Value,  tk), token),
                 "AddAdminChoice" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
                                         (cl, chId,  userNews, tk) => SendAddAdminChoiceHandle(cl, chId, user, userNews,  tk), token),
                 "AddModeratorChoice" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
@@ -180,17 +183,17 @@ namespace ROTGBot.Service
                 "EditButtonChoice" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
                                         (cl, chId,  userNews, tk) => SendEditButtonChoiceHandle(cl, chId, user, userNews,  tk), token),
                 "AddAdmin" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => AddAdminHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => AddAdminHandle(cl, userId, chId, userNews,  tk), token),
                 "AddAdminDecline" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => AddAdminDeclineHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => AddAdminDeclineHandle(cl, userId, chId, userNews,  tk), token),
                 "AddModerator" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => AddModeratorHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => AddModeratorHandle(cl, userId, chId, userNews,  tk), token),
                 "AddModeratorDecline" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => AddModeratorDeclineHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => AddModeratorDeclineHandle(cl, userId, chId, userNews,  tk), token),
                 "EditButton" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => EditButtonHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => EditButtonHandle(cl, userId, chId, userNews,  tk), token),
                 "EditButtonDecline" => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.administrator,
-                                        (cl, chId,  userNews, tk) => EditButtonDeclineHandle(cl, chId, userNews,  tk), token),
+                                        (cl, chId,  userNews, tk) => EditButtonDeclineHandle(cl, userId, chId, userNews,  tk), token),
                 _ => await SendWithCheckRights(client, user, chatId.Value,  callbackQuery.Id, RoleEnum.user,
                                         (cl, chId,  userNews, tk) => SendUserNotImplemented(cl, chId), token),
             };
@@ -251,11 +254,17 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям\r\n: {report}", cancellationToken: token);
         }
 
-        private async Task AddAdminHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task GetModeratorReportHandle(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetModeratorReport(user.Id, token);
+            await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям\r\n: {report}", cancellationToken: token);
+        }
+
+        private async Task AddAdminHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await AddAdminAccepted(client, chatId, userNews,  token);
+                await AddAdminAccepted(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -263,11 +272,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task EditButtonHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await EditButtonAccepted(client, chatId, userNews,  token);
+                await EditButtonAccepted(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -275,11 +284,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddModeratorHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task AddModeratorHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await AddModeratorAccepted(client, chatId, userNews,  token);
+                await AddModeratorAccepted(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -287,11 +296,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddAdminDeclineHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task AddAdminDeclineHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await AddAdminModeratorDeclined(client, chatId, userNews,  token);
+                await AddAdminModeratorDeclined(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -299,11 +308,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonDeclineHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task EditButtonDeclineHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await AddAdminModeratorDeclined(client, chatId, userNews,  token);
+                await AddAdminModeratorDeclined(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -311,11 +320,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddModeratorDeclineHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        private async Task AddModeratorDeclineHandle(TelegramBotClient client, Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await AddAdminModeratorDeclined(client, chatId, userNews,  token);
+                await AddAdminModeratorDeclined(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -323,12 +332,12 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsApproveHandle(TelegramBotClient client, long chatId, Guid newsId, CancellationToken token)
+        private async Task SendNewsApproveHandle(TelegramBotClient client, Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
         {
             var userNews = await _newsDataService.GetNewsById(newsId, token);
             if (userNews != null)
             {
-                await SendNewsMessageApproved(client, chatId, userNews,  token);
+                await SendNewsMessageApproved(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -336,12 +345,12 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsDeclineHandle(TelegramBotClient client, long chatId, Guid newsId, CancellationToken token)
+        private async Task SendNewsDeclineHandle(TelegramBotClient client, Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
         {
             var userNews = await _newsDataService.GetNewsById(newsId, token);
             if (userNews != null)
             {
-                await SendNewsMessageDeclined(client, chatId, userNews,  token);
+                await SendNewsMessageDeclined(client, moderatorId, chatId, userNews,  token);
             }
             else
             {
@@ -462,7 +471,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddAdminAccepted(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task AddAdminAccepted(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
@@ -474,7 +483,7 @@ namespace ROTGBot.Service
 
             await ParseAndSetRole(messages, RoleEnum.administrator, token);
 
-            await _newsDataService.SetNewsApproved(userNews.Id, token);
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Администраторы добавлены", cancellationToken: token);
         }
 
@@ -492,7 +501,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonAccepted(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task EditButtonAccepted(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
@@ -532,7 +541,7 @@ namespace ROTGBot.Service
                 }
             }
 
-            await _newsDataService.SetNewsApproved(userNews.Id, token);            
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);            
             await client.SendMessageAsync(chatId, "Кнопки сохранены", cancellationToken: token);
         }
 
@@ -573,13 +582,13 @@ namespace ROTGBot.Service
             return numbers;
         }
 
-        private async Task AddAdminModeratorDeclined(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task AddAdminModeratorDeclined(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
-            await _newsDataService.SetNewsDeclined(userNews.Id, token);           
+            await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);           
             await client.SendMessageAsync(chatId, "Задание отменено", cancellationToken: token);
         }
 
-        private async Task AddModeratorAccepted(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task AddModeratorAccepted(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
@@ -591,7 +600,7 @@ namespace ROTGBot.Service
 
             await ParseAndSetRole(messages, RoleEnum.moderator, token);
 
-            await _newsDataService.SetNewsApproved(userNews.Id, token);           
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);           
             await client.SendMessageAsync(chatId, "Модераторы добавлены", cancellationToken: token);
         }
 
@@ -880,9 +889,9 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsDeleted(userNews.Id, token);
         }
 
-        private async Task SendNewsMessageApproved(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task SendNewsMessageApproved(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
-            await _newsDataService.SetNewsApproved(userNews.Id, token);                       
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);                       
 
             if(userNews.GroupId.HasValue)
             {
@@ -902,9 +911,9 @@ namespace ROTGBot.Service
             }            
         }
 
-        private async Task SendNewsMessageDeclined(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        private async Task SendNewsMessageDeclined(TelegramBotClient client, Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
-            await _newsDataService.SetNewsDeclined(userNews.Id, token);
+            await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);
 
             await client.SendMessageAsync(chatId, "Обращение отклонено",cancellationToken: token);
             await client.SendMessageAsync(userNews.ChatId, "Обращение отклонено", cancellationToken: token);
@@ -1003,7 +1012,7 @@ namespace ROTGBot.Service
 
             var buttons = new List<List<InlineKeyboardButton>>();
                        
-            if (user.IsModerator) buttons.AddRange(GetModeratorButtons(user));
+            if (user.IsModerator) buttons.AddRange(await GetModeratorButtons(user));
             
             if (user.IsAdmin) buttons.AddRange(GetAdminButtons());
             
@@ -1029,7 +1038,7 @@ namespace ROTGBot.Service
                 sendButtons.Add([buttonSend]);
             }
 
-            sendButtons.Add([new InlineKeyboardButton("Отчёт по обращениям")
+            sendButtons.Add([new InlineKeyboardButton("Отчёт по отправленным обращениям")
                 {
                     CallbackData = "UserReport"
                 }]);
@@ -1059,7 +1068,7 @@ namespace ROTGBot.Service
             ];
         }
 
-        private static List<List<InlineKeyboardButton>> GetModeratorButtons(Contract.Model.User user)
+        private async static Task<List<List<InlineKeyboardButton>>> GetModeratorButtons(Contract.Model.User user)
         {
             var switchNotify = "Включить уведомления";
             if(user.IsNotify)
@@ -1075,6 +1084,10 @@ namespace ROTGBot.Service
                 [ new InlineKeyboardButton(switchNotify)
                 {
                     CallbackData = "SwitchNotify"
+                }],
+                [new InlineKeyboardButton("Отчёт по обработанным обращениям")
+                {
+                    CallbackData = "ModeratorReport"
                 }]
             ];
         }

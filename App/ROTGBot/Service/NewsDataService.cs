@@ -112,30 +112,31 @@ namespace ROTGBot.Service
 
         public async Task SetNewsAccepted(Guid id, CancellationToken token)
         {
-            await SetNewsStatus(id, "accepted", false, token);
+            await SetNewsStatus(id, null, "accepted", false, token);
         }
 
-        private async Task SetNewsStatus(Guid id, string state, bool toDelete, CancellationToken token)
+        private async Task SetNewsStatus(Guid id, Guid? moderatorId, string state, bool toDelete, CancellationToken token)
         {
             var userNews = await _newsRepo.GetAsync(id, token);
             userNews.State = state;
+            if (moderatorId.HasValue) userNews.ModeratorId = moderatorId;
             if (toDelete) userNews.IsDeleted = true;
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
 
-        public async Task SetNewsApproved(Guid id, CancellationToken token)
+        public async Task SetNewsApproved(Guid id, Guid moderatorId, CancellationToken token)
         {
-            await SetNewsStatus(id, "approved", false, token);            
+            await SetNewsStatus(id, moderatorId, "approved", false, token);            
         }
 
-        public async Task SetNewsDeclined(Guid id, CancellationToken token)
+        public async Task SetNewsDeclined(Guid id, Guid moderatorId, CancellationToken token)
         {
-            await SetNewsStatus(id, "declined", false, token);            
+            await SetNewsStatus(id, moderatorId, "declined", false, token);            
         }
 
         public async Task SetNewsDeleted(Guid id, CancellationToken token)
         {
-            await SetNewsStatus(id, "deleted", true, token);           
+            await SetNewsStatus(id, null, "deleted", true, token);           
         }
 
         public Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, CancellationToken token)
@@ -180,6 +181,34 @@ namespace ROTGBot.Service
                 $"принято: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
                 $"в очереди на подтверждение: {allNews.Count(s => s.State == "approved")} обращений.";
+
+            return result;
+        }
+
+        public async Task<string> GetModeratorReport(Guid userId, CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.ModeratorId == userId
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result += $"{byYear.Key} год:\r\n";
+
+                foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                {
+                    result += $"{byMonth.Key} месяц: всего {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"подтверждено: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
 
             return result;
         }
