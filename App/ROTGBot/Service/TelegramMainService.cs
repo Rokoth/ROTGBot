@@ -251,7 +251,7 @@ namespace ROTGBot.Service
         private async Task GetUserReportHandle(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetUserReport(user.Id, token);
-            await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям\r\n: {report}", cancellationToken: token);
+            await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям:\r\n {report}", cancellationToken: token);
         }
 
         private async Task GetModeratorReportHandle(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)

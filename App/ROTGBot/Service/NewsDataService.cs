@@ -1,6 +1,7 @@
 ﻿using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 
 namespace ROTGBot.Service
@@ -171,7 +172,9 @@ namespace ROTGBot.Service
 
                 foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
                 {
-                    result += $"{byMonth.Key} месяц: отправлено {byMonth.Count()}," +
+                    string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(byMonth.Key);
+
+                    result += $"{monthName}: отправлено {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                         $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";    
                 }
