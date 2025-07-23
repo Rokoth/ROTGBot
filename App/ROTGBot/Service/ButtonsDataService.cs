@@ -1,6 +1,7 @@
 ﻿using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
+using System.Threading;
 using Telegram.BotAPI.AvailableTypes;
 
 namespace ROTGBot.Service
@@ -46,6 +47,34 @@ namespace ROTGBot.Service
             }
         }
 
+        public async Task AddParentButton(string name, int? parent, CancellationToken cancellationToken)
+        {            
+            var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
+            {
+                Selector = s => !s.IsDeleted && s.ParentId == parent && s.ButtonName == name
+            }, cancellationToken);
+
+            var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
+            {
+                Selector = s => !s.IsDeleted
+            }, cancellationToken);
+
+
+            if (exists.Count == 0)
+            {
+                await _newsButtonRepo.AddAsync(new NewsButton()
+                {                    
+                    ChatName = name,
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,                    
+                    ToSend = false,
+                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
+                    IsParent = true,
+                    ParentId = parent
+                }, true, cancellationToken);
+            }
+        }
+
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)
         {
             return [.. (await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -83,7 +112,9 @@ namespace ROTGBot.Service
                 ChatName = newsButton.ChatName,
                 ThreadId = newsButton.ThreadId,
                 ThreadName = newsButton.ThreadName,
-                ToSend = newsButton.ToSend
+                ToSend = newsButton.ToSend,
+                ParentId = newsButton.ParentId,
+                IsParent = newsButton.IsParent
             };
         }
 
@@ -107,11 +138,12 @@ namespace ROTGBot.Service
             }
         }
 
-        public async Task SetButtonSend(Guid id, string? name, CancellationToken token)
+        public async Task SetButtonSend(Guid id, string? name, int? parentId, CancellationToken token)
         {
             var button = await _newsButtonRepo.GetAsync(id, token);
             button.ToSend = true;
             button.ButtonName = name;
+            button.ParentId = parentId;
             await _newsButtonRepo.UpdateAsync(button, true, token);
         }
     }

@@ -6,7 +6,7 @@ namespace ROTGBot.Db.Model
     public class NewsButton : Entity
     {       
         [ColumnName("chatid")]
-        public long ChatId { get; set; }
+        public long? ChatId { get; set; }
         [ColumnName("chatname")]
         public string? ChatName { get; set; }
         [ColumnName("threadid")]
@@ -19,5 +19,10 @@ namespace ROTGBot.Db.Model
         public int ButtonNumber { get; set; }
         [ColumnName("buttonname")]
         public string? ButtonName { get; set; }
+
+        [ColumnName("isparent")]
+        public bool IsParent { get; set; }
+        [ColumnName("parentid")]
+        public int? ParentId { get; set; }
     }
 }

@@ -641,7 +641,7 @@ namespace ROTGBot.Service
                 var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
                 if (newItem != null)
                 {
-                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, token);                   
+                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, null, token);                   
                 }
                 else
                 {
@@ -682,8 +682,12 @@ namespace ROTGBot.Service
             var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
             if (button != null)
             {
-                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, token);
-            }            
+                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, settings.Parent, token);
+            }
+            else if(settings.IsParent)
+            {
+                await _buttonsDataService.AddParentButton(settings.Name!, settings.Parent, token);
+            }
 
             await _newsDataService.SetNewsApproved(userNews.Id, token);
             await client.SendMessageAsync(chatId, "Кнопка сохранена", cancellationToken: token);
@@ -747,14 +751,20 @@ namespace ROTGBot.Service
                 if (int.TryParse(itemElements[0], out int num))
                 {
                     string? name = null;
+                    int? parent = null;
                     if (itemElements.Length > 1)
                     {
                         name = itemElements[1];
                     }
+                    if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                    {
+                        parent = parNum;
+                    }
                     numbers.Add(new ButtonSetting()
                     {
                         Number = num,
-                        Name = name
+                        Name = name,
+                        Parent = parent
                     });
                 }
             }
@@ -776,14 +786,43 @@ namespace ROTGBot.Service
             if (int.TryParse(itemElements[0], out int num))
             {
                 string? name = null;
+                int? parent = null;
                 if (itemElements.Length > 1)
                 {
                     name = itemElements[1];
                 }
+                if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                {
+                    parent = parNum;
+                }
                 return new ButtonSetting()
                 {
                     Number = num,
-                    Name = name
+                    Name = name,
+                    Parent = parent
+                };
+            }
+            else if(itemElements[0] == "_")
+            {
+                string? name = null;
+                int? parent = null;
+                if (itemElements.Length > 1)
+                {
+                    name = itemElements[1];
+                }
+                else
+                {
+                    name = "_";
+                }
+                if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                {
+                    parent = parNum;
+                }
+                return new ButtonSetting()
+                {                   
+                    Name = name,
+                    Parent = parent,
+                    IsParent = true
                 };
             }
 
