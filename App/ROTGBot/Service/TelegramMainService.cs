@@ -232,8 +232,10 @@ namespace ROTGBot.Service
                                         (cl, chId, userNews, tk) => DeleteButtonHandle(cl, chId, userNews, tk), token),
                 "DeleteButtonDecline" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
                                         (cl, chId, userNews, tk) => DeleteButtonDeclineHandle(cl, chId, userNews, tk), token),
-                "GetPDNOferta" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
+                "GetPDNOferta" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
                                         (cl, chId, userNews, tk) => SendPDNOferta(cl, chId, userNews, tk), token),
+                "GetDonateQR" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => SendDonateQR(cl, chId, userNews, tk), token),
                 _ => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
                                         (cl, chId, userNews, tk) => SendUserNotImplemented(cl, chId), token),
             };
@@ -411,6 +413,13 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", cancellationToken: token);
             using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
             await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "Cогласие на обработку персональных данных.txt")), cancellationToken: token);
+        }
+
+        private async Task SendDonateQR(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Отправить пожертвование можно, используя ссылку", cancellationToken: token);
+            await client.SendMessageAsync(chatId, "https://t.me/c/1627860016/6606/746066", cancellationToken: token);
+            //await client.SendPhotoAsync(new SendPhotoArgs(chatId, ), cancellationToken: token);
         }
 
         private async Task AddModeratorDeclineHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
@@ -1539,9 +1548,18 @@ namespace ROTGBot.Service
                 sendButtons.Add([buttonSend]);
             }
 
+            sendButtons.Add([new InlineKeyboardButton(" ") { }]);
+
             sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
             {
                 CallbackData = "GetPDNOferta"
+            }]);
+
+            sendButtons.Add([new InlineKeyboardButton(" "){ }]);
+
+            sendButtons.Add([new InlineKeyboardButton("Отправить пожертвование")
+            {
+                CallbackData = "GetDonateQR"
             }]);
 
             return sendButtons;
