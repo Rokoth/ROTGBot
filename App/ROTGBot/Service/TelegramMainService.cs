@@ -916,24 +916,73 @@ namespace ROTGBot.Service
                 return;
             }
 
-            await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", token);
+            if(button.IsParent)
+            {
+                var buttons = (await _buttonsDataService.GetActiveButtons(token)).Where(s => s.ParentId == buttonNumber);
 
-            var sendButtons = new List<List<InlineKeyboardButton>>(){new()
+                if(!buttons.Any())
                 {
-                    new InlineKeyboardButton("Отправить обращение")
-                    {
-                        CallbackData = "SendNews"
-                    },
-                    new InlineKeyboardButton("Отменить")
-                    {
-                        CallbackData = "DeleteNews"
-                    }
+                    await client.SendMessageAsync(chatId, "Ненастроенная родительская кнопка, выберите другой вариант", cancellationToken: token);
+                    return;
                 }
-            };
 
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+                var sendButtons = new List<List<InlineKeyboardButton>>();
 
-            await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений и нажмите кнопку Отправить", replyMarkup: replyMarkup, cancellationToken: token);
+                foreach (var childbutton in buttons)
+                {
+                    var buttonName = childbutton.ButtonName ?? $"{childbutton.ChatName}:{childbutton.ThreadName}";
+                    var buttonSend = new InlineKeyboardButton(buttonName)
+                    {
+                        CallbackData = $"SendNewsChoice_{childbutton.ButtonNumber}"
+                    };
+                    sendButtons.Add([buttonSend]);
+                }
+                
+                if(button.ParentId == null)
+                {
+                    var buttonSend = new InlineKeyboardButton("Вернуться")
+                    {
+                        CallbackData = $"/start"
+                    };
+                    sendButtons.Add([buttonSend]);
+                }
+                else
+                {
+                    var buttonSend = new InlineKeyboardButton("Вернуться")
+                    {
+                        CallbackData = $"SendNewsChoice_{button.ParentId}"
+                    };
+                    sendButtons.Add([buttonSend]);
+                }
+
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+                await client.SendMessageAsync(chatId, "Выберите, что хотите сделать", replyMarkup: replyMarkup, cancellationToken: token);
+            }
+            else
+            {
+                await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", token);
+
+                var sendButtons = new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        new InlineKeyboardButton("Отправить обращение")
+                        {
+                            CallbackData = "SendNews"
+                        },
+                        new InlineKeyboardButton("Отменить")
+                        {
+                            CallbackData = "DeleteNews"
+                        }
+                    }
+                };
+
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+
+                await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений и нажмите кнопку Отправить", replyMarkup: replyMarkup, cancellationToken: token);
+            }
+
+            
         }
 
         private async Task SendAddAdminForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
@@ -1534,7 +1583,7 @@ namespace ROTGBot.Service
 
         private async Task<List<List<InlineKeyboardButton>>> GetUserButtons(CancellationToken token)
         {
-            var buttons = await _buttonsDataService.GetActiveButtons(token);
+            var buttons = (await _buttonsDataService.GetActiveButtons(token)).Where(s => s.ParentId == null);
                       
             var sendButtons = new List<List<InlineKeyboardButton>>();
 
