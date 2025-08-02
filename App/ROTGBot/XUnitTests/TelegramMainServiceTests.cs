@@ -9,21 +9,39 @@ using ROTGBot.Db.Repository;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using ROTGBot.Db.Model;
+using Moq;
+using Telegram.BotAPI;
+using Telegram.BotAPI.GettingUpdates;
 
-namespace UnitTests
-{
-    [TestFixture]
-    public class TelegramMainServiceTests : IClassFixture<CustomFixture>
+namespace XUnitTests
+{    
+    public class TelegramMainServiceUnitTests 
     {
-        [SetUp]
-        public void Setup()
+        private IConfiguration configuration;
+
+        public TelegramMainServiceUnitTests()
         {
+            ConfigurationBuilder builder = new ConfigurationBuilder();
+            builder.AddJsonFile("appsettings.json");
+            configuration = builder.Build();
         }
 
-        [Test]
+        [Fact]
         public async Task Execute_No_Updates_Async()
         {
-            Assert.Pass();
+            var handlerService = new Mock<ITelegramMessageHandler>();
+            var wrapperService = new Mock<ITelegramBotWrapper>();
+            handlerService.Setup(s => s.HandleUpdates(It.IsAny<IEnumerable<Update>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+            var tgMainService = new TelegramMainService(handlerService.Object, wrapperService.Object);
+
+            var result = await tgMainService.Execute(1);
+
+            Assert.Equal(1, result);
         }
     }
 
@@ -46,11 +64,9 @@ namespace UnitTests
             builder.AddJsonFile("appsettings.json");
             var config = builder.Build();
 
-            var rand = new Random();
-                       
             serviceCollection.Configure<CommonOptions>(config);
-            serviceCollection.AddLogging(configure => configure.AddSerilog());            
-          
+            serviceCollection.AddLogging(configure => configure.AddSerilog());
+
             serviceCollection.AddDbContext<ROTGBot.Db.Context.DbPgContext>(opt => opt.UseNpgsql(ConnectionString));
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.User>, Repository<ROTGBot.Db.Model.User>>();
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Role>, Repository<ROTGBot.Db.Model.Role>>();
@@ -60,48 +76,31 @@ namespace UnitTests
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Groups>, Repository<ROTGBot.Db.Model.Groups>>();
             serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.NewsButton>, Repository<ROTGBot.Db.Model.NewsButton>>();
             serviceCollection.AddDataServices();
-                       
-            ServiceProvider = serviceCollection.BuildServiceProvider();           
+
+            ServiceProvider = serviceCollection.BuildServiceProvider();
         }
 
         public void Dispose()
         {
-            var logger = ServiceProvider.GetRequiredService<ILogger<CustomFixture>>();
-            try
-            {
-                using NpgsqlConnection _connPg = new NpgsqlConnection(RootConnectionString);
-                _connPg.Open();
-                string script1 = "SELECT pg_terminate_backend (pg_stat_activity.pid) " +
-                    $"FROM pg_stat_activity WHERE pid<> pg_backend_pid() AND pg_stat_activity.datname = '{DatabaseName}'; ";
-                var cmd1 = new NpgsqlCommand(script1, _connPg);
-                cmd1.ExecuteNonQuery();
-
-                string script2 = $"DROP DATABASE {DatabaseName};";
-                var cmd2 = new NpgsqlCommand(script2, _connPg);
-                cmd2.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"Error on dispose: {ex.Message}; StackTrace: {ex.StackTrace}");
-            }
+            
         }
 
-        public User CreateUser(string nameMask, string descriptionMask, string loginMask, string passwordMask, Guid formulaId)
-        {
+        //public User CreateUser(string nameMask, string descriptionMask, string loginMask, string passwordMask, Guid formulaId)
+        //{
 
-            var id = Guid.NewGuid();
-            var user = new User()
-            {
-                Name = string.Format(nameMask, id),
-                Id = id,
-                Description = string.Format(descriptionMask, id),
-                IsDeleted = false,
-                ChatId = 1,
-                IsNotify = true,
-                TGId = 1,
-                TGLogin = "tgtestuser"               
-            };
-            return user;
-        }
+        //    var id = Guid.NewGuid();
+        //    var user = new User()
+        //    {
+        //        Name = string.Format(nameMask, id),
+        //        Id = id,
+        //        Description = string.Format(descriptionMask, id),
+        //        IsDeleted = false,
+        //        ChatId = 1,
+        //        IsNotify = true,
+        //        TGId = 1,
+        //        TGLogin = "tgtestuser"
+        //    };
+        //    return user;
+        //}
     }
 }

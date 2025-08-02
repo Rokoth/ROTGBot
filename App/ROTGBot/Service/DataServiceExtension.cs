@@ -13,6 +13,8 @@ namespace ROTGBot.Service
             
             services.AddScoped<ITelegramMainService, TelegramMainService>();
             services.AddScoped<ITelegramMessageHandler, TelegramMessageHandler>();
+            services.AddScoped<ITelegramBotWrapper, TelegramBotWrapper>();
+            
             services.AddHostedService<TelegramHostedService>();
             return services;
         }

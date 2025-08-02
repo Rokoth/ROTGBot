@@ -1,46 +1,40 @@
-﻿using Common;
-using Microsoft.Extensions.Configuration;
-using Telegram.BotAPI;
+﻿using System.Threading;
 using Telegram.BotAPI.AvailableMethods;
-using Telegram.BotAPI.GettingUpdates;
 
 namespace ROTGBot.Service
 {
     public class TelegramMainService : ITelegramMainService
-    {
-        private readonly string botToken = "token";
+    {       
                 
         private readonly ITelegramMessageHandler _telegramMessageHandler;
-
+        private readonly ITelegramBotWrapper _client;
 
         public TelegramMainService(
             ITelegramMessageHandler telegramMessageHandler,
-            IConfiguration configuration)
+            ITelegramBotWrapper client)
         {
-            _telegramMessageHandler = telegramMessageHandler;         
-            var botSettings = configuration.GetSection("BotSettings").Get<BotSettings>();
-            botToken = botSettings?.Token ?? botToken;
+            _telegramMessageHandler = telegramMessageHandler;
+            _client = client;
         }
 
         public async Task<int> Execute(int offset)
         {
             var cancellationToken = new CancellationTokenSource(60000).Token;
-            var client = new TelegramBotClient(botToken);
-
-            var updates = await client.GetUpdatesAsync(offset, cancellationToken: cancellationToken);
+            
+            var updates = await _client.GetUpdatesAsync(offset, cancellationToken);
             if ((updates?.Any()) != true)
             {
                 return offset;
             }
 
-            await _telegramMessageHandler.HandleUpdates(client, updates, cancellationToken);
+            await _telegramMessageHandler.HandleUpdates(updates, cancellationToken);
             return updates.Last().UpdateId + 1;
         }
 
         public async Task SetCommands()
         {
-            var client = new TelegramBotClient(botToken);
-            _ = await client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]));
+            var cancellationToken = new CancellationTokenSource(60000).Token;
+            await _client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]), cancellationToken);
         }
     }
 }

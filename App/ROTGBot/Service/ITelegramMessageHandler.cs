@@ -5,6 +5,6 @@ namespace ROTGBot.Service
 {
     public interface ITelegramMessageHandler
     {
-        Task HandleUpdates(TelegramBotClient client, IEnumerable<Update> updates, CancellationToken cancellationToken);
+        Task HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken);
     }
 }
