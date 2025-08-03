@@ -8,10 +8,12 @@ namespace ROTGBot.Service
 {
     public class NewsDataService(
         IRepository<News> newsRepo,
-        IRepository<NewsMessage> newsMessageRepo) : INewsDataService
+        IRepository<NewsMessage> newsMessageRepo,
+        IRepository<User> userRepo) : INewsDataService
     {
         private readonly IRepository<News> _newsRepo = newsRepo;
         private readonly IRepository<NewsMessage> _newsMessageRepo = newsMessageRepo;
+        private readonly IRepository<User> _userRepo = userRepo;
 
         public async Task AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
         {
@@ -212,6 +214,48 @@ namespace ROTGBot.Service
             result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
                 $"подтверждено: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
+
+            return result;
+        }
+
+        public async Task<string> GetAdminUserReport(CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach(var byUser in allNews.GroupBy(s => s.UserId))
+            {
+                var user = await _userRepo.GetAsync(byUser.Key, token);
+                result += $"Пользователь {user.Name} ({user.TGLogin}):\r\n";
+
+                foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
+                {
+                    result += $"{byYear.Key} год:\r\n";
+
+                    foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                    {
+                        string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(byMonth.Key);
+
+                        result += $"{monthName}: отправлено {byMonth.Count()}," +
+                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";
+                    }
+                }
+
+                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
+                    $"принято: {byUser.Count(s => s.State == "approved")}, " +
+                    $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
+                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "approved")} обращений.";
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "approved")} обращений.";
 
             return result;
         }
