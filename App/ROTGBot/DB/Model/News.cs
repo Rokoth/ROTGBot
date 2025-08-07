@@ -25,5 +25,8 @@ namespace ROTGBot.Db.Model
         [ColumnName("createddate")]
         [ColumnType("timestamp")]
         public DateTime CreatedDate { get; set; }
+
+        [ColumnName("ismulti")]
+        public bool IsMulti { get; set; }
     }
 }

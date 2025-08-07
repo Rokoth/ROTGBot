@@ -48,7 +48,8 @@ namespace ROTGBot.Service
                 ThreadId = result.ThreadId,
                 Title = result.Title,
                 Type = result.Type,
-                UserId = result.UserId
+                UserId = result.UserId,
+                IsMulti = result.IsMulti
             };
         }
 
@@ -152,8 +153,16 @@ namespace ROTGBot.Service
                 Type = type,
                 GroupId = groupId,
                 ThreadId = threadId,
-                CreatedDate = DateTime.Now
+                CreatedDate = DateTime.Now,
+                IsMulti = false
             }, true, token);
-        }        
+        }
+
+        public async Task SetNewsMulti(Guid id, CancellationToken token)
+        {
+            var userNews = await _newsRepo.GetAsync(id, token);
+            userNews.IsMulti = true;           
+            await _newsRepo.UpdateAsync(userNews, true, token);
+        }
     }
 }

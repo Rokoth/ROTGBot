@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
+using System.Linq.Dynamic.Core.Tokenizer;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -105,6 +106,38 @@ namespace ROTGBot.Service
             {
                 await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, message.Text ?? "", cancellationToken);
 
+                if(userNews.Type == "news")
+                {
+                    if (userNews.IsMulti)
+                    {
+                        var sendButtons = new List<List<InlineKeyboardButton>>()
+                        {
+                            new()
+                            {
+                                new InlineKeyboardButton("Подтвердить отправку")
+                                {
+                                    CallbackData = "SendNews"
+                                },
+                                new InlineKeyboardButton("Отменить")
+                                {
+                                    CallbackData = "DeleteNews"
+                                }
+                            }
+                        };
+
+                        ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+
+                        await client.SendMessageAsync(message.Chat.Id, 
+                            "Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
+                            "для отмены отправки нажмите Отменить.",
+                            replyMarkup: replyMarkup, cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        await HandleData(client, message.Chat.Id, user, "SendNews", cancellationToken);
+                    }
+                }
+
                 if (userNews.Type == "addbutton")
                 {
                     await HandleData(client, message.Chat.Id, user, "AddButton", cancellationToken);
@@ -192,6 +225,8 @@ namespace ROTGBot.Service
                                         (cl, chId, userNews, tk) => SendNewsChoiceHandle(cl, chId, user, userNews, buttonNumber.Value, tk), token),
                 "SendNews" => await SendWithCheckRights(client, user, chatId.Value,  RoleEnum.user,
                                         (cl, chId, userNews, tk) => SendNewsHandle(cl, chId, userNews, tk), token),
+                "SendNewsMulti" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => SendNewsMultiHandle(cl, chId, userNews, tk), token),
                 "DeleteNews" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
                                         (cl, chId, userNews, tk) => DeleteNewsHandle(cl, chId, userNews, tk), token),
                 "ApproveNewsChoice" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.moderator,
@@ -281,6 +316,18 @@ namespace ROTGBot.Service
             if (userNews != null)
             {
                 await SendNewsMessageAccepted(client, chatId, userNews,  token);
+            }
+            else
+            {
+                await SendNewsMessageNotFound(client, chatId);
+            }
+        }
+
+        private async Task SendNewsMultiHandle(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SetNewsMulti(client, chatId, userNews, token);
             }
             else
             {
@@ -577,6 +624,12 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsAccepted(userNews.Id, token);
             await client.SendMessageAsync(chatId, "Обращение принято в обработку", cancellationToken: token);
             await NotifyModerators(client, userNews, token);
+        }
+
+        private async Task SetNewsMulti(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
+        {            
+            await _newsDataService.SetNewsMulti(userNews.Id, token);
+            await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений, затем нажмите кнопку подтверждения отправки", cancellationToken: token);            
         }
 
         private async Task NotifyModerators(TelegramBotClient client, News userNews, CancellationToken token)
@@ -966,9 +1019,9 @@ namespace ROTGBot.Service
                 {
                     new()
                     {
-                        new InlineKeyboardButton("Отправить обращение")
+                        new InlineKeyboardButton("Отправить обращение в нескольких сообщениях")
                         {
-                            CallbackData = "SendNews"
+                            CallbackData = "SendNewsMulti"
                         },
                         new InlineKeyboardButton("Отменить")
                         {
@@ -979,10 +1032,10 @@ namespace ROTGBot.Service
 
                 ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-                await client.SendMessageAsync(chatId, "Отправьте одно или несколько сообщений и нажмите кнопку Отправить", replyMarkup: replyMarkup, cancellationToken: token);
-            }
-
-            
+                await client.SendMessageAsync(chatId, "Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
+                    "если требуется отправить несколько сообщений (в данном случае после отправки сообщений необходимо будет подтвердить отправку). " +
+                    "Для отмены отправки нажмите Отменить", replyMarkup: replyMarkup, cancellationToken: token);
+            }            
         }
 
         private async Task SendAddAdminForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
