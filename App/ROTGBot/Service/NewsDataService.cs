@@ -165,7 +165,7 @@ namespace ROTGBot.Service
             string result = string.Empty;
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>() { 
-                Selector = s => s.UserId == userId
+                Selector = s => s.UserId == userId && s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
             foreach(var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
@@ -196,7 +196,7 @@ namespace ROTGBot.Service
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.ModeratorId == userId
+                Selector = s => s.ModeratorId == userId && s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
             foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
@@ -224,7 +224,7 @@ namespace ROTGBot.Service
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false
+                Selector = s => s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
             foreach(var byUser in allNews.GroupBy(s => s.UserId))
