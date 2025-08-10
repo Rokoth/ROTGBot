@@ -178,14 +178,14 @@ namespace ROTGBot.Service
 
                     result += $"{monthName}: отправлено {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";    
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";    
                 }
             }
 
             result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
                 $"принято: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
-                $"в очереди на подтверждение: {allNews.Count(s => s.State == "approved")} обращений.";
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
 
             return result;
         }
@@ -207,7 +207,7 @@ namespace ROTGBot.Service
                 {
                     result += $"{byMonth.Key} месяц: всего {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
                 }
             }
 
@@ -242,20 +242,20 @@ namespace ROTGBot.Service
 
                         result += $"{monthName}: отправлено {byMonth.Count()}," +
                             $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;";
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
                     }
                 }
 
                 result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
                     $"принято: {byUser.Count(s => s.State == "approved")}, " +
                     $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
-                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "approved")} обращений.";
+                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "accepted")} обращений.\r\n\r\n";
             }
 
             result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
                 $"принято: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
-                $"в очереди на подтверждение: {allNews.Count(s => s.State == "approved")} обращений.";
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
 
             return result;
         }
