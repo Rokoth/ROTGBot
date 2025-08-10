@@ -459,7 +459,7 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", cancellationToken: token);
             using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
-            await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "Cогласие на обработку персональных данных.txt")), cancellationToken: token);
+            await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "PDNOferta.txt")), cancellationToken: token);
         }
 
         private async Task SendDonateQR(TelegramBotClient client, long chatId, News? userNews, CancellationToken token)
@@ -1650,14 +1650,18 @@ namespace ROTGBot.Service
                 sendButtons.Add([buttonSend]);
             }
 
-            sendButtons.Add([new InlineKeyboardButton(" ") { }]);
+            sendButtons.Add([new InlineKeyboardButton(" ") { 
+                CallbackData = "-"
+            }]);
 
             sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
             {
                 CallbackData = "GetPDNOferta"
             }]);
 
-            sendButtons.Add([new InlineKeyboardButton(" "){ }]);
+            sendButtons.Add([new InlineKeyboardButton(" "){
+                CallbackData = "-"
+            }]);
 
             sendButtons.Add([new InlineKeyboardButton("Отправить пожертвование")
             {
