@@ -1,8 +1,13 @@
 ﻿namespace Common
 {
+    /// <summary>
+    /// Настройки бота
+    /// </summary>
     public class BotSettings
     {       
-        public string Token { get; set; } = "";
-
+        /// <summary>
+        /// Токен
+        /// </summary>
+        public string Token { get; set; } = string.Empty;
     }
 }

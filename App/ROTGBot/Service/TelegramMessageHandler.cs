@@ -78,7 +78,12 @@ namespace ROTGBot.Service
 
             if (user.IsAdmin && message.IsTopicMessage == true)
             {
-                await _buttonsDataService.AddNewButton(message, cancellationToken);
+                await _buttonsDataService.AddNewButton(
+                    message.Chat.Id, 
+                    message.MessageThreadId,
+                    message.Chat.Title ?? $"{message.Chat.FirstName} {message.Chat.LastName}",
+                    (message.ForumTopicCreated ?? message.ReplyToMessage?.ForumTopicCreated)?.Name,                    
+                    cancellationToken);
             }
 
             if (message.Text == "/start")

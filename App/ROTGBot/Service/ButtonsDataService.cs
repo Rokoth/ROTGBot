@@ -9,41 +9,33 @@ namespace ROTGBot.Service
     {
         private readonly IRepository<NewsButton> _newsButtonRepo = newsButtonRepo;
 
-        public async Task AddNewButton(Message message, CancellationToken cancellationToken)
-        {
-            var chatId = message.Chat.Id;
-            var threadId = message.MessageThreadId;
-
-            var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
-            {
-                Selector = s => !s.IsDeleted && s.ChatId == chatId && s.ThreadId == threadId
-            }, cancellationToken);
-
+        public async Task<bool> AddNewButton(long chatId, int? threadId, string chatName, string? threadName, CancellationToken cancellationToken)
+        {      
             var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
                 Selector = s => !s.IsDeleted
             }, cancellationToken);
 
+            var exists = allButtons.FirstOrDefault(s => s.ChatId == chatId && s.ThreadId == threadId);
 
-            if (exists.Count == 0)
+            if (exists == null && threadName != null)
             {
-                var forumTopic = message.ForumTopicCreated ?? message.ReplyToMessage?.ForumTopicCreated;
-
-                if (forumTopic != null)
+                await _newsButtonRepo.AddAsync(new NewsButton()
                 {
-                    await _newsButtonRepo.AddAsync(new NewsButton()
-                    {
-                        ChatId = chatId,
-                        ChatName = message.Chat.Title ?? $"{message.Chat.FirstName} {message.Chat.LastName}",
-                        Id = Guid.NewGuid(),
-                        IsDeleted = false,
-                        ThreadId = threadId,
-                        ThreadName = forumTopic.Name,
-                        ToSend = false,
-                        ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1
-                    }, true, cancellationToken);
-                }
+                    ChatId = chatId,
+                    ChatName = chatName,
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,
+                    ThreadId = threadId,
+                    ThreadName = threadName,
+                    ToSend = false,
+                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1
+                }, true, cancellationToken);
+
+                return true;
             }
+
+            return false;
         }
 
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)
