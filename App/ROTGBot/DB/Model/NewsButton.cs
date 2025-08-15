@@ -24,5 +24,7 @@ namespace ROTGBot.Db.Model
         public bool IsParent { get; set; }
         [ColumnName("parentid")]
         public int? ParentId { get; set; }
+        [ColumnName("ismoderate")]
+        public bool IsModerate { get; set; }
     }
 }

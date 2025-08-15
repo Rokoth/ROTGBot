@@ -961,6 +961,8 @@ namespace ROTGBot.Service
 
         private async Task SendNewsMessageForUser(TelegramBotClient client, long chatId, int buttonNumber, Contract.Model.User user, CancellationToken token)
         {
+
+
             var button = await _buttonsDataService.GetButtonByNumber(buttonNumber, token);
 
             if (button == null || !button.ToSend)
@@ -1013,6 +1015,13 @@ namespace ROTGBot.Service
             }
             else
             {
+                var span = (DateTime.Now - user.LastSendDate).TotalMinutes;
+                if (span < 10)
+                {
+                    await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {11 - span} минут", cancellationToken: token);
+                    return;
+                }
+
                 await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", token);
 
                 var sendButtons = new List<List<InlineKeyboardButton>>()
@@ -1035,6 +1044,8 @@ namespace ROTGBot.Service
                 await client.SendMessageAsync(chatId, "Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
                     "если требуется отправить несколько сообщений (в данном случае после отправки сообщений необходимо будет подтвердить отправку). " +
                     "Для отмены отправки нажмите Отменить", replyMarkup: replyMarkup, cancellationToken: token);
+
+                await _userDataService.SetUserSendDate(user.Id, token);
             }            
         }
 

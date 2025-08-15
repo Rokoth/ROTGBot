@@ -18,5 +18,8 @@ namespace ROTGBot.Db.Model
         public bool IsNotify { get; set; }
         [ColumnName("chatid")]
         public long ChatId { get; set; }
+        [ColumnName("lastsenddate")]
+        [ColumnType("timestamp")]
+        public DateTime LastSendDate { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿namespace ROTGBot.Contract.Model
+﻿
+namespace ROTGBot.Contract.Model
 {
     public class User : Entity
     {        
@@ -13,6 +14,8 @@
 
         public bool IsAdmin => Roles.Contains(RoleEnum.administrator);
         public bool IsModerator => Roles.Contains(RoleEnum.moderator);
+
+        public DateTime LastSendDate { get; set; }
     }
 
 }

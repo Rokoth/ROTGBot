@@ -30,7 +30,8 @@ namespace ROTGBot.Service
                     Name = $"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
                     TGLogin = tguser.Username,
                     TGId = tguser.Id,
-                    ChatId = chatId
+                    ChatId = chatId,
+                    LastSendDate = DateTime.Now.AddHours(-1)
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
@@ -43,7 +44,7 @@ namespace ROTGBot.Service
                     UserId = user.Id
                 }, true, cancellationToken);
             }
-            else
+            else if(user.ChatId != chatId)
             {
                 user.ChatId = chatId;
                 await _userRepo.UpdateAsync(user, true, cancellationToken);
@@ -63,7 +64,8 @@ namespace ROTGBot.Service
                 Name = user.Name,
                 Roles = roles,
                 TGId = user.TGId,
-                TGLogin = user.TGLogin
+                TGLogin = user.TGLogin,
+                LastSendDate = user.LastSendDate
             };
         }
 
@@ -123,6 +125,13 @@ namespace ROTGBot.Service
             user.IsNotify = !user.IsNotify;
             await _userRepo.UpdateAsync(user, true, token);
             return user.IsNotify;
+        }
+
+        public async Task SetUserSendDate(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            user.LastSendDate = DateTime.Now;
+            await _userRepo.UpdateAsync(user, true, token);            
         }
     }
 }

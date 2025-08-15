@@ -41,7 +41,8 @@ namespace ROTGBot.Service
                         ThreadId = threadId,
                         ThreadName = forumTopic.Name,
                         ToSend = false,
-                        ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1
+                        ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
+                        IsModerate = false
                     }, true, cancellationToken);
                 }
             }
