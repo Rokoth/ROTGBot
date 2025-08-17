@@ -1,4 +1,5 @@
-﻿using ROTGBot.Db.Interface;
+﻿using Microsoft.Extensions.Logging;
+using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
 using System.Globalization;
@@ -9,22 +10,40 @@ namespace ROTGBot.Service
     public class NewsDataService(
         IRepository<News> newsRepo,
         IRepository<NewsMessage> newsMessageRepo,
-        IRepository<User> userRepo) : INewsDataService
+        IRepository<User> userRepo,
+        ILogger<NewsDataService> logger) : INewsDataService
     {
         private readonly IRepository<News> _newsRepo = newsRepo;
         private readonly IRepository<NewsMessage> _newsMessageRepo = newsMessageRepo;
         private readonly IRepository<User> _userRepo = userRepo;
+        private readonly ILogger<NewsDataService> _logger = logger;
 
-        public async Task AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
+        public async Task<bool> AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
         {
-            await _newsMessageRepo.AddAsync(new NewsMessage()
+            try
             {
-                Id = Guid.NewGuid(),
-                IsDeleted = false,
-                NewsId = userNewsId,
-                TGMessageId = messageId,
-                TextValue = text
-            }, true, cancellationToken);
+                if(string.IsNullOrEmpty(text))
+                {
+                    _logger.LogError($"AddNewMessageForNews error: mesage text is null");
+                    return false;
+                }
+
+                await _newsMessageRepo.AddAsync(new NewsMessage()
+                {
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,
+                    NewsId = userNewsId,
+                    TGMessageId = messageId,
+                    TextValue = text
+                }, true, cancellationToken);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"AddNewMessageForNews error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<Contract.Model.News?> GetCurrentNews(Guid userId, CancellationToken cancellationToken)
