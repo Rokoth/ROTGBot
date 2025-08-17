@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
+using System.Collections.Generic;
 using System.Linq.Dynamic.Core.Tokenizer;
+using System.Threading;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -100,7 +102,7 @@ namespace ROTGBot.Service
 
             if (message.Text == "/start")
             {
-                await StartCommandHandle(client, message, user, userNews, cancellationToken);
+                await StartCommandHandle(client, message.Chat.Id, user, userNews, "all", cancellationToken);
             }
             else if (userNews != null)
             {
@@ -185,7 +187,7 @@ namespace ROTGBot.Service
             string? dataReq, 
             CancellationToken token)
         {
-            if (dataReq == null) return false;
+            if (dataReq == null || dataReq == "-") return false;
 
             string data = dataReq;
             Guid? newsId = null;
@@ -271,6 +273,13 @@ namespace ROTGBot.Service
                                         (cl, chId, userNews, tk) => SendPDNOferta(cl, chId, userNews, tk), token),
                 "GetDonateQR" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
                                         (cl, chId, userNews, tk) => SendDonateQR(cl, chId, userNews, tk), token),
+                "MenuAdmin" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => StartCommandHandle(cl, chId, user, userNews, "admin", tk), token),
+                "MenuModerator" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => StartCommandHandle(cl, chId, user, userNews, "moderator", tk), token),
+                "MenuUser" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
+                                        (cl, chId, userNews, tk) => StartCommandHandle(cl, chId, user, userNews, "user", tk), token),
+
                 _ => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.user,
                                         (cl, chId, userNews, tk) => SendUserNotImplemented(cl, chId), token),
             };
@@ -1567,10 +1576,10 @@ namespace ROTGBot.Service
             ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
                 new List<List<InlineKeyboardButton>>()
                 {
-                            new()
-                            {
-                                button1, button2
-                            }
+                    new()
+                    {
+                        button1, button2
+                    }
                 });
             await client.SendMessageAsync(chatId, "У вас есть неподтвержденное обращение." +
                 " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки", 
@@ -1630,25 +1639,59 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(message.Chat.Id, addInfo, cancellationToken: token);
         }
 
-        private async Task SendMenuButtons(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task SendMenuButtons(TelegramBotClient client, long chatId, Contract.Model.User user, string type, CancellationToken token)
         {            
+            if(type == "all")
+            {
+                if(user.IsModerator || user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Выберите раздел",
+                        replyMarkup: new InlineKeyboardMarkup(GetMenuButtons(user)), cancellationToken: token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "Панель пользователя",
+                        replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), cancellationToken: token);
+                }
+            }
 
-            var buttons = new List<List<InlineKeyboardButton>>();
-                       
-            if (user.IsModerator) buttons.AddRange(GetModeratorButtons(user));
-            
-            if (user.IsAdmin) buttons.AddRange(GetAdminButtons());
-            
-            buttons.AddRange(await GetUserButtons(token));
+            if (type == "user")
+            {
+                await client.SendMessageAsync(chatId, "Панель пользователя",
+                         replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), cancellationToken: token);
+            }
 
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(buttons);
-            await client.SendMessageAsync(chatId, "Выберите, что хотите сделать", replyMarkup: replyMarkup, cancellationToken: token);
+            if (type == "moderator")
+            {
+                if (user.IsModerator)
+                {                    
+                    await client.SendMessageAsync(chatId, "Панель модератора",
+                        replyMarkup: new InlineKeyboardMarkup(GetModeratorButtons(user)), cancellationToken: token);                   
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", cancellationToken: token);
+                }
+            }
+
+            if(type == "admin")
+            {
+                if (user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Панель администратора",
+                        replyMarkup: new InlineKeyboardMarkup(GetAdminButtons()), cancellationToken: token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", cancellationToken: token);
+                }
+            }
         }
 
         private async Task<List<List<InlineKeyboardButton>>> GetUserButtons(CancellationToken token)
         {
             var buttons = (await _buttonsDataService.GetActiveButtons(token)).Where(s => s.ParentId == null);
-                      
+
             var sendButtons = new List<List<InlineKeyboardButton>>();
 
             foreach (var button in buttons)
@@ -1661,18 +1704,14 @@ namespace ROTGBot.Service
                 sendButtons.Add([buttonSend]);
             }
 
-            sendButtons.Add([new InlineKeyboardButton(" ") { 
-                CallbackData = "-"
-            }]);
+            sendButtons.Add(EmptyButton());
 
             sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
             {
                 CallbackData = "GetPDNOferta"
             }]);
 
-            sendButtons.Add([new InlineKeyboardButton(" "){
-                CallbackData = "-"
-            }]);
+            sendButtons.Add(EmptyButton());
 
             sendButtons.Add([new InlineKeyboardButton("Отправить пожертвование")
             {
@@ -1682,10 +1721,18 @@ namespace ROTGBot.Service
             return sendButtons;
         }
 
+        private static List<InlineKeyboardButton> EmptyButton(string? text = null)
+        {            
+            return [new InlineKeyboardButton(text ?? "* * *")
+            {
+                CallbackData = "-"
+            }];
+        }
+
         private static List<List<InlineKeyboardButton>> GetAdminButtons()
         {
             return
-            [
+            [                
                 [
                     new InlineKeyboardButton("Добавить администратора")
                     {
@@ -1696,6 +1743,7 @@ namespace ROTGBot.Service
                         CallbackData = "AddModeratorChoice"
                     }
                 ],
+                EmptyButton(),
                 [
                     new InlineKeyboardButton("Управление кнопками пользователя (множественное)")
                     {
@@ -1722,8 +1770,7 @@ namespace ROTGBot.Service
             {
                 switchNotify = "Отключить уведомления";
             }            
-
-            return [ 
+            return [                
                 [ new InlineKeyboardButton("Получить обращение для подтверждения")
                 {
                     CallbackData = "ApproveNewsChoice_0"
@@ -1733,6 +1780,31 @@ namespace ROTGBot.Service
                     CallbackData = "SwitchNotify"
                 }]
             ];
+        }
+
+        private static List<List<InlineKeyboardButton>> GetMenuButtons(Contract.Model.User user)
+        {
+            List<List<InlineKeyboardButton>> result = [];
+            if (user.IsAdmin)
+            {
+                result.Add([ new InlineKeyboardButton("Панель администратора")
+                {
+                    CallbackData = "MenuAdmin"
+                }]);
+            }
+            if (user.IsAdmin)
+            {
+                result.Add([ new InlineKeyboardButton("Панель модератора")
+                {
+                    CallbackData = "MenuModerator"
+                }]);
+            }
+            result.Add([ new InlineKeyboardButton("Панель пользователя")
+                {
+                    CallbackData = "MenuUser"
+                }]);
+
+            return result;
         }
 
         public async Task SetCommands()
@@ -1753,15 +1825,15 @@ namespace ROTGBot.Service
             await _groupsDataService.AddGroupIfNotExists(chatId, title, description, cancellationToken);
         }
 
-        private async Task StartCommandHandle(TelegramBotClient client, Message message, Contract.Model.User user, News? userNews, CancellationToken cancellationToken)
+        private async Task StartCommandHandle(TelegramBotClient client, long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
         {
             if (userNews != null)
             {
-                await SendUserRemember(client, message.Chat.Id, userNews, cancellationToken);
+                await SendUserRemember(client, chatId, userNews, cancellationToken);
             }
             else
             {
-                await SendMenuButtons(client, message.Chat.Id, user, cancellationToken);
+                await SendMenuButtons(client, chatId, user, type, cancellationToken);
             }
         }
     }   

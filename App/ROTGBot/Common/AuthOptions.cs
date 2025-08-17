@@ -3,32 +3,42 @@ using System.Text;
 
 namespace Common
 {
+    /// <summary>
+    /// Настройки авторизации API
+    /// </summary>
     public class AuthOptions
     {
+        private static Encoding GetEncoding() => Encoding.ASCII;
+
         /// <summary>
-        /// издатель токена
+        /// Издатель токена
         /// </summary>
-        public string Issuer { get; set; } = "";
+        public string Issuer { get; set; } = string.Empty;
+
         /// <summary>
-        /// потребитель токена
+        /// Потребитель токена
         /// </summary>
-        public string Audience { get; set; } = "";
+        public string Audience { get; set; } = string.Empty;
+
         /// <summary>
-        /// ключ для шифрации
+        /// Ключ для шифрации
         /// </summary>
-        public string Key { get; set; } = "";
+        public string Key { get; set; } = string.Empty;
+
         /// <summary>
-        /// время жизни токена - 1 минута
+        /// Время жизни токена - 1 минута
         /// </summary>
-        public int LifeTime { get; set; }
+        public int LifeTime { get; set; } = 60;
 
         /// <summary>
         /// получить ключ
         /// </summary>
         /// <returns></returns>
-        public SymmetricSecurityKey GetSymmetricSecurityKey()
+        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(GetKeyBytes());
+
+        private byte[] GetKeyBytes()
         {
-            return new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Key));
+            return GetEncoding().GetBytes(Key);
         }
     }
 }
