@@ -192,10 +192,8 @@ namespace ROTGBot.Service
                 result += $"{byYear.Key} год:\r\n";
 
                 foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
-                {
-                    string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(byMonth.Key);
-
-                    result += $"{monthName}: отправлено {byMonth.Count()}," +
+                {                   
+                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                         $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";    
                 }
@@ -224,7 +222,7 @@ namespace ROTGBot.Service
 
                 foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
                 {
-                    result += $"{byMonth.Key} месяц: всего {byMonth.Count()}," +
+                    result += $"{GetMonthName(byMonth.Key)} месяц: всего {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                         $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
                 }
@@ -235,6 +233,11 @@ namespace ROTGBot.Service
                 $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
 
             return result;
+        }
+
+        private static string GetMonthName(int monthNum)
+        {
+            return CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthNum);
         }
 
         public async Task<string> GetAdminUserReport(CancellationToken token)
@@ -256,10 +259,8 @@ namespace ROTGBot.Service
                     result += $"{byYear.Key} год:\r\n";
 
                     foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
-                    {
-                        string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(byMonth.Key);
-
-                        result += $"{monthName}: отправлено {byMonth.Count()}," +
+                    {                        
+                        result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                             $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                             $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
                     }
