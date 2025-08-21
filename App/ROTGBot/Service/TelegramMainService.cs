@@ -130,7 +130,7 @@ namespace ROTGBot.Service
                         ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
                         await client.SendMessageAsync(message.Chat.Id, 
-                            "Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
+                            "Сообщение принято. Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
                             "для отмены отправки нажмите Отменить.",
                             replyMarkup: replyMarkup, cancellationToken: cancellationToken);
                     }
@@ -631,7 +631,7 @@ namespace ROTGBot.Service
             }
 
             await _newsDataService.SetNewsAccepted(userNews.Id, token);
-            await client.SendMessageAsync(chatId, "Обращение принято в обработку", cancellationToken: token);
+            await client.SendMessageAsync(chatId, "Ваше обращение принято в обработку", cancellationToken: token);
             await NotifyModerators(client, userNews, token);
         }
 
