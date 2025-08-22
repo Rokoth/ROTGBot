@@ -11,7 +11,7 @@ namespace ROTGBot.Service
         Task<NewsButton?> GetButtonByNumber(int buttonNumber, CancellationToken token);
         Task<NewsButton?> GetButtonByThreadId(long? groupId, long? threadId, CancellationToken token);
         Task RemoveButtonSend(Guid id, CancellationToken token);
-        Task SetButtonSend(Guid id, string? name, int? parentId, CancellationToken token);
+        Task SetButtonSend(Guid id, string? name, int? parentId, bool isModerate, CancellationToken token);
         Task AddParentButton(string name, int? parent, CancellationToken cancellationToken);
     }
 }

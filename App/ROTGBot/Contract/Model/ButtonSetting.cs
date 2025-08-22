@@ -6,5 +6,6 @@
         public string? Name { get; set; }
         public int? Parent { get; set; }
         public bool IsParent { get; set; }
+        public bool IsModerate { get; set; }
     }
 }

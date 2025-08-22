@@ -12,5 +12,6 @@
         public long? ThreadId { get; set; }              
         public DateTime CreatedDate { get; set; }
         public bool IsMulti { get; set; }
+        public bool IsModerate { get; set; }
     }
 }

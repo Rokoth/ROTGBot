@@ -5,7 +5,7 @@ namespace ROTGBot.Service
     public interface INewsDataService
     {
         Task AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken);
-        Task CreateNews(long chatId, Guid id, long? groupId, long? threadId, string type, string title, CancellationToken token);
+        Task CreateNews(long chatId, Guid id, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token);
         Task<News?> GetCurrentNews(Guid userId, CancellationToken cancellationToken);
         Task<News?> GetNewsById(Guid id, CancellationToken token);
         Task<List<News>> GetNewsForApprove(CancellationToken token);

@@ -115,7 +115,8 @@ namespace ROTGBot.Service
                 ThreadName = newsButton.ThreadName,
                 ToSend = newsButton.ToSend,
                 ParentId = newsButton.ParentId,
-                IsParent = newsButton.IsParent
+                IsParent = newsButton.IsParent,
+                IsModerate = newsButton.IsModerate
             };
         }
 
@@ -139,7 +140,7 @@ namespace ROTGBot.Service
             }
         }
 
-        public async Task SetButtonSend(Guid id, string? name, int? parentId, CancellationToken token)
+        public async Task SetButtonSend(Guid id, string? name, int? parentId, bool isModerate, CancellationToken token)
         {
             var button = await _newsButtonRepo.GetAsync(id, token);
             button.ToSend = true;

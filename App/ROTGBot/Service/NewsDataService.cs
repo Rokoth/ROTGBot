@@ -49,7 +49,8 @@ namespace ROTGBot.Service
                 Title = result.Title,
                 Type = result.Type,
                 UserId = result.UserId,
-                IsMulti = result.IsMulti
+                IsMulti = result.IsMulti,
+                IsModerate = result.IsModerate
             };
         }
 
@@ -139,7 +140,7 @@ namespace ROTGBot.Service
             await SetNewsStatus(id, "deleted", true, token);           
         }
 
-        public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, CancellationToken token)
+        public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
         {
             await _newsRepo.AddAsync(new News()
             {
@@ -154,7 +155,8 @@ namespace ROTGBot.Service
                 GroupId = groupId,
                 ThreadId = threadId,
                 CreatedDate = DateTime.Now,
-                IsMulti = false
+                IsMulti = false,
+                IsModerate = isModerate
             }, true, token);
         }
 

@@ -1,4 +1,5 @@
 ﻿using Common;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
@@ -630,9 +631,31 @@ namespace ROTGBot.Service
                 return;
             }
 
-            await _newsDataService.SetNewsAccepted(userNews.Id, token);
-            await client.SendMessageAsync(chatId, "Ваше обращение принято в обработку", cancellationToken: token);
-            await NotifyModerators(client, userNews, token);
+            if (userNews.IsModerate)
+            {                
+                
+                await client.SendMessageAsync(chatId, "Ваше обращение принято в обработку", cancellationToken: token);
+                await NotifyModerators(client, userNews, token);
+            }
+            else
+            {
+                await _newsDataService.SetNewsAccepted(userNews.Id, token);
+                await _newsDataService.SetNewsApproved(userNews.Id, token);
+
+                if (userNews.GroupId.HasValue)
+                {                    
+                    await client.SendMessageAsync(userNews.ChatId, "Ваше обращение принято в обработку", cancellationToken: token);
+                    
+                    if (messages.Count != 0)
+                    {
+                        await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
+                    }
+                }
+                else
+                {
+                    await client.SendMessageAsync(userNews.ChatId, "Обращение создано некорректно,  не задано направление. Требуется пересоздание", cancellationToken: token);
+                }
+            }            
         }
 
         private async Task SetNewsMulti(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
@@ -712,7 +735,7 @@ namespace ROTGBot.Service
                 var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
                 if (newItem != null)
                 {
-                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, null, token);                   
+                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, null, newItem.IsModerate, token);                   
                 }
                 else
                 {
@@ -753,7 +776,7 @@ namespace ROTGBot.Service
             var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
             if (button != null)
             {
-                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, settings.Parent, token);
+                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, settings.Parent, settings.IsModerate, token);
             }
             else if(settings.IsParent)
             {
@@ -823,19 +846,33 @@ namespace ROTGBot.Service
                 {
                     string? name = null;
                     int? parent = null;
+                    bool isModer = false;
                     if (itemElements.Length > 1)
                     {
                         name = itemElements[1];
                     }
-                    if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                    if (itemElements.Length > 2)
                     {
-                        parent = parNum;
+                        if(int.TryParse(itemElements[2], out int parNum))
+                        {
+                            parent = parNum;
+                        }
+                        else if(itemElements[2] == "m")
+                        {
+                            isModer = true;
+                        }
                     }
+                    if (itemElements.Length > 3 && itemElements[3] == "m")
+                    {
+                        isModer = true;
+                    }
+
                     numbers.Add(new ButtonSetting()
                     {
                         Number = num,
                         Name = name,
-                        Parent = parent
+                        Parent = parent,
+                        IsModerate = isModer
                     });
                 }
             }
@@ -858,19 +895,32 @@ namespace ROTGBot.Service
             {
                 string? name = null;
                 int? parent = null;
+                bool isModer = false;
                 if (itemElements.Length > 1)
                 {
                     name = itemElements[1];
                 }
-                if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                if (itemElements.Length > 2)
                 {
-                    parent = parNum;
+                    if (int.TryParse(itemElements[2], out int parNum))
+                    {
+                        parent = parNum;
+                    }
+                    else if (itemElements[2] == "m")
+                    {
+                        isModer = true;
+                    }
+                }
+                if (itemElements.Length > 3 && itemElements[3] == "m")
+                {
+                    isModer = true;
                 }
                 return new ButtonSetting()
                 {
                     Number = num,
                     Name = name,
-                    Parent = parent
+                    Parent = parent,
+                    IsModerate = isModer
                 };
             }
             else if(itemElements[0] == "_")
@@ -1031,7 +1081,7 @@ namespace ROTGBot.Service
                     return;
                 }
 
-                await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", token);
+                await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", button.IsModerate, token);
 
                 var sendButtons = new List<List<InlineKeyboardButton>>()
                 {
@@ -1060,7 +1110,7 @@ namespace ROTGBot.Service
 
         private async Task SendAddAdminForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
         {            
-            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addadmin", "Добавление администратора", token);
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addadmin", "Добавление администратора", false, token);
 
             var button1 = new InlineKeyboardButton("Добавить")
             {
@@ -1082,7 +1132,7 @@ namespace ROTGBot.Service
 
         private async Task SendAddModeratorForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
         {
-            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addmoderator", "Добавление модератора", token);
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addmoderator", "Добавление модератора", false, token);
            
             var button1 = new InlineKeyboardButton("Добавить")
             {
@@ -1107,7 +1157,7 @@ namespace ROTGBot.Service
             var availableButtons = await _buttonsDataService.GetAllButtons(token);            
             if(availableButtons.Count != 0)
             {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "editbutton", "Изменение кнопок", token);
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "editbutton", "Изменение кнопок", false, token);
                
                 var buttonsView = string.Join("\n", availableButtons.OrderBy(s => s.ButtonNumber)
                     .Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
@@ -1234,7 +1284,7 @@ namespace ROTGBot.Service
             var availableButtons = await _buttonsDataService.GetAllButtons(token);
             if (availableButtons.Count != 0)
             {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "addbutton", "Добавление кнопки", token);
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "addbutton", "Добавление кнопки", false, token);
                                
                 var button2 = new InlineKeyboardButton("Отменить")
                 {
@@ -1274,7 +1324,7 @@ namespace ROTGBot.Service
             var availableButtons = await _buttonsDataService.GetAllButtons(token);
             if (availableButtons.Count != 0)
             {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "deletebutton", "Удаление кнопки", token);
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "deletebutton", "Удаление кнопки", false, token);
                                 
                 var button2 = new InlineKeyboardButton("Отменить")
                 {

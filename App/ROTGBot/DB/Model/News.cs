@@ -28,5 +28,8 @@ namespace ROTGBot.Db.Model
 
         [ColumnName("ismulti")]
         public bool IsMulti { get; set; }
+
+        [ColumnName("ismoderate")]
+        public bool IsModerate { get; set; }
     }
 }
