@@ -25,6 +25,8 @@ namespace ROTGBot.Service
         private readonly IUserDataService _userDataService;
         private readonly INewsDataService _newsDataService;
         private readonly IButtonsDataService _buttonsDataService;
+
+        private readonly int TimeoutSpan = 1;
         
 
         public TelegramMainService(
@@ -1075,9 +1077,9 @@ namespace ROTGBot.Service
             else
             {
                 var span = (DateTime.Now - user.LastSendDate).TotalMinutes;
-                if (span < 10)
+                if (span < TimeoutSpan)
                 {
-                    await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {11 - span} минут", cancellationToken: token);
+                    await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {TimeoutSpan + 1 - span} минут", cancellationToken: token);
                     return;
                 }
 
