@@ -31,5 +31,8 @@ namespace ROTGBot.Db.Model
 
         [ColumnName("ismoderate")]
         public bool IsModerate { get; set; }
+
+        [ColumnName("number")]
+        public int? Number { get; set; }
     }
 }

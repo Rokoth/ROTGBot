@@ -2,6 +2,7 @@
 using ROTGBot.Db.Model;
 using System.Data;
 using System.Linq;
+using System.Threading;
 
 namespace ROTGBot.Service
 {
@@ -50,7 +51,8 @@ namespace ROTGBot.Service
                 Type = result.Type,
                 UserId = result.UserId,
                 IsMulti = result.IsMulti,
-                IsModerate = result.IsModerate
+                IsModerate = result.IsModerate,
+                Number = result.Number
             };
         }
 
@@ -142,6 +144,15 @@ namespace ROTGBot.Service
 
         public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
         {
+            var maxNum = 0;
+            if (type == "news")
+            {
+                maxNum = ((await _newsRepo.GetAsync(new Filter<News>()
+                {
+                    Selector = s => s.Type == "news"
+                }, token)).Max(s => s.Number)?? 0 ) + 1;
+            }                        
+
             await _newsRepo.AddAsync(new News()
             {
                 IsDeleted = false,
@@ -156,7 +167,8 @@ namespace ROTGBot.Service
                 ThreadId = threadId,
                 CreatedDate = DateTime.Now,
                 IsMulti = false,
-                IsModerate = isModerate
+                IsModerate = isModerate,
+                Number = maxNum
             }, true, token);
         }
 
