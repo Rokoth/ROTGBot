@@ -1,24 +1,15 @@
-﻿using System;
-
-namespace ROTGBot.Db.Attributes
+﻿namespace ROTGBot.Db.Attributes
 {
     /// <summary>
     /// Атрибут Имя колонки БД
-    /// </summary>
-    public class ColumnNameAttribute : Attribute
+    /// </summary>   
+    /// <param name="name"></param>
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ColumnNameAttribute(string name) : Attribute
     {
         /// <summary>
         /// Имя колоник БД
         /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="name"></param>
-        public ColumnNameAttribute(string name)
-        {
-            Name = name;
-        }
+        public string Name { get; } = name;
     }
 }

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DB\DB.csproj" />
+    <ProjectReference Include="..\DB\ROTGBot.DB.csproj" />
   </ItemGroup>
 
 </Project>
