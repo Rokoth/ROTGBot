@@ -635,7 +635,7 @@ namespace ROTGBot.Service
 
             if (userNews.IsModerate)
             {
-
+                await _newsDataService.SetNewsAccepted(userNews.Id, token);
                 await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} принято в обработку", cancellationToken: token);
                 await NotifyModerators(client, userNews, token);
             }

@@ -146,6 +146,7 @@ namespace ROTGBot.Service
             button.ToSend = true;
             button.ButtonName = name;
             button.ParentId = parentId;
+            button.IsModerate = isModerate;
             await _newsButtonRepo.UpdateAsync(button, true, token);
         }
     }
