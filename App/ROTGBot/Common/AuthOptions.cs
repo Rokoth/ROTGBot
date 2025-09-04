@@ -7,9 +7,7 @@ namespace Common
     /// Настройки авторизации API
     /// </summary>
     public class AuthOptions
-    {
-        private static Encoding GetEncoding() => Encoding.ASCII;
-
+    {        
         /// <summary>
         /// Издатель токена
         /// </summary>
@@ -34,11 +32,6 @@ namespace Common
         /// получить ключ
         /// </summary>
         /// <returns></returns>
-        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(GetKeyBytes());
-
-        private byte[] GetKeyBytes()
-        {
-            return GetEncoding().GetBytes(Key);
-        }
+        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(Encoding.ASCII.GetBytes(Key));        
     }
 }
