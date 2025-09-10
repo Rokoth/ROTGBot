@@ -26,7 +26,7 @@ namespace ROTGBot.Service
         private readonly INewsDataService _newsDataService;
         private readonly IButtonsDataService _buttonsDataService;
 
-        private readonly int TimeoutSpan = 1;
+        private readonly int TimeoutSpan = 10;
         
 
         public TelegramMainService(
@@ -645,12 +645,15 @@ namespace ROTGBot.Service
                 await _newsDataService.SetNewsApproved(userNews.Id, token);
 
                 if (userNews.GroupId.HasValue)
-                {                    
-                    await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} принято в обработку", cancellationToken: token);
-                    
+                {        
                     if (messages.Count != 0)
                     {
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} принято в обработку", cancellationToken: token);
                         await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
+                    }
+                    else
+                    {
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} создано некорректно, не отправлено ни одного сообщения. Требуется пересоздание", cancellationToken: token);
                     }
                 }
                 else
@@ -1075,10 +1078,10 @@ namespace ROTGBot.Service
             }
             else
             {
-                var span = (DateTime.Now - user.LastSendDate).TotalMinutes;
+                var span = (int)(DateTime.Now - user.LastSendDate).TotalMinutes;
                 if (span < TimeoutSpan)
                 {
-                    await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {TimeoutSpan + 1 - span} минут", cancellationToken: token);
+                    await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {TimeoutSpan - span} минут", cancellationToken: token);
                     return;
                 }
 
