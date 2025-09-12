@@ -68,10 +68,11 @@ namespace ROTGBot.Service
                     ChatName = name,
                     Id = Guid.NewGuid(),
                     IsDeleted = false,                    
-                    ToSend = false,
+                    ToSend = true,
                     ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
                     IsParent = true,
-                    ParentId = parent
+                    ParentId = parent                    
+                    
                 }, true, cancellationToken);
             }
         }
