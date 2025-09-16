@@ -71,7 +71,8 @@ namespace ROTGBot.Service
                     ToSend = true,
                     ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
                     IsParent = true,
-                    ParentId = parent                    
+                    ParentId = parent,
+                    ButtonName = name
                     
                 }, true, cancellationToken);
             }

@@ -1162,16 +1162,11 @@ namespace ROTGBot.Service
             if(availableButtons.Count != 0)
             {
                 await _newsDataService.CreateNews(chatId, user.Id, null, null, "editbutton", "Изменение кнопок", false, token);
-               
-                var buttonsView = string.Join("\n", availableButtons.OrderBy(s => s.ButtonNumber)
-                    .Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
 
-                await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте по шаблону ({{номер}} " +
-                    $"или {{номер:Наименование кнопки}}) одну " +
-                    "или несколько настроек (настройки разделяются знаком \";\")" +
-                    "\nПодключенные кнопки, которые вы не укажете, будут отключены. Если нужных групп или тем нет в списке - " +
-                    "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). " +
-                    "\nПользователь, отправляющий сообщения, должен быть администратором бота.",                    
+                var buttonsView = GetButtonsView(availableButtons);                    
+
+                await client.SendMessageAsync(chatId, 
+                    GetAddButtonsRules(buttonsView),                    
                     cancellationToken: token);
             }
             else
@@ -1289,7 +1284,7 @@ namespace ROTGBot.Service
             if (availableButtons.Count != 0)
             {
                 await _newsDataService.CreateNews(chatId, user.Id, null, null, "addbutton", "Добавление кнопки", false, token);
-                               
+
                 var button2 = new InlineKeyboardButton("Отменить")
                 {
                     CallbackData = "AddButtonDecline"
@@ -1303,13 +1298,10 @@ namespace ROTGBot.Service
                     }
                     });
 
+                var buttonsView = GetButtonsView(availableButtons);
 
-                var buttonsView = string.Join("\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
-
-                await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте по шаблону ({{номер}} или {{номер:Наименование кнопки}}) одну " +
-                    "из кнопок. \nЕсли кнопка уже была подключена - изменится ее наименование. Если нужных групп или тем нет в списке - " +
-                    "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). " +
-                    "\nПользователь, отправляющий сообщения, должен быть администратором бота.",
+                await client.SendMessageAsync(chatId,
+                    GetAddButtonsRules(buttonsView),
                     replyMarkup: replyMarkup,
                     cancellationToken: token);
             }
@@ -1321,6 +1313,58 @@ namespace ROTGBot.Service
                     cancellationToken: token);
             }
 
+        }
+
+        private static string? GetButtonsView(List<NewsButton> availableButtons, int? parentId = null, int level = 0)
+        {
+            var result = availableButtons.Where(s => s.ParentId == parentId);
+            if (!result.Any())
+                return null;
+
+            return string.Join("\n", result.OrderBy(s => s.ButtonNumber)
+                .Select(s => GetGroupView(availableButtons, level, s)));
+        }
+
+        private static string GetGroupView(List<NewsButton> availableButtons, int level, NewsButton currentButton)
+        {
+            string chButtonsView = string.Empty;
+            var childButtons = GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1);
+            if(childButtons != null)
+            {
+                chButtonsView = $"\r\n{GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1)}";
+            }
+            return $"{GetTabs(level)}{GetButtonName(currentButton)}{chButtonsView}";
+        }
+
+        public static string GetTabs(int count)
+        {
+            var result = "";
+            for(int i = 0; i< count; i++)
+            {
+                result += "\t\t\t\t";
+            }
+            return result;
+        }
+
+        private static string GetAddButtonsRules(string buttonsView)
+        {
+            return $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\n" +
+                $"Отправьте по шаблону ({{номер}} или {{номер:Наименование кнопки}}) одну из доступных и не подключенных кнопок для добавления." +
+                $"\nЕсли кнопка уже была подключена - изменится ее наименование. \n\n" +
+                $"Для добавления группы кнопок (родительской кнопки) отправьте запрос по шаблону {{_:Наименование кнопки}}.\n\n " +
+                $"Для добавления доступной кнопки в группу кнопок отправьте запрос по шаблону {{номер:Наименование кнопки:Номер родительской кнопки}}. " +
+                $"В качестве родительской могут быть использованы только групповые кнопки. Групповую кнопку также можно добавлять дочерней к другой групповой (родительской) кнопке. \n\n" +
+                $"Если необходимо подключить модерацию на одну из кнопок (только для кнопок отправки обращения) - в конце запроса подключения добавьте {{:m}}" +
+                $", например: {{номер:Наименование кнопки:Номер родительской кнопки:m}}" +
+                $"\n\nЕсли нужных групп или тем нет в списке - " +
+                "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). " +
+                "\nПользователь, отправляющий сообщения, должен быть администратором бота.";
+        }
+
+        private static string GetButtonName(NewsButton button)
+        {
+            var buttonName = button.ButtonName ?? $"{button.ChatName}:{button.ThreadName}";
+            return $"{button.ButtonNumber}.{buttonName}. Подключена: {(button.ToSend ? "Да" : "Нет")}. Родительская: {(button.IsParent ? "Да" : "Нет")}";
         }
 
         private async Task SendDeleteButtonForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
@@ -1344,7 +1388,7 @@ namespace ROTGBot.Service
                     });
 
 
-                var buttonsView = string.Join("\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+                var buttonsView = GetButtonsView(availableButtons);
 
                 await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте номер одной из кнопок" +
                     ". \nЕсли кнопка уже была отключена - ничего не произойдёт.",
@@ -1383,7 +1427,7 @@ namespace ROTGBot.Service
                     }
                     });
 
-                var buttonsView = string.Join("\r\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+                var buttonsView = GetButtonsView(availableButtons);
 
                 await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя." +
                     " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну или несколько настроек (настройки разделяются либо знаком \";\"" +
@@ -1430,7 +1474,7 @@ namespace ROTGBot.Service
                     }
                     });
 
-                var buttonsView = string.Join("\r\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+                var buttonsView = GetButtonsView(availableButtons);
 
                 await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на добавление кнопки пользователя." +
                     " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну из кнопок" +                   
@@ -1476,7 +1520,7 @@ namespace ROTGBot.Service
                     }
                     });
 
-                var buttonsView = string.Join("\r\n", availableButtons.OrderBy(s => s.ButtonNumber).Select(s => $"{s.ButtonNumber}. {s.ChatName}:{s.ThreadName}. Подключена: {(s.ToSend ? "Да" : "Нет")}"));
+                var buttonsView = GetButtonsView(availableButtons);
 
                 await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на удаление кнопки пользователя." +
                     "Отправьте номер кнопки, которую хотите удалить, либо Отменить для отмены изменения кнопок", replyMarkup: replyMarkup, cancellationToken: token);
