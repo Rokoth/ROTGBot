@@ -248,6 +248,8 @@ namespace ROTGBot.Service
                                         (cl, chId, userNews, tk) => SendEditButtonsChoiceHandle(cl, chId, user, userNews, tk), token),
                 "AddButtonChoice" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
                                         (cl, chId, userNews, tk) => SendAddButtonChoiceHandle(cl, chId, user, userNews, tk), token),
+                "GetButtonChoice" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
+                                        (cl, chId, userNews, tk) => SendGetButtonChoiceHandle(cl, chId, user, userNews, tk), token),
                 "DeleteButtonChoice" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
                                         (cl, chId, userNews, tk) => SendDeleteButtonChoiceHandle(cl, chId, user, userNews, tk), token),
                 "AddAdmin" => await SendWithCheckRights(client, user, chatId.Value, RoleEnum.administrator,
@@ -608,6 +610,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendAddButtonForUser(client, chatId, user, token);
+            }
+        }
+
+        private async Task SendGetButtonChoiceHandle(TelegramBotClient client, long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(client, chatId, userNews, token);
+            }
+            else
+            {
+                await SendGetButtonForUser(client, chatId, user, token);
             }
         }
 
@@ -1315,6 +1329,27 @@ namespace ROTGBot.Service
 
         }
 
+        private async Task SendGetButtonForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {                
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId,
+                    GetButtonsRules(buttonsView),                  
+                    cancellationToken: token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                    cancellationToken: token);
+            }
+
+        }
+
         private static string? GetButtonsView(List<NewsButton> availableButtons, int? parentId = null, int level = 0)
         {
             var result = availableButtons.Where(s => s.ParentId == parentId);
@@ -1344,6 +1379,11 @@ namespace ROTGBot.Service
                 result += "\t\t\t\t";
             }
             return result;
+        }
+
+        private static string GetButtonsRules(string buttonsView)
+        {
+            return $"Подключенные и доступные кнопки:  \n{buttonsView}. ";
         }
 
         private static string GetAddButtonsRules(string buttonsView)
@@ -1849,10 +1889,18 @@ namespace ROTGBot.Service
                     }
                 ],
                 [
+                    new InlineKeyboardButton("Просмотр кнопок пользователя")
+                    {
+                        CallbackData = "GetButtonChoice"
+                    }
+                ],
+                [
                     new InlineKeyboardButton("Добавить кнопку пользователя")
                     {
                         CallbackData = "AddButtonChoice"
-                    },
+                    }
+                ],
+                [                    
                     new InlineKeyboardButton("Удалить кнопку пользователя")
                     {
                         CallbackData = "DeleteButtonChoice"
