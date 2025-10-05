@@ -94,8 +94,17 @@ namespace ROTGBot.Service
                 await SendTestConnectionMessage(client, message, "Не удалось получить информацию по отправителю", cancellationToken);
                 return;
             }
-            
+                      
+            if (message.Chat?.Id == null || message.Chat?.Type != "private")
+            {
+                return;
+            }                       
+
             var user = await _userDataService.GetOrAddUser(message.From, message.Chat.Id, cancellationToken);
+
+            if (user == null)
+                return;
+
             var userNews = await _newsDataService.GetCurrentNews(user.Id, cancellationToken);
 
             if (user.IsAdmin && message.IsTopicMessage == true)
@@ -105,7 +114,7 @@ namespace ROTGBot.Service
 
             if (message.Text == "/start")
             {
-                await StartCommandHandle(client, message.Chat.Id, user, userNews, "all", cancellationToken);
+                await StartCommandHandle(client, user.ChatId, user, userNews, "all", cancellationToken);
             }
             else if (userNews != null)
             {
@@ -132,30 +141,30 @@ namespace ROTGBot.Service
 
                         ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-                        await client.SendMessageAsync(message.Chat.Id, 
+                        await client.SendMessageAsync(user.ChatId, 
                             "Сообщение принято. Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
                             "для отмены отправки нажмите Отменить.",
                             replyMarkup: replyMarkup, cancellationToken: cancellationToken);
                     }
                     else
                     {
-                        await HandleData(client, message.Chat.Id, user, "SendNews", cancellationToken);
+                        await HandleData(client, user.ChatId, user, "SendNews", cancellationToken);
                     }
                 }
 
                 if (userNews.Type == "addbutton")
                 {
-                    await HandleData(client, message.Chat.Id, user, "AddButton", cancellationToken);
+                    await HandleData(client, user.ChatId, user, "AddButton", cancellationToken);
                 }
 
                 if (userNews.Type == "deletebutton")
                 {
-                    await HandleData(client, message.Chat.Id, user, "DeleteButton", cancellationToken);
+                    await HandleData(client, user.ChatId, user, "DeleteButton", cancellationToken);
                 }
 
                 if (userNews.Type == "editbutton")
                 {
-                    await HandleData(client, message.Chat.Id, user, "EditButtonApprove", cancellationToken);
+                    await HandleData(client, user.ChatId, user, "EditButtonApprove", cancellationToken);
                 }
             }
             else if (message.IsTopicMessage != true)
@@ -175,10 +184,24 @@ namespace ROTGBot.Service
                 return false;
             }
 
-            var user = await _userDataService.GetOrAddUser(callbackQuery.From, chatId.Value, token);
+            Contract.Model.User? user = null;
+
+            if (callbackQuery.Message?.Chat?.Type != "private")
+            {
+                user = await _userDataService.GetOrAddUser(callbackQuery.From, null, token);
+            }
+            else
+            {
+                user = await _userDataService.GetOrAddUser(callbackQuery.From, chatId.Value, token);
+            }
+
+            if(user == null)
+            {
+                return false;
+            }
 
             var data = callbackQuery.Data;
-            var result = await HandleData(client, chatId, user, data, token);
+            var result = await HandleData(client, user.ChatId, user, data, token);
             await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), cancellationToken: token);
 
             return result;
@@ -643,14 +666,14 @@ namespace ROTGBot.Service
 
             if (messages.Count == 0)
             {
-                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} создано некорректно, отправьте не менее одного сообщения", cancellationToken: token);
+                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} \"{userNews.Title}\" создано некорректно, отправьте не менее одного сообщения", cancellationToken: token);
                 return;
             }
 
             if (userNews.IsModerate)
             {
                 await _newsDataService.SetNewsAccepted(userNews.Id, token);
-                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} принято в обработку", cancellationToken: token);
+                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", cancellationToken: token);
                 await NotifyModerators(client, userNews, token);
             }
             else
@@ -662,19 +685,28 @@ namespace ROTGBot.Service
                 {        
                     if (messages.Count != 0)
                     {
-                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} принято в обработку", cancellationToken: token);
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", cancellationToken: token);
+                        await SendForwardMessageTitle(client, userNews, token);
                         await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
                     }
                     else
                     {
-                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} создано некорректно, не отправлено ни одного сообщения. Требуется пересоздание", cancellationToken: token);
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно, не отправлено ни одного сообщения. Требуется пересоздание", cancellationToken: token);
                     }
                 }
                 else
                 {
-                    await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} создано некорректно,  не задано направление. Требуется пересоздание", cancellationToken: token);
+                    await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно,  не задано направление. Требуется пересоздание", cancellationToken: token);
                 }
             }            
+        }
+
+        private async Task SendForwardMessageTitle(TelegramBotClient client, News userNews, CancellationToken token)
+        {
+            var user = await _userDataService.GetUser(userNews.UserId, token);
+            var tgLogin = !string.IsNullOrEmpty(user.TGLogin) ? $"@{user.TGLogin}" : "Не определен";
+            var userName = user.Name ?? "Не определен";
+            await client.SendMessageAsync(userNews.GroupId.Value, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" от пользователя {userName} (логин: {tgLogin})", messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
         }
 
         private async Task SetNewsMulti(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
@@ -1025,7 +1057,7 @@ namespace ROTGBot.Service
         private async Task DeleteNewsMessageAccepted(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
         {
             await _newsDataService.SetNewsDeleted(userNews.Id, token);
-            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} удалено", cancellationToken: token);
+            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} \"{userNews.Title}\" удалено", cancellationToken: token);
         }
 
         private static async Task DeleteNewsMessageNotFound(TelegramBotClient client, long chatId)
@@ -1074,12 +1106,12 @@ namespace ROTGBot.Service
                 {
                     var buttonSend = new InlineKeyboardButton("Вернуться")
                     {
-                        CallbackData = $"/start"
+                        CallbackData = $"MenuUser"
                     };
                     sendButtons.Add([buttonSend]);
                 }
                 else
-                {
+                {                    
                     var buttonSend = new InlineKeyboardButton("Вернуться")
                     {
                         CallbackData = $"SendNewsChoice_{button.ParentId}"
@@ -1099,7 +1131,7 @@ namespace ROTGBot.Service
                     return;
                 }
 
-                await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", "Новое обращение", button.IsModerate, token);
+                await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", $"{GetButtonName(button, false)}", button.IsModerate, token);
                 var userNews = await _newsDataService.GetCurrentNews(user.Id, token);
                 var sendButtons = new List<List<InlineKeyboardButton>>()
                 {
@@ -1118,7 +1150,7 @@ namespace ROTGBot.Service
 
                 ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-                await client.SendMessageAsync(chatId, $"Обращение №{userNews?.Number}. Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
+                await client.SendMessageAsync(chatId, $"Обращение №{userNews?.Number} в раздел \"{GetButtonName(button, false)}\". Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
                     "если требуется отправить несколько сообщений (в данном случае после отправки сообщений необходимо будет подтвердить отправку). " +
                     "Для отмены отправки нажмите Отменить", replyMarkup: replyMarkup, cancellationToken: token);
 
@@ -1368,7 +1400,7 @@ namespace ROTGBot.Service
             {
                 chButtonsView = $"\r\n{GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1)}";
             }
-            return $"{GetTabs(level)}{GetButtonName(currentButton)}{chButtonsView}";
+            return $"{GetTabs(level)}{GetButtonName(currentButton, true)}{chButtonsView}";
         }
 
         public static string GetTabs(int count)
@@ -1401,10 +1433,51 @@ namespace ROTGBot.Service
                 "\nПользователь, отправляющий сообщения, должен быть администратором бота.";
         }
 
-        private static string GetButtonName(NewsButton button)
-        {
-            var buttonName = button.ButtonName ?? $"{button.ChatName}:{button.ThreadName}";
-            return $"{button.ButtonNumber}.{buttonName}. Подключена: {(button.ToSend ? "Да" : "Нет")}. Родительская: {(button.IsParent ? "Да" : "Нет")}";
+        private static string GetButtonName(NewsButton button, bool withSettings)
+        {            
+            var buttonName = button.ButtonName ?? "";
+            if(!string.IsNullOrEmpty(button.ButtonName))
+            {
+                if(!string.IsNullOrEmpty(button.ChatName))
+                {
+                    if (!string.IsNullOrEmpty(button.ThreadName))
+                    {
+                        buttonName = $"{buttonName}({button.ChatName}:{button.ThreadName})";
+                    }
+                    else
+                    {
+                        buttonName = $"{buttonName}({button.ChatName})";
+                    }
+                }
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(button.ChatName))
+                {
+                    if (!string.IsNullOrEmpty(button.ThreadName))
+                    {
+                        buttonName = $"{button.ChatName}:{button.ThreadName}";
+                    }
+                    else
+                    {
+                        buttonName = $"{button.ChatName}";
+                    }
+                }
+            }
+
+            if(string.IsNullOrEmpty(buttonName))
+            {
+                buttonName = "Безымянная кнопка";
+            }
+                       
+            if(withSettings)
+            {
+                return $"{button.ButtonNumber}. {buttonName}. Подключена: {(button.ToSend ? "Да" : "Нет")}. Родительская: {(button.IsParent ? "Да" : "Нет")}";
+            }
+            else
+            {
+                return $"{button.ButtonNumber}. {buttonName}";
+            }
         }
 
         private async Task SendDeleteButtonForUser(TelegramBotClient client, long chatId, Contract.Model.User user, CancellationToken token)
@@ -1645,15 +1718,19 @@ namespace ROTGBot.Service
             }
             else
             {
-                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} для подтверждения в раздел \"{userButton.ChatName} : {userButton.ThreadName} ({userButton.ButtonName})\"", replyMarkup: replyMarkup, cancellationToken: token);
+                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} для подтверждения в раздел \"{userButton.ChatName} : {userButton.ThreadName} ({userButton.ButtonName})\"",
+                    cancellationToken: token);
                 await client.ForwardMessagesAsync(chatId, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), cancellationToken: token);
-            }                
+                await client.SendMessageAsync(chatId, $"Возможные действия с обращением:", 
+                    replyMarkup: replyMarkup, cancellationToken: token);
+
+            }
         }
 
         private async Task ClearNews(TelegramBotClient client, long chatId, News userNews, CancellationToken token)
         {
-            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} для подтверждения создано некорректно, будет удалено", cancellationToken: token);
-            await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} создано некорректно, будет удалено", cancellationToken: token);
+            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" для подтверждения создано некорректно, будет удалено", cancellationToken: token);
+            await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно, будет удалено", cancellationToken: token);
             await _newsDataService.SetNewsDeleted(userNews.Id, token);
         }
 
@@ -1663,19 +1740,22 @@ namespace ROTGBot.Service
 
             if(userNews.GroupId.HasValue)
             {
-                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} подтверждено", cancellationToken: token);
-                await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} подтверждено", cancellationToken: token);
+                
+
+                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", cancellationToken: token);
 
                 var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
                 if (messages.Count != 0)
                 {
+                    await SendForwardMessageTitle(client, userNews, token);
                     await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), messageThreadId: (int?)userNews.ThreadId, cancellationToken: token);
                 }
             }
             else
             {
-                await client.SendMessageAsync(chatId, $"Нельзя подтвердить обращение №{userNews.Number}: не задано направление. Требуется пересоздание", cancellationToken: token);
-                await client.SendMessageAsync(userNews.ChatId, $"Нельзя подтвердить обращение №{userNews.Number}: не задано направление. Требуется пересоздание", cancellationToken: token);
+                await client.SendMessageAsync(chatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", cancellationToken: token);
+                await client.SendMessageAsync(userNews.ChatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", cancellationToken: token);
             }            
         }
 
@@ -1683,8 +1763,8 @@ namespace ROTGBot.Service
         {
             await _newsDataService.SetNewsDeclined(userNews.Id, token);
 
-            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} отклонено", cancellationToken: token);
-            await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} отклонено", cancellationToken: token);
+            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" отклонено", cancellationToken: token);
+            await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" отклонено", cancellationToken: token);
         }
 
         private Task SendUserRemember(TelegramBotClient client, long chatId, News? news, CancellationToken token)
@@ -1719,7 +1799,7 @@ namespace ROTGBot.Service
                         button1, button2
                     }
                 });
-            await client.SendMessageAsync(chatId, $"У вас есть неподтвержденное обращение №{news.Number}." +
+            await client.SendMessageAsync(chatId, $"У вас есть неподтвержденное обращение №{news.Number} в раздел \"{news.Title}\"" +
                 " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки", 
                 replyMarkup: replyMarkup);
         }

@@ -13,7 +13,7 @@ namespace ROTGBot.Service
         private readonly IRepository<Role> _roleRepo = roleRepo;
         private readonly IRepository<UserRole> _userRoleRepo = userRoleRepo;
 
-        public async Task<Contract.Model.User> GetOrAddUser(User tguser, long chatId, CancellationToken cancellationToken)
+        public async Task<Contract.Model.User?> GetOrAddUser(User tguser, long? chatId, CancellationToken cancellationToken)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
@@ -22,6 +22,10 @@ namespace ROTGBot.Service
 
             if (user == null)
             {
+                if(chatId == null)
+                {
+                    return null;
+                }
                 user = await _userRepo.AddAsync(new Db.Model.User()
                 {
                     Id = Guid.NewGuid(),
@@ -30,7 +34,7 @@ namespace ROTGBot.Service
                     Name = $"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
                     TGLogin = tguser.Username,
                     TGId = tguser.Id,
-                    ChatId = chatId,
+                    ChatId = chatId.Value,
                     LastSendDate = DateTime.Now.AddHours(-1)
                 }, true, cancellationToken);
 
@@ -44,9 +48,9 @@ namespace ROTGBot.Service
                     UserId = user.Id
                 }, true, cancellationToken);
             }
-            else if(user.ChatId != chatId)
+            else if(chatId != null && user.ChatId != chatId)
             {
-                user.ChatId = chatId;
+                user.ChatId = chatId.Value;
                 await _userRepo.UpdateAsync(user, true, cancellationToken);
             }
             return await Map(user, cancellationToken);
@@ -133,5 +137,13 @@ namespace ROTGBot.Service
             user.LastSendDate = DateTime.Now;
             await _userRepo.UpdateAsync(user, true, token);            
         }
+
+        public async Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            return await Map(user, token);
+        }
+
+        
     }
 }
