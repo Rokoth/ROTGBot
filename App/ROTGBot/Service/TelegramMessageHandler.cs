@@ -159,6 +159,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => GetModeratorReportHandle(chId, user, tk), token),
                 "AdminUserReport" => await SendWithCheckRights(user, chatId.Value, callbackQuery.Id, RoleEnum.user,
                                         (chId, userNews, tk) => GetAdminUserReportHandle(chId, user, tk), token),
+                "AdminModeratorReport" => await SendWithCheckRights(user, chatId.Value, callbackQuery.Id, RoleEnum.user,
+                                        (chId, userNews, tk) => GetAdminModeratorReportHandle(chId, user, tk), token),
                 "DeleteNews" => await SendWithCheckRights(user, chatId.Value, callbackQuery.Id, RoleEnum.user,
                                         (chId, userNews, tk) => DeleteNewsHandle(chId, userNews, tk), token),
                 "ApproveNewsChoice" => await SendWithCheckRights(user, chatId.Value, callbackQuery.Id, RoleEnum.moderator,
@@ -247,14 +249,20 @@ namespace ROTGBot.Service
         private async Task GetModeratorReportHandle( long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetModeratorReport(user.Id, token);
-            await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям\r\n: {report}", token);
+            await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям:\r\n {report}", token);
         }
 
         private async Task GetAdminUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetAdminUserReport(token);
-            await client.SendMessageAsync(chatId, $"Отчёт по отправленным пользователями обращениям\r\n: {report}", token);
-        }                
+            await client.SendMessageAsync(chatId, $"Отчёт по отправленным пользователями обращениям:\r\n {report}", token);
+        }
+
+        private async Task GetAdminModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetAdminModeratorReport(token);
+            await client.SendMessageAsync(chatId, $"Отчёт по обработанным модераторами обращениям:\r\n {report}", token);
+        }
 
         private async Task AddAdminHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
@@ -1063,9 +1071,15 @@ namespace ROTGBot.Service
                     }
                 ],
                 [   
-                    new InlineKeyboardButton("Отчёт по обработанным обращениям")
+                    new InlineKeyboardButton("Отчёт по обработанным обращениям пользователей")
                     {
                         CallbackData = "AdminUserReport"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Отчёт по обработанным обращениям модераторов")
+                    {
+                        CallbackData = "AdminModeratorReport"
                     }
                 ]
             ];

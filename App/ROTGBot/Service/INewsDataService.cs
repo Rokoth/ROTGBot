@@ -7,6 +7,8 @@ namespace ROTGBot.Service
         Task<bool> AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken);
         Task CreateNews(long chatId, Guid id, long? groupId, long? threadId, string type, string title, CancellationToken token);
         Task<string> GetAdminUserReport(CancellationToken token);
+
+        Task<string> GetAdminModeratorReport(CancellationToken token);
         Task<News?> GetCurrentNews(Guid userId, CancellationToken cancellationToken);
         Task<string> GetModeratorReport(Guid id, CancellationToken token);
         Task<News?> GetNewsById(Guid id, CancellationToken token);

@@ -191,7 +191,7 @@ namespace ROTGBot.Service
             {
                 result += $"{byYear.Key} год:\r\n";
 
-                foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                 {                   
                     result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
@@ -220,7 +220,7 @@ namespace ROTGBot.Service
             {
                 result += $"{byYear.Key} год:\r\n";
 
-                foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                 {
                     result += $"{GetMonthName(byMonth.Key)} месяц: всего {byMonth.Count()}," +
                         $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
@@ -258,7 +258,7 @@ namespace ROTGBot.Service
                 {
                     result += $"{byYear.Key} год:\r\n";
 
-                    foreach (var byMonth in allNews.GroupBy(s => s.CreatedDate.Month))
+                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                     {                        
                         result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                             $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
@@ -276,6 +276,44 @@ namespace ROTGBot.Service
                 $"принято: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
                 $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
+        }
+
+        public async Task<string> GetAdminModeratorReport(CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).Where(s => s.ModeratorId.HasValue).OrderBy(s => s.CreatedDate);
+
+            foreach (var byModer in allNews.GroupBy(s => s.ModeratorId.Value))
+            {
+                var user = await _userRepo.GetAsync(byModer.Key, token);
+                result += $"Модератор {user.Name} ({user.TGLogin}):\r\n";
+
+                foreach (var byYear in byModer.GroupBy(s => s.CreatedDate.Year))
+                {
+                    result += $"{byYear.Key} год:\r\n";
+
+                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                    {
+                        result += $"{GetMonthName(byMonth.Key)}: обработано {byMonth.Count()}," +
+                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                    }
+                }
+
+                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): обработано {byModer.Count()}, " +
+                    $"подтверждено: {byModer.Count(s => s.State == "approved")}, " +
+                    $"отклонено: {byModer.Count(s => s.State == "declined")} обращений.\r\n\r\n";
+            }
+
+            result += $"\r\n\r\nВсего: обработано {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
 
             return result;
         }
