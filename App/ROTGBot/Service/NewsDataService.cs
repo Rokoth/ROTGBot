@@ -1,6 +1,8 @@
-﻿using ROTGBot.Db.Interface;
+﻿using Microsoft.Extensions.Logging;
+using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 
@@ -8,21 +10,41 @@ namespace ROTGBot.Service
 {
     public class NewsDataService(
         IRepository<News> newsRepo,
-        IRepository<NewsMessage> newsMessageRepo) : INewsDataService
+        IRepository<NewsMessage> newsMessageRepo,
+        IRepository<User> userRepo,
+        ILogger<NewsDataService> logger) : INewsDataService
     {
         private readonly IRepository<News> _newsRepo = newsRepo;
         private readonly IRepository<NewsMessage> _newsMessageRepo = newsMessageRepo;
+        private readonly IRepository<User> _userRepo = userRepo;
+        private readonly ILogger<NewsDataService> _logger = logger;
 
-        public async Task AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
+        public async Task<bool> AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
         {
-            await _newsMessageRepo.AddAsync(new NewsMessage()
+            try
             {
-                Id = Guid.NewGuid(),
-                IsDeleted = false,
-                NewsId = userNewsId,
-                TGMessageId = messageId,
-                TextValue = text
-            }, true, cancellationToken);
+                if(string.IsNullOrEmpty(text))
+                {
+                    _logger.LogError($"AddNewMessageForNews error: mesage text is null");
+                    return false;
+                }
+
+                await _newsMessageRepo.AddAsync(new NewsMessage()
+                {
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,
+                    NewsId = userNewsId,
+                    TGMessageId = messageId,
+                    TextValue = text
+                }, true, cancellationToken);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"AddNewMessageForNews error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<Contract.Model.News?> GetCurrentNews(Guid userId, CancellationToken cancellationToken)
@@ -116,30 +138,31 @@ namespace ROTGBot.Service
 
         public async Task SetNewsAccepted(Guid id, CancellationToken token)
         {
-            await SetNewsStatus(id, "accepted", false, token);
+            await SetNewsStatus(id, null, "accepted", false, token);
         }
 
-        private async Task SetNewsStatus(Guid id, string state, bool toDelete, CancellationToken token)
+        private async Task SetNewsStatus(Guid id, Guid? moderatorId, string state, bool toDelete, CancellationToken token)
         {
             var userNews = await _newsRepo.GetAsync(id, token);
             userNews.State = state;
+            if (moderatorId.HasValue) userNews.ModeratorId = moderatorId;
             if (toDelete) userNews.IsDeleted = true;
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
 
-        public async Task SetNewsApproved(Guid id, CancellationToken token)
+        public async Task SetNewsApproved(Guid id, Guid moderatorId, CancellationToken token)
         {
-            await SetNewsStatus(id, "approved", false, token);            
+            await SetNewsStatus(id, moderatorId, "approved", false, token);            
         }
 
-        public async Task SetNewsDeclined(Guid id, CancellationToken token)
+        public async Task SetNewsDeclined(Guid id, Guid moderatorId, CancellationToken token)
         {
-            await SetNewsStatus(id, "declined", false, token);            
+            await SetNewsStatus(id, moderatorId, "declined", false, token);            
         }
 
         public async Task SetNewsDeleted(Guid id, CancellationToken token)
         {
-            await SetNewsStatus(id, "deleted", true, token);           
+            await SetNewsStatus(id, null, "deleted", true, token);           
         }
 
         public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
@@ -171,6 +194,145 @@ namespace ROTGBot.Service
                 Number = maxNum
             }, true, token);
         }
+
+        public async Task<string> GetUserReport(Guid userId, CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>() { 
+                Selector = s => s.UserId == userId && s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach(var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result += $"{byYear.Key} год:\r\n";
+
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                {                   
+                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";    
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
+        }
+
+        public async Task<string> GetModeratorReport(Guid userId, CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.ModeratorId == userId && s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result += $"{byYear.Key} год:\r\n";
+
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                {
+                    result += $"{GetMonthName(byMonth.Key)} месяц: всего {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"подтверждено: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
+
+            return result;
+        }
+
+        private static string GetMonthName(int monthNum)
+        {
+            return CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthNum);
+        }
+
+        public async Task<string> GetAdminUserReport(CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach(var byUser in allNews.GroupBy(s => s.UserId))
+            {
+                var user = await _userRepo.GetAsync(byUser.Key, token);
+                result += $"Пользователь {user.Name} ({user.TGLogin}):\r\n";
+
+                foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
+                {
+                    result += $"{byYear.Key} год:\r\n";
+
+                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                    {                        
+                        result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
+                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                    }
+                }
+
+                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
+                    $"принято: {byUser.Count(s => s.State == "approved")}, " +
+                    $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
+                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "accepted")} обращений.\r\n\r\n";
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
+        }
+
+        public async Task<string> GetAdminModeratorReport(CancellationToken token)
+        {
+            string result = string.Empty;
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).Where(s => s.ModeratorId.HasValue).OrderBy(s => s.CreatedDate);
+
+            foreach (var byModer in allNews.GroupBy(s => s.ModeratorId.Value))
+            {
+                var user = await _userRepo.GetAsync(byModer.Key, token);
+                result += $"Модератор {user.Name} ({user.TGLogin}):\r\n";
+
+                foreach (var byYear in byModer.GroupBy(s => s.CreatedDate.Year))
+                {
+                    result += $"{byYear.Key} год:\r\n";
+
+                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                    {
+                        result += $"{GetMonthName(byMonth.Key)}: обработано {byMonth.Count()}," +
+                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                    }
+                }
+
+                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): обработано {byModer.Count()}, " +
+                    $"подтверждено: {byModer.Count(s => s.State == "approved")}, " +
+                    $"отклонено: {byModer.Count(s => s.State == "declined")} обращений.\r\n\r\n";
+            }
+
+            result += $"\r\n\r\nВсего: обработано {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")} обращений.";
+
+            return result;
+        }        
 
         public async Task SetNewsMulti(Guid id, CancellationToken token)
         {

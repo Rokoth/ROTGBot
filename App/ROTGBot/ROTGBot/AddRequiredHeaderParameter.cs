@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.OpenApi.Any;
+﻿using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -7,23 +6,41 @@ namespace ROTGBot
 {
     public class AddRequiredHeaderParameter : IOperationFilter
     {
+        private const string AuthorizationName = "Authorization";
+        private const string DefaultDescription = "access token";
+        private const string StringType = "string";
+        private const string BearerDefaultApiString = "Bearer ";
+
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            if (operation.Parameters == null)
-                operation.Parameters = new List<OpenApiParameter>();
+            CheckOperation(operation);
+            operation.Parameters.Add(CreateOpenApiParameter());
+        }
 
-            operation.Parameters.Add(new OpenApiParameter
+        private static OpenApiParameter CreateOpenApiParameter()
+        {
+            return new OpenApiParameter
             {
-                Name = "Authorization",
+                Name = AuthorizationName,
                 In = ParameterLocation.Header,
-                Description = "access token",
+                Description = DefaultDescription,
                 Required = true,
-                Schema = new OpenApiSchema
-                {
-                    Type = "string",
-                    Default = new OpenApiString("Bearer ")
-                }
-            });
+                Schema = CreateOpenApiSchema()
+            };
+        }
+
+        private static OpenApiSchema CreateOpenApiSchema()
+        {
+            return new OpenApiSchema
+            {
+                Type = StringType,
+                Default = new OpenApiString(BearerDefaultApiString)
+            };
+        }
+
+        private static void CheckOperation(OpenApiOperation operation)
+        {
+            operation.Parameters ??= [];
         }
     }
 }

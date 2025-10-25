@@ -34,5 +34,7 @@ namespace ROTGBot.Db.Model
 
         [ColumnName("number")]
         public int? Number { get; set; }
+        [ColumnName("moderatorid")]
+        public Guid? ModeratorId { get; set; }
     }
 }
