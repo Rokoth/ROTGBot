@@ -33,11 +33,17 @@ namespace ROTGBot.Service
         public Task<IEnumerable<Update>> GetUpdatesAsync(int offset, CancellationToken token)
             => Execute(client => client.GetUpdatesAsync(offset, cancellationToken: token));
 
+        public Task SendDocumentAsync(SendDocumentArgs args, CancellationToken token)
+            => Execute(client => client.SendDocumentAsync(args, cancellationToken: token));
+
         public Task SendMessageAsync(long chatId, string message, CancellationToken token)
             => Execute(client => client.SendMessageAsync(chatId, message, cancellationToken: token));
 
         public Task SendMessageAsync(long chatId, string message, ReplyMarkup replyMarkup, CancellationToken token)
             => Execute(client => client.SendMessageAsync(chatId, message, replyMarkup: replyMarkup, cancellationToken: token));
+
+        public Task SendMessageAsync(long chatId, string message, int? threadId, CancellationToken token)
+        => Execute(client => client.SendMessageAsync(chatId, message, messageThreadId: threadId, cancellationToken: token));
 
         public Task SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token)
             => Execute(client => client.SetMyCommandsAsync(args, cancellationToken: token));

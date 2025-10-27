@@ -1,4 +1,5 @@
-﻿using System.Linq.Dynamic.Core.Tokenizer;
+﻿using System.IO;
+using System.Linq.Dynamic.Core.Tokenizer;
 using System.Threading;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -21,5 +22,8 @@ namespace ROTGBot.Service
         Task ForwardMessagesAsync(long chatId, long forwardChatId, IEnumerable<int> messageIds, CancellationToken token);
 
         Task ForwardMessagesAsync(long chatId, long forwardChatId, IEnumerable<int> messageIds, int? threadId, CancellationToken token);
+        Task SendMessageAsync(long chatId, string message, int? threadId, CancellationToken token);
+
+        Task SendDocumentAsync(SendDocumentArgs args, CancellationToken token);
     }
 }
