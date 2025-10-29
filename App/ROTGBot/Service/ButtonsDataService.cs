@@ -11,7 +11,12 @@ namespace ROTGBot.Service
         private readonly IRepository<NewsButton> _newsButtonRepo = newsButtonRepo;
 
         public async Task<bool> AddNewButton(long chatId, int? threadId, string chatName, string? threadName, CancellationToken cancellationToken)
-        {      
+        {
+            if(string.IsNullOrEmpty(chatName))
+            {
+                throw new ArgumentException("Наименование группы обязательно");
+            }
+
             var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
                 Selector = s => !s.IsDeleted
@@ -19,25 +24,25 @@ namespace ROTGBot.Service
 
             var exists = allButtons.FirstOrDefault(s => s.ChatId == chatId && s.ThreadId == threadId);
 
-            if (exists == null && threadName != null)
+            if (exists != null || threadName == null)
             {
-                await _newsButtonRepo.AddAsync(new NewsButton()
-                {
-                    ChatId = chatId,
-                    ChatName = chatName,
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,
-                    ThreadId = threadId,
-                    ThreadName = threadName,
-                    ToSend = false,
-                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
-                    IsModerate = false
-                }, true, cancellationToken);
-
-                return true;
+                return false;
             }
 
-            return false;
+            await _newsButtonRepo.AddAsync(new NewsButton()
+            {
+                ChatId = chatId,
+                ChatName = chatName,
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                ThreadId = threadId,
+                ThreadName = threadName,
+                ToSend = false,
+                ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
+                IsModerate = false
+            }, true, cancellationToken);
+
+            return true;
         }
 
         public async Task AddParentButton(string name, int? parent, CancellationToken cancellationToken)

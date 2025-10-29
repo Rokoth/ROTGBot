@@ -13,11 +13,11 @@ namespace ROTGBot.Service
         private readonly IRepository<Role> _roleRepo = roleRepo;
         private readonly IRepository<UserRole> _userRoleRepo = userRoleRepo;
 
-        public async Task<Contract.Model.User?> GetOrAddUser(User tguser, long? chatId, CancellationToken cancellationToken)
+        public async Task<Contract.Model.User?> GetOrAddUser(long tgId, string tgUserName, string tgFullName, long? chatId, CancellationToken cancellationToken)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
-                Selector = s => s.TGId == tguser.Id
+                Selector = s => s.TGId == tgId
             }, cancellationToken)).FirstOrDefault();
 
             if (user == null)
@@ -29,11 +29,11 @@ namespace ROTGBot.Service
                 user = await _userRepo.AddAsync(new Db.Model.User()
                 {
                     Id = Guid.NewGuid(),
-                    Description = $"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
+                    Description = tgFullName,//$"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
                     IsDeleted = false,
-                    Name = $"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
-                    TGLogin = tguser.Username,
-                    TGId = tguser.Id,
+                    Name = tgFullName,
+                    TGLogin = tgUserName,
+                    TGId = tgId,
                     ChatId = chatId.Value,
                     LastSendDate = DateTime.Now.AddHours(-1)
                 }, true, cancellationToken);

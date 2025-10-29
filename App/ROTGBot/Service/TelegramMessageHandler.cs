@@ -79,7 +79,9 @@ namespace ROTGBot.Service
                 return;
             }
 
-            var user = await _userDataService.GetOrAddUser(message.From, message.Chat.Id, cancellationToken);
+            var tgUser = message.From;
+
+            var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
 
             if (user == null)
                 return;
@@ -170,25 +172,24 @@ namespace ROTGBot.Service
 
             Contract.Model.User? user = null;
 
+            var tgUser = callbackQuery.From;
+
             if (callbackQuery.Message?.Chat?.Type != "private")
             {
-                user = await _userDataService.GetOrAddUser(callbackQuery.From, null, token);
+                user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", null, token);
             }
             else
             {
-                user = await _userDataService.GetOrAddUser(callbackQuery.From, chatId.Value, token);
+                user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", chatId.Value, token);
             }
-
             if (user == null)
             {
                 return false;
             }
-
             var data = callbackQuery.Data;
             if (data == null) return false;
             var result = await HandleData(user.ChatId, user, data, token);
             await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
-
             return result;
         }
 
