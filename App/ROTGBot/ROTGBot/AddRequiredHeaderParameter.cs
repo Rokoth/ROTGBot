@@ -4,6 +4,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace ROTGBot
 {
+    /// <summary>
+    /// Параметры сваггер
+    /// </summary>
     public class AddRequiredHeaderParameter : IOperationFilter
     {
         private const string AuthorizationName = "Authorization";
@@ -11,36 +14,44 @@ namespace ROTGBot
         private const string StringType = "string";
         private const string BearerDefaultApiString = "Bearer ";
 
+        /// <summary>
+        /// Применить параметры
+        /// </summary>
+        /// <param name="operation"></param>
+        /// <param name="context"></param>
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             CheckOperation(operation);
             operation.Parameters.Add(CreateOpenApiParameter());
         }
 
-        private static OpenApiParameter CreateOpenApiParameter()
+        /// <summary>
+        /// Создание параметра OpenApi
+        /// </summary>
+        /// <returns></returns>
+        private static OpenApiParameter CreateOpenApiParameter() => new()
         {
-            return new OpenApiParameter
-            {
-                Name = AuthorizationName,
-                In = ParameterLocation.Header,
-                Description = DefaultDescription,
-                Required = true,
-                Schema = CreateOpenApiSchema()
-            };
-        }
+            Name = AuthorizationName,
+            In = ParameterLocation.Header,
+            Description = DefaultDescription,
+            Required = true,
+            Schema = CreateOpenApiSchema()
+        };
 
-        private static OpenApiSchema CreateOpenApiSchema()
+        /// <summary>
+        /// Создание схемы OpenApi
+        /// </summary>
+        /// <returns></returns>
+        private static OpenApiSchema CreateOpenApiSchema() => new()
         {
-            return new OpenApiSchema
-            {
-                Type = StringType,
-                Default = new OpenApiString(BearerDefaultApiString)
-            };
-        }
+            Type = StringType,
+            Default = new OpenApiString(BearerDefaultApiString)
+        };
 
-        private static void CheckOperation(OpenApiOperation operation)
-        {
-            operation.Parameters ??= [];
-        }
+        /// <summary>
+        /// Проверка параметра OpenApi
+        /// </summary>
+        /// <param name="operation"></param>
+        private static void CheckOperation(OpenApiOperation operation) => operation.Parameters ??= [];
     }
 }
