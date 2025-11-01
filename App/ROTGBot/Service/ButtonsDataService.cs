@@ -1,20 +1,27 @@
 ﻿using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
-using System.Threading;
-using Telegram.BotAPI.AvailableTypes;
 
 namespace ROTGBot.Service
 {
+    public class AddButtonModel
+    {
+        public long ChatId { get; set; }
+        public int? ThreadId { get; set; }
+        public string ChatName { get; set; }
+        public string? ThreadName { get; set; }
+    }
+
     public class ButtonsDataService(IRepository<NewsButton> newsButtonRepo) : IButtonsDataService
     {
+        private const string NAME_REQUIRED_MESSAGE = "Наименование группы обязательно";
         private readonly IRepository<NewsButton> _newsButtonRepo = newsButtonRepo;
 
         public async Task<bool> AddNewButton(long chatId, int? threadId, string chatName, string? threadName, CancellationToken cancellationToken)
         {
             if(string.IsNullOrEmpty(chatName))
             {
-                throw new ArgumentException("Наименование группы обязательно");
+                throw new ArgumentException(NAME_REQUIRED_MESSAGE);
             }
 
             var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -45,8 +52,8 @@ namespace ROTGBot.Service
             return true;
         }
 
-        public async Task AddParentButton(string name, int? parent, CancellationToken cancellationToken)
-        {            
+        public async Task<bool> AddParentButton(string name, int? parent, CancellationToken cancellationToken)
+        {
             var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
                 Selector = s => !s.IsDeleted && s.ParentId == parent && s.ButtonName == name
@@ -58,21 +65,25 @@ namespace ROTGBot.Service
             }, cancellationToken);
 
 
-            if (exists.Count == 0)
+            if (exists.Count != 0)
             {
-                await _newsButtonRepo.AddAsync(new NewsButton()
-                {                    
-                    ChatName = name,
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,                    
-                    ToSend = true,
-                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
-                    IsParent = true,
-                    ParentId = parent,
-                    ButtonName = name
-                    
-                }, true, cancellationToken);
+                return false;
             }
+
+            await _newsButtonRepo.AddAsync(new NewsButton()
+            {
+                ChatName = name,
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                ToSend = true,
+                ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
+                IsParent = true,
+                ParentId = parent,
+                ButtonName = name
+
+            }, true, cancellationToken);
+
+            return true;
         }
 
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)

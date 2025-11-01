@@ -1,24 +1,15 @@
-﻿using System;
-
-namespace ROTGBot.Db.Attributes
+﻿namespace ROTGBot.Db.Attributes
 {
     /// <summary>
     /// Атрибут - тип колонки
-    /// </summary>
-    public class ColumnTypeAttribute : Attribute
+    /// </summary>    
+    /// <param name="name"></param>
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ColumnTypeAttribute(string name) : Attribute
     {
         /// <summary>
         /// Наименование типа колонки
         /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="name"></param>
-        public ColumnTypeAttribute(string name)
-        {
-            Name = name;
-        }
+        public string Name { get; } = name;
     }
 }

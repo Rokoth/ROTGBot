@@ -37,7 +37,7 @@
     <ProjectReference Include="..\Contract\Contract.csproj" />
     <ProjectReference Include="..\DB\ROTGBot.DB.csproj" />
     <ProjectReference Include="..\ROTGBot\ROTGBot.csproj" />
-    <ProjectReference Include="..\Service\Service.csproj" />
+    <ProjectReference Include="..\Service\ROTGBot.Service.csproj" />
   </ItemGroup>
 
   <ItemGroup>
