@@ -165,7 +165,7 @@ namespace ROTGBot.Service
             await SetNewsStatus(id, null, "deleted", true, token);           
         }
 
-        public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
+        public async Task<bool> CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
         {
             var maxNum = 0;
             if (type == "news")
@@ -193,6 +193,8 @@ namespace ROTGBot.Service
                 IsModerate = isModerate,
                 Number = maxNum
             }, true, token);
+
+            return true;
         }
 
         public async Task<string> GetUserReport(Guid userId, CancellationToken token)

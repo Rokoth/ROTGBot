@@ -1,12 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
-using System.Collections.Generic;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using ROTGBot.Db.Context;
@@ -41,13 +36,7 @@ namespace ROTGBot.Db.Repository
         /// <param name="token">токен</param>
         /// <returns>модель</returns>
         public async Task<T> AddAsync(T entity, bool withSave, CancellationToken token)
-        {
-            return await ExecuteAsync(async (context) => {
-                var item = context.Set<T>().Add(entity).Entity;
-                await Task.CompletedTask;
-                return item;
-            }, "AddAsync", withSave);
-        }
+            => await ExecuteAsync(async (context) => (await context.Set<T>().AddAsync(entity)).Entity, nameof(AddAsync), withSave);
 
         /// <summary>
         /// Метод удаления из базы
