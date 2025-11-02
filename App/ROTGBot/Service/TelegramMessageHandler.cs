@@ -1981,9 +1981,17 @@ namespace ROTGBot.Service
                     new InlineKeyboardButton("Добавить администратора")
                     {
                         CallbackData = "AddAdminChoice"
-                    },new InlineKeyboardButton("Добавить модератора")
+                    },
+                    new InlineKeyboardButton("Добавить модератора")
                     {
                         CallbackData = "AddModeratorChoice"
+                    }
+                ],
+                EmptyButton(),
+                [
+                    new InlineKeyboardButton("Поиск пользователей")
+                    {
+                        CallbackData = "SearchUsersButtonsChoice"
                     }
                 ],
                 EmptyButton(),
