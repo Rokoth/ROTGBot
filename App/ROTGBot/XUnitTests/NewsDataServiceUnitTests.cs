@@ -53,5 +53,39 @@ namespace XUnitTests
 
             Assert.Null(result);
         }
+
+        /// <summary>
+        /// 0.0.18.2.4
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task GetNewsById_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<News>>();
+            var _repoUserMock = new Mock<IRepository<User>>();
+            var _repoMessageMock = new Mock<IRepository<NewsMessage>>();
+            var _loggerMock = new Mock<ILogger<NewsDataService>>();
+
+            var dbNews = new News()
+            {
+                ChatId = 1,
+                CreatedDate = DateTime.Now,
+                Description = "Test",
+                GroupId = 2,
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                IsModerate = true,
+                IsMulti = false,
+            };
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(dbNews));
+
+            var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
+
+            var result = await newsService.GetNewsById(Guid.NewGuid(), new CancellationToken());
+
+            Assert.Null(result);
+        }
     }
 }
