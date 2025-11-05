@@ -25,7 +25,7 @@ namespace ROTGBot.Db.Interface
         /// <param name="id">id</param>
         /// <param name="token">token</param>
         /// <returns></returns>
-        Task<T> GetAsync(Guid id, CancellationToken token);
+        Task<T?> GetAsync(Guid id, CancellationToken token);
                
         /// <summary>
         /// add model to db

@@ -114,7 +114,7 @@ namespace ROTGBot.Db.Repository
         /// <param name="id">id</param>
         /// <param name="token">token</param>
         /// <returns></returns>
-        public async Task<T> GetAsync(Guid id, CancellationToken token)
+        public async Task<T?> GetAsync(Guid id, CancellationToken token)
         {
             var result =  await ExecuteAsync(async (context) => {
                 return await context.Set<T>()
