@@ -1,10 +1,10 @@
 ﻿namespace ROTGBot
 {
-    public class AddRequiredHeaderOptions
+    public static class AddRequiredHeaderOptions
     {
-        public string AuthorizationName { get; set; } = "Authorization";
-        public string DefaultDescription { get; set; } = "access token";
-        public string StringType { get; set; } = "string";
-        public string BearerDefaultApiString { get; set; } = "Bearer ";
+        public static string AuthorizationName { get; set; } = "Authorization";
+        public static string DefaultDescription { get; set; } = "access token";
+        public static string StringType { get; set; } = "string";
+        public static string BearerDefaultApiString { get; set; } = "Bearer ";
     }
 }

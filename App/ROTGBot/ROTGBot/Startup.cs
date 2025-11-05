@@ -33,7 +33,7 @@ namespace ROTGBot
                 {
                     var settings = (Configuration.GetSection("AuthOptions")?.Get<AuthOptions>()) ?? throw new ArgumentNullException(nameof(AuthOptions));
                     options.RequireHttpsMetadata = false;
-                    options.SaveToken = true;
+                    options.SaveToken = true;                    
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         //// укзывает, будет ли валидироваться издатель при валидации токена
