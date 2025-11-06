@@ -1,12 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
-using System.Collections.Generic;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using ROTGBot.Db.Context;
@@ -18,20 +13,14 @@ namespace ROTGBot.Db.Repository
     /// Repository - wrapper for db works
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Repository<T> : IRepository<T> where T : class, IEntity 
-    {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger _logger;
-
-        /// <summary>
-        /// ctor
-        /// </summary>
-        /// <param name="serviceProvider"></param>
-        public Repository(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = _serviceProvider.GetRequiredService<ILogger<Repository<T>>>();
-        }
+    /// <remarks>
+    /// ctor
+    /// </remarks>
+    /// <param name="serviceProvider"></param>
+    public class Repository<T>(ILogger<Repository<T>> logger, DbPgContext context) : IRepository<T> where T : class, IEntity 
+    {        
+        private readonly ILogger _logger = logger;
+        private readonly DbPgContext _context = context;
 
         /// <summary>
         /// Метод добавления модели в базу
@@ -168,10 +157,9 @@ namespace ROTGBot.Db.Repository
         private async Task<TEx> ExecuteAsync<TEx>(Func<DbPgContext, Task<TEx>> action, string method, bool withSave)
         {
             try
-            {
-                var context = _serviceProvider.GetRequiredService<DbPgContext>();
-                var result = await action(context);
-                if (withSave) await context.SaveChangesAsync();
+            {                
+                var result = await action(_context);
+                if (withSave) await _context.SaveChangesAsync();
                 return result;
             }
             catch (Exception ex)
@@ -183,8 +171,7 @@ namespace ROTGBot.Db.Repository
 
         public async Task SaveChangesAsync()
         {
-            var context = _serviceProvider.GetRequiredService<DbPgContext>();
-            await context.SaveChangesAsync();
+             await _context.SaveChangesAsync();
         }
     }
 }
