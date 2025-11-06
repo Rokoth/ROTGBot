@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\Contract\Contract.csproj" />
+    <ProjectReference Include="..\Contract\ROTGBot.Contract.csproj" />
   </ItemGroup>
 
 </Project>
