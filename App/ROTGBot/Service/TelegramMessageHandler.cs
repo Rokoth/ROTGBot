@@ -1957,9 +1957,9 @@ namespace ROTGBot.Service
 
             sendButtons.Add(EmptyButton());
 
-            sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
+            sendButtons.Add([new InlineKeyboardButton("Регламент обращений")
             {
-                CallbackData = "GetPDNOferta"
+                CallbackData = "UserReglament"
             }]);
 
             sendButtons.Add(EmptyButton());
