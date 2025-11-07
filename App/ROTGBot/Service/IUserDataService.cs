@@ -8,5 +8,6 @@
         Task<bool> SwitchUserNotify(Guid userId, CancellationToken token);
         Task SetUserSendDate(Guid userId, CancellationToken token);
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
+        Task<List<Contract.Model.User>> GetUsers(CancellationToken token);
     }
 }
