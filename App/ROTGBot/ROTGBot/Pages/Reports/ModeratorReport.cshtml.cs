@@ -1,12 +1,32 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using ROTGBot.Contract.Model;
+using ROTGBot.Service;
 
 namespace ROTGBot.Pages.Reports
 {
-    public class ModeratorReportModel : PageModel
+    public class ModeratorReportModel(ILogger<UserReportModel> logger, INewsDataService newsDataService) : PageModel
     {
-        public void OnGet()
+        private readonly ILogger<UserReportModel> _logger = logger;
+        private readonly INewsDataService _newsDataService = newsDataService;
+
+        [BindProperty]
+        public Report Report { get; set; } = default!;
+
+        public async Task<IActionResult> OnGetAsync()
         {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+                return RedirectToPage("/Auth");
+            var userId = Guid.Parse(auth.Principal.Identity.Name);
+
+            Report = await _newsDataService.GetModeratorReport(userId, //token);
+
+            return Page();
         }
     }
 }

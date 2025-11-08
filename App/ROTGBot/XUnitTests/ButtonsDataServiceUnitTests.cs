@@ -96,5 +96,79 @@ namespace XUnitTests
 
             await Assert.ThrowsAsync<ArgumentException>(() => buttonsService.AddNewButton(1, 1, null, "chat", new CancellationToken()));
         }
+
+        /// <summary>
+        /// 0.0.14.2.4
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task AddParentButton_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<NewsButton>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<NewsButton>()));
+
+            _repoMock.Setup(s => s.AddAsync(It.IsAny<NewsButton>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new NewsButton()));
+
+            var buttonsService = new ButtonsDataService(_repoMock.Object);
+
+            var result = await buttonsService.AddNewButton(1, 1, "chat", "chat", new CancellationToken());
+
+            Assert.True(result);
+        }
+
+        /// <summary>
+        /// 0.0.14.2.5
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task GetActiveButtons_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<NewsButton>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<NewsButton>()
+                {
+                    new()
+                    {
+                        ButtonName = "Button1",
+                        ButtonNumber = 1,
+                        ChatId = 1,
+                        ChatName = "ChatName",
+                        Id = Guid.NewGuid(),
+                        IsDeleted = false,
+                        IsModerate = false,
+                        IsParent = false,
+                        ParentId = null,
+                        ThreadId = 1,
+                        ThreadName = "ThreadName",
+                        ToSend = true
+                    },
+                    new()
+                    {
+                        ButtonName = "Button2",
+                        ButtonNumber = 2,
+                        ChatId = 1,
+                        ChatName = "ChatName",
+                        Id = Guid.NewGuid(),
+                        IsDeleted = false,
+                        IsModerate = false,
+                        IsParent = false,
+                        ParentId = null,
+                        ThreadId = 2,
+                        ThreadName = "ThreadName2",
+                        ToSend = true
+                    }
+                }));
+                        
+            var buttonsService = new ButtonsDataService(_repoMock.Object);
+
+            var result = await buttonsService.GetActiveButtons(new CancellationToken());
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+        }
     }
 }
