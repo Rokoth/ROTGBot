@@ -71,5 +71,27 @@ namespace XUnitTests
 
             Assert.Null(result);
         }
+
+        /// <summary>
+        /// 0.0.10.2.4
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task GetCurrentNews_Success_OneNews_Async()
+        {
+            var _repoMock = new Mock<IRepository<News>>();
+            var _repoUserMock = new Mock<IRepository<User>>();
+            var _repoMessageMock = new Mock<IRepository<NewsMessage>>();
+            var _loggerMock = new Mock<ILogger<NewsDataService>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<News>()));
+
+            var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
+
+            var result = await newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken());
+
+            Assert.Null(result);
+        }
     }
 }
