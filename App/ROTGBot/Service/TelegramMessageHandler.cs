@@ -2054,6 +2054,11 @@ namespace ROTGBot.Service
                 [new InlineKeyboardButton("Отчёт по обработанным обращениям")
                 {
                     CallbackData = "ModeratorReport"
+                }],
+                EmptyButton(),
+                [new InlineKeyboardButton("Регламент обработки обращений")
+                {
+                    CallbackData = "ModeratorReglament"
                 }]
             ];
         }

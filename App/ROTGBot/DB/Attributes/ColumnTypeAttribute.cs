@@ -7,7 +7,7 @@
     /// ctor
     /// </remarks>
     /// <param name="name"></param>
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class ColumnTypeAttribute(string name) : Attribute
     {
         /// <summary>
