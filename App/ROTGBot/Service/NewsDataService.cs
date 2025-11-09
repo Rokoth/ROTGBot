@@ -21,30 +21,21 @@ namespace ROTGBot.Service
 
         public async Task<bool> AddNewMessageForNews(long messageId, Guid userNewsId, string text, CancellationToken cancellationToken)
         {
-            try
+            if (string.IsNullOrEmpty(text))
             {
-                if(string.IsNullOrEmpty(text))
-                {
-                    _logger.LogError($"AddNewMessageForNews error: mesage text is null");
-                    return false;
-                }
-
-                await _newsMessageRepo.AddAsync(new NewsMessage()
-                {
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,
-                    NewsId = userNewsId,
-                    TGMessageId = messageId,
-                    TextValue = text
-                }, true, cancellationToken);
-
-                return true;
+                throw new ArgumentException($"Пустое сообщение");
             }
-            catch (Exception ex)
+
+            await _newsMessageRepo.AddAsync(new NewsMessage()
             {
-                _logger.LogError($"AddNewMessageForNews error: {ex.Message}");
-                throw;
-            }
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                NewsId = userNewsId,
+                TGMessageId = messageId,
+                TextValue = text
+            }, true, cancellationToken);
+
+            return true;
         }
 
         public async Task<Contract.Model.News?> GetCurrentNews(Guid userId, CancellationToken cancellationToken)

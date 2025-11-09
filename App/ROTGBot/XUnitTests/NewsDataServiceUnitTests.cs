@@ -37,7 +37,7 @@ namespace XUnitTests
         }
 
         /// <summary>
-        /// 0.0.20.2.3 - todo
+        /// 0.0.20.2.3
         /// </summary>
         /// <returns></returns>
         [Fact]
@@ -53,7 +53,7 @@ namespace XUnitTests
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
-            var result = await newsService.AddNewMessageForNews(1, Guid.NewGuid(), "test", new CancellationToken());
+            var result = await newsService.AddNewMessageForNews(1, Guid.NewGuid(), null, new CancellationToken());
 
             Assert.True(result);
         }
