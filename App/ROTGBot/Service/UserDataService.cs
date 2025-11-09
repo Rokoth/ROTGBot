@@ -102,25 +102,24 @@ namespace ROTGBot.Service
             return users.Where(s => s.IsModerator);
         }
 
-        public async Task SetRole(string login, RoleEnum role, CancellationToken token)
+        public async Task<bool> SetRole(string login, RoleEnum role, CancellationToken token)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
-            }, token)).FirstOrDefault();
+            }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {login} не найден");
+           
+            var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
 
-            if (user != null)
+            await _userRoleRepo.AddAsync(new UserRole()
             {
-                var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                RoleId = newRole.Id,
+                UserId = user.Id
+            }, true, token);
 
-                await _userRoleRepo.AddAsync(new UserRole()
-                {
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,
-                    RoleId = newRole.Id,
-                    UserId = user.Id
-                }, true, token);
-            }
+            return true;
         }
 
         public async Task<bool> SwitchUserNotify(Guid userId, CancellationToken token)
