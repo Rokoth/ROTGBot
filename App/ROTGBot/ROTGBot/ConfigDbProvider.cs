@@ -13,9 +13,7 @@ namespace ROTGBot
             _options(builder);
 
             using var context = new DbPgContext(builder.Options);
-            var items = context.Settings
-                .AsNoTracking()
-                .ToList();
+            var items = context.Settings.AsNoTracking().ToList();
 
             foreach (var item in items)
             {
