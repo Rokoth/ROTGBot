@@ -12,26 +12,20 @@ namespace ROTGBot
             operation.Parameters.Add(CreateOpenApiParameter());
         }
 
-        private static OpenApiParameter CreateOpenApiParameter()
+        private static OpenApiParameter CreateOpenApiParameter() => new()
         {
-            return new OpenApiParameter
-            {
-                Name = AddRequiredHeaderOptions.AuthorizationName,
-                In = ParameterLocation.Header,
-                Description = AddRequiredHeaderOptions.DefaultDescription,
-                Required = true,
-                Schema = CreateOpenApiSchema()
-            };
-        }
+            Name = AddRequiredHeaderOptions.AuthorizationName,
+            In = ParameterLocation.Header,
+            Description = AddRequiredHeaderOptions.DefaultDescription,
+            Required = true,
+            Schema = CreateOpenApiSchema()
+        };
 
-        private static OpenApiSchema CreateOpenApiSchema()
+        private static OpenApiSchema CreateOpenApiSchema() => new()
         {
-            return new OpenApiSchema
-            {
-                Type = AddRequiredHeaderOptions.StringType,
-                Default = new OpenApiString(AddRequiredHeaderOptions.BearerDefaultApiString)
-            };
-        }
+            Type = AddRequiredHeaderOptions.StringType,
+            Default = new OpenApiString(AddRequiredHeaderOptions.BearerDefaultApiString)
+        };
 
         private static void CheckOperation(OpenApiOperation operation)
         {
