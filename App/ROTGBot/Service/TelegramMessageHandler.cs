@@ -74,8 +74,15 @@ namespace ROTGBot.Service
                 return;
             }
 
-            if (message.Chat?.Id == null || message.Chat?.Type != "private")
+            if (message.Chat?.Id == null)
             {
+                return;
+            }
+
+            if (message.Chat?.Type != "private")
+            {
+                string? command = null;
+
                 return;
             }
 
