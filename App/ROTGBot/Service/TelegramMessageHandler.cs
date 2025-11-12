@@ -272,6 +272,10 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendDeleteButtonChoiceHandle(chId, user, userNews, tk), token),
                 "AddAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminHandle(userId, chId, userNews, tk), token),
+                "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
+                "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendMessageToUserHandle(userId, chId, userNews, tk), token),
                 "AddAdminDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminDeclineHandle(userId, chId, userNews, tk), token),
                 "AddModerator" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -2017,6 +2021,21 @@ namespace ROTGBot.Service
                     new InlineKeyboardButton("Удалить кнопку пользователя")
                     {
                         CallbackData = "DeleteButtonChoice"
+                    }
+                ],
+                EmptyButton(),
+                [
+                    new InlineKeyboardButton("Получить список пользователей")
+                    {
+                        CallbackData = "GetUserListChoice"
+                    },
+                    new InlineKeyboardButton("Разблокировать пользователя")
+                    {
+                        CallbackData = "UnblockUser"
+                    },
+                    new InlineKeyboardButton("Отправить сообщение пользователю")
+                    {
+                        CallbackData = "SendMessageToUser"
                     }
                 ],
                 EmptyButton(),                

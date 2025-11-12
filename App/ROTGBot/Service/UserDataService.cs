@@ -26,16 +26,23 @@ namespace ROTGBot.Service
                 {
                     return null;
                 }
+
+                var lastUser = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+                {
+                    Sort = "number desc"
+                }, cancellationToken)).FirstOrDefault();
+
                 user = await _userRepo.AddAsync(new Db.Model.User()
                 {
                     Id = Guid.NewGuid(),
-                    Description = tgFullName,//$"{tguser.FirstName} {tguser.LastName} (@{tguser.Username})",
+                    Description = tgFullName,
                     IsDeleted = false,
                     Name = tgFullName,
                     TGLogin = tgUserName,
                     TGId = tgId,
                     ChatId = chatId.Value,
-                    LastSendDate = DateTime.Now.AddHours(-1)
+                    LastSendDate = DateTime.Now.AddHours(-1),
+                    Number = lastUser?.Number ?? 1
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
@@ -69,7 +76,8 @@ namespace ROTGBot.Service
                 Roles = roles,
                 TGId = user.TGId,
                 TGLogin = user.TGLogin,
-                LastSendDate = user.LastSendDate
+                LastSendDate = user.LastSendDate,
+                Number = user.Number
             };
         }
 

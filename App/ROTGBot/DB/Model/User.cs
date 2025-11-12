@@ -21,5 +21,8 @@ namespace ROTGBot.Db.Model
         [ColumnName("lastsenddate")]
         [ColumnType("timestamp")]
         public DateTime LastSendDate { get; set; }
+
+        [ColumnName("number")]
+        public int? Number { get; set; }
     }
 }

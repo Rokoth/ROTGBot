@@ -16,6 +16,7 @@ namespace ROTGBot.Contract.Model
         public bool IsModerator => Roles.Contains(RoleEnum.moderator);
 
         public DateTime LastSendDate { get; set; }
+        public int? Number { get; set; }
     }
 
 }
