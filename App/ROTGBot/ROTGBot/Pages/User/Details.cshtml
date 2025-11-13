@@ -1,0 +1,28 @@
+﻿@page
+@model ROTGBot.Pages.User.DetailsModel
+@{
+    ViewData["Title"] = "Детализация пользователя";
+}
+
+<h2>Детализация пользователя</h2>
+<div class="row">
+    <div class="col-4">
+        <div class="p-3 border bg-light row g-0" id="namecontainer">
+            <b>@Html.DisplayNameFor(x => x.Product.Name)</b>
+            @Html.DisplayFor(x => x.Product.Name)
+        </div>
+        <div class="p-3 border bg-light row g-0" id="dsccontainer">
+            <b>@Html.DisplayNameFor(x => x.Product.Description)</b> 
+            @Html.DisplayFor(x => x.Product.Description)
+        </div>
+        <div class="p-3 border bg-light row g-0" id="pricecontainer">
+            <b>@Html.DisplayNameFor(x => x.Product.Price)</b> 
+            @Html.DisplayFor(x => x.Product.Price)
+        </div>
+        <div class="p-3 border bg-light row g-0">            
+            <div class="col-3 d-flex justify-content-center">
+                <a class="btn btn-warning" id="close" asp-page="Index">Вернуться</a>
+            </div>
+        </div>
+    </div>
+</div>

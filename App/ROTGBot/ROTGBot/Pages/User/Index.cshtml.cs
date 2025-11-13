@@ -12,7 +12,8 @@ namespace ROTGBot.Pages.User
 
         public IndexModel(ILogger<IndexModel> logger, IUserDataService userDataService)
         {
-
+            _userDataService = userDataService;
+            _logger = logger;
         }
 
         [BindProperty]
@@ -20,7 +21,7 @@ namespace ROTGBot.Pages.User
 
         public async Task<IActionResult> OnGetAsync()
         {
-
+            Users = await _userDataService.GetUsers(new CancellationToken());
         }
     }
 }
