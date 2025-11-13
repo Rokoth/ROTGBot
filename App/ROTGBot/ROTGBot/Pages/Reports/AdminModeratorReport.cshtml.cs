@@ -5,7 +5,7 @@ namespace ROTGBot.Pages.Reports
 {
     public class AdminModeratorReportModel : PageModel
     {
-        public void OnGet()
+        public async Task<IActionResult> OnGet()
         {
         }
     }

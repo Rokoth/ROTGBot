@@ -195,7 +195,7 @@ namespace ROTGBot.Service
             }, true, token);
         }
 
-        public async Task<string> GetUserReport(Guid userId, CancellationToken token)
+        public async Task<string> GetUserReportString(Guid userId, CancellationToken token)
         {
             string result = string.Empty;
 
@@ -223,7 +223,7 @@ namespace ROTGBot.Service
             return result;
         }
 
-        public async Task<string> GetModeratorReport(Guid userId, CancellationToken token)
+        public async Task<string> GetModeratorReportString(Guid userId, CancellationToken token)
         {
             string result = string.Empty;
 
@@ -256,7 +256,7 @@ namespace ROTGBot.Service
             return CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthNum);
         }
 
-        public async Task<string> GetAdminUserReport(CancellationToken token)
+        public async Task<string> GetAdminUserReportString(CancellationToken token)
         {
             string result = string.Empty;
 
@@ -296,7 +296,7 @@ namespace ROTGBot.Service
             return result;
         }
 
-        public async Task<string> GetAdminModeratorReport(CancellationToken token)
+        public async Task<string> GetAdminModeratorReportString(CancellationToken token)
         {
             string result = string.Empty;
 
