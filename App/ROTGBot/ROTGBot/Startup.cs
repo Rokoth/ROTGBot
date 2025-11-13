@@ -36,6 +36,8 @@ namespace ROTGBot
                     options.SaveToken = true;
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
+                        //todo: LifeTime
+
                         //// укзывает, будет ли валидироваться издатель при валидации токена
                         ValidateIssuer = true,
                         //// строка, представляющая издателя
