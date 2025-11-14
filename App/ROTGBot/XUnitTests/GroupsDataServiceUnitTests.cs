@@ -77,5 +77,29 @@ namespace XUnitTests
                        
             await Assert.ThrowsAsync<ArgumentException>(() => service.AddGroupIfNotExists(1, null, "test", new CancellationToken()));
         }
+
+        /// <summary>
+        /// 0.0.18.2.5
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task AddGroupIfNotExists_Error_OnRepositoryError_Async()
+        {
+            var _repoMock = new Mock<IRepository<Groups>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<Groups>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(GetGroupsException()));
+            _repoMock.Setup(s => s.AddAsync(It.IsAny<Groups>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new Groups()));
+
+            var service = new GroupsDataService(_repoMock.Object);
+
+            await Assert.ThrowsAsync<RepositoryException>(() => service.AddGroupIfNotExists(1, "test", "test", new CancellationToken()));
+        }
+
+        private static List<Groups> GetGroupsException()
+        {
+            throw new RepositoryException("RepositoryException");
+        }
     }
 }
