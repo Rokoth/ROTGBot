@@ -133,6 +133,53 @@ namespace XUnitTests
             _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// 0.0.20.2.1
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task SwitchUserNotify_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<User>>();
+            var _repoRoleMock = new Mock<IRepository<Role>>();
+            var _repouserRoleMock = new Mock<IRepository<UserRole>>();
+
+            var user1Id = Guid.NewGuid();
+
+            var moderGuid = Guid.NewGuid();
+            var userGuid = Guid.NewGuid();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<User>()
+                {
+                    new()
+                    {
+                        Id = user1Id,
+                        IsDeleted = false,
+                        IsNotify = true,
+                        ChatId = 1
+                    }
+                }));
+
+            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<User>()
+                {
+                    new()
+                    {
+                        Id = user1Id,
+                        IsDeleted = false,
+                        IsNotify = true,
+                        ChatId = 1
+                    }
+                }));
+
+            var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+
+            var result = await buttonsService.SwitchUserNotify(user1Id, new CancellationToken());
+
+            Assert.True(result);           
+        }
+
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
         {
             var result = new List<Role>

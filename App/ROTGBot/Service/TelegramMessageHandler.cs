@@ -272,6 +272,10 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendDeleteButtonChoiceHandle(chId, user, userNews, tk), token),
                 "AddAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminHandle(userId, chId, userNews, tk), token),
+                "UserListChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => UserListChoiseHandle(userId, chId, userNews, tk), token),
+                "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => UserLisHandle(userId, chId, userNews, tk), token),
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -344,6 +348,13 @@ namespace ROTGBot.Service
             {
                 await DeleteNewsMessageNotFound(chatId, token);
             }
+        }
+                
+        private async Task UserListChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId,
+                "Отправьте ",
+                 token);
         }
 
         private async Task SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
