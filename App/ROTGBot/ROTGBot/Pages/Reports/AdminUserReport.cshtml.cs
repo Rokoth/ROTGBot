@@ -7,7 +7,7 @@ using ROTGBot.Service;
 
 namespace ROTGBot.Pages.Reports
 {
-    public class AdminUserReportModel : PageModel
+    public class AdminUserReportModel(ILogger<UserReportModel> logger, INewsDataService newsDataService) : PageModel
     {
         private readonly ILogger<UserReportModel> _logger = logger;
         private readonly INewsDataService _newsDataService = newsDataService;
@@ -19,11 +19,11 @@ namespace ROTGBot.Pages.Reports
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetModeratorReportString(userId, new CancellationToken());
+            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
 
             return Page();
         }

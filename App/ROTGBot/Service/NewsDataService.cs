@@ -340,5 +340,28 @@ namespace ROTGBot.Service
             userNews.IsMulti = true;           
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
+
+        public async Task<Contract.Model.Report> GetAdminUserReport(CancellationToken token)
+        {
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+        }
+
+        public Task<Contract.Model.Report> GetAdminModeratorReport(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Contract.Model.Report> GetModeratorReport(Guid id, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Contract.Model.Report> GetUserReport(Guid id, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
