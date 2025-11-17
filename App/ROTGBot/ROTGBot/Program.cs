@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore;
 using Serilog;
-using Microsoft.Extensions.Configuration;
 
 namespace ROTGBot
 {
@@ -43,7 +41,7 @@ namespace ROTGBot
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseConfiguration(GetConfiguration())
                 .ConfigureAppConfiguration((hostingContext, config) => ConfigureApp(args, config))
-                .ConfigureLogging((hostingContext, logging) => CreateLogger(hostingContext, logging))
+                .ConfigureLogging(CreateLogger)
                 .UseKestrel()
                 .UseStartup<Startup>();
 
@@ -81,11 +79,11 @@ namespace ROTGBot
         private static IConfigurationRoot GetConfiguration()
         {
             return new ConfigurationBuilder()
-                                .SetBasePath(Directory.GetCurrentDirectory())
-                                .AddJsonFile(_appSettingsFileName, optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables()
-                                .AddDbConfiguration()
-                                .Build();
+                  .SetBasePath(Directory.GetCurrentDirectory())
+                  .AddJsonFile(_appSettingsFileName, optional: false, reloadOnChange: true)
+                  .AddEnvironmentVariables()
+                  .AddDbConfiguration()
+                  .Build();
         }
     }
 }

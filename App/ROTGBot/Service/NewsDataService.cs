@@ -25,8 +25,7 @@ namespace ROTGBot.Service
             {
                 if(string.IsNullOrEmpty(text))
                 {
-                    _logger.LogError($"AddNewMessageForNews error: mesage text is null");
-                    return false;
+                    throw new ArgumentException("AddNewMessageForNews error: mesage text is null or empty");
                 }
 
                 await _newsMessageRepo.AddAsync(new NewsMessage()
