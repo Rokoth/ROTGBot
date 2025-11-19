@@ -97,12 +97,16 @@ namespace XUnitTests
             await Assert.ThrowsAsync<ArgumentException>(() => buttonsService.AddNewButton(1, 1, null, "chat", new CancellationToken()));
         }
 
+        /// <summary>
+        /// 0.0.18.2.1
+        /// </summary>
+        /// <returns></returns>
         [Fact]
-        public async Task AddParentButton_000_Async()
+        public async Task AddParentButton_Success_Async()
         {
             var _repoMock = new Mock<IRepository<NewsButton>>();
 
-            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+            _repoMock.SetupSequence(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new List<NewsButton>()
                 {
                     new()

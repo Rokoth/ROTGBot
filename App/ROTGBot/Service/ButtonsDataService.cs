@@ -4,19 +4,25 @@ using System.Data;
 
 namespace ROTGBot.Service
 {
-    public class AddButtonModel
-    {
-        public long ChatId { get; set; }
-        public int? ThreadId { get; set; }
-        public string ChatName { get; set; }
-        public string? ThreadName { get; set; }
-    }
-
+    /// <summary>
+    /// Сервис работы с пользовательскими кнопками
+    /// </summary>
+    /// <param name="newsButtonRepo"></param>
     public class ButtonsDataService(IRepository<NewsButton> newsButtonRepo) : IButtonsDataService
     {
         private const string NAME_REQUIRED_MESSAGE = "Наименование группы обязательно";
         private readonly IRepository<NewsButton> _newsButtonRepo = newsButtonRepo;
 
+        /// <summary>
+        /// Добавить новую кнопку
+        /// </summary>
+        /// <param name="chatId">ИД чата (группы)</param>
+        /// <param name="threadId">ИД темы в группе</param>
+        /// <param name="chatName">Имя чата (группы)</param>
+        /// <param name="threadName">Имя темы в группе</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public async Task<bool> AddNewButton(long chatId, int? threadId, string chatName, string? threadName, CancellationToken cancellationToken)
         {
             if(string.IsNullOrEmpty(chatName))
@@ -52,6 +58,13 @@ namespace ROTGBot.Service
             return true;
         }
 
+        /// <summary>
+        /// Добавить родительскую кнопку (категорий)
+        /// </summary>
+        /// <param name="name">Наименование</param>
+        /// <param name="parent">ИД родительской кнопки</param>
+        /// <param name="cancellationToken">токен</param>
+        /// <returns></returns>
         public async Task<bool> AddParentButton(string name, int? parent, CancellationToken cancellationToken)
         {
             var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -86,6 +99,11 @@ namespace ROTGBot.Service
             return true;
         }
 
+        /// <summary>
+        /// Активные (включенные) кнопки
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)
         {
             return [.. (await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -94,6 +112,11 @@ namespace ROTGBot.Service
             }, token)).Select(Map).Where(s => s != null)];
         }
 
+        /// <summary>
+        /// Получить все кнопки
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task<List<Contract.Model.NewsButton>> GetAllButtons(CancellationToken token)
         {
             return [.. (await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -102,6 +125,12 @@ namespace ROTGBot.Service
             }, token)).Select(Map).Where(s => s != null)];
         }
 
+        /// <summary>
+        /// Кнопка по номеру
+        /// </summary>
+        /// <param name="buttonNumber">Номер кнопки</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task<Contract.Model.NewsButton?> GetButtonByNumber(int buttonNumber, CancellationToken token)
         {
             return Map((await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
@@ -110,6 +139,11 @@ namespace ROTGBot.Service
             }, token)).FirstOrDefault());
         }
 
+        /// <summary>
+        /// Маппинг моедли БД в контракт
+        /// </summary>
+        /// <param name="newsButton">Модель БД</param>
+        /// <returns></returns>
         private Contract.Model.NewsButton? Map(NewsButton? newsButton)
         {
             if(newsButton == null) return null;
@@ -130,6 +164,13 @@ namespace ROTGBot.Service
             };
         }
 
+        /// <summary>
+        /// Получить кнопку по ИД темы группы
+        /// </summary>
+        /// <param name="groupId">ИД темы</param>
+        /// <param name="threadId">ИД группы</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task<Contract.Model.NewsButton?> GetButtonByThreadId(long? groupId, long? threadId, CancellationToken token)
         {
             if (groupId == null) return null;
@@ -140,6 +181,12 @@ namespace ROTGBot.Service
             }, token)).FirstOrDefault());
         }
 
+        /// <summary>
+        /// Деактивация кнопки
+        /// </summary>
+        /// <param name="id">ИД кнопки</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task RemoveButtonSend(Guid id, CancellationToken token)
         {
             var button = await _newsButtonRepo.GetAsync(id, token);
@@ -150,6 +197,15 @@ namespace ROTGBot.Service
             }
         }
 
+        /// <summary>
+        /// Активация кнопки
+        /// </summary>
+        /// <param name="id">ИД кнопки</param>
+        /// <param name="name">Наименование</param>
+        /// <param name="parentId">Родитель</param>
+        /// <param name="isModerate">Модерируемая</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task SetButtonSend(Guid id, string? name, int? parentId, bool isModerate, CancellationToken token)
         {
             var button = await _newsButtonRepo.GetAsync(id, token);

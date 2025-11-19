@@ -9,18 +9,23 @@ namespace ROTGBot
 
         public override void Load()
         {
+            GetSettings(GetBuilder())
+                .Select(item => KeyValuePair.Create(item.ParamName, item.ParamValue))
+                .ToList()
+                .ForEach(item => Data.Add(item.Key, item.Value));
+        }
+
+        private DbContextOptionsBuilder<DbPgContext> GetBuilder()
+        {
             var builder = new DbContextOptionsBuilder<DbPgContext>();
             _options(builder);
+            return builder;
+        }
 
+        private static List<Db.Model.Settings> GetSettings(DbContextOptionsBuilder<DbPgContext> builder)
+        {
             using var context = new DbPgContext(builder.Options);
-            var items = context.Settings
-                .AsNoTracking()
-                .ToList();
-
-            foreach (var item in items)
-            {
-                Data.Add(item.ParamName, item.ParamValue);
-            }
-        }                
+            return [.. context.Settings.AsNoTracking()];
+        }
     }
 }
