@@ -83,7 +83,7 @@ namespace ROTGBot
             return new ConfigurationBuilder()
                                 .SetBasePath(Directory.GetCurrentDirectory())
                                 .AddJsonFile(_appSettingsFileName, optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables()
+                                .AddEnvironmentVariables()
                                 .AddDbConfiguration()
                                 .Build();
         }
