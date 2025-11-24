@@ -11,7 +11,7 @@ WORKDIR /src
 COPY ["ROTGBot/ROTGBot.csproj", "ROTGBot/"]
 COPY ["Common/Common.csproj", "Common/"]
 COPY ["Contract/Contract.csproj", "Contract/"]
-COPY ["DB/DB.csproj", "DB/"]
+COPY ["DB/ROTGBot.DB.csproj", "DB/"]
 COPY ["Service/Service.csproj", "Service/"]
 RUN dotnet restore "./ROTGBot/ROTGBot.csproj"
 COPY . .
