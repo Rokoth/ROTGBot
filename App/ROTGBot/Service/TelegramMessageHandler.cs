@@ -79,10 +79,12 @@ namespace ROTGBot.Service
                 return;
             }
 
+            string? command = null;
+            bool isCommand = false;
+
             if (message.Chat?.Type != "private")
             {
-                string? command = null;
-
+                
                 return;
             }
 
