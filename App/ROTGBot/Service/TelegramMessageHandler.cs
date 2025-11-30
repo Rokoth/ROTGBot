@@ -104,7 +104,7 @@ namespace ROTGBot.Service
             }
             else if (userNews != null)
             {
-                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, message.Text ?? "", cancellationToken);
+                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, message.Text ?? message.Caption ?? "Сообщение без подписи", cancellationToken);
 
                 if (userNews.Type == "news")
                 {
