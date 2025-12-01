@@ -7,7 +7,8 @@
         Task SetRole(string login, Contract.Model.RoleEnum role, CancellationToken token);
         Task<bool> SwitchUserNotify(Guid userId, CancellationToken token);
         Task SetUserSendDate(Guid userId, CancellationToken token);
-        Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
-        Task<bool> SwitchUserBlock(string login, CancellationToken token);
+        Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);       
+        Task<bool> UserUnBlock(string login, CancellationToken token);
+        Task<bool> UserBlock(string login, CancellationToken token);
     }
 }

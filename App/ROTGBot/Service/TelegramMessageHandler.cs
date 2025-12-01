@@ -273,9 +273,9 @@ namespace ROTGBot.Service
                 "AddAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminHandle(userId, chId, userNews, tk), token),
                 "UserListChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => UserListChoiseHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => UserListChoiseHandle(chId, userNews, tk), token),
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => UserLisHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -349,14 +349,7 @@ namespace ROTGBot.Service
                 await DeleteNewsMessageNotFound(chatId, token);
             }
         }
-                
-        private async Task UserListChoiseHandle(long chatId, News? userNews, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId,
-                "Отправьте ",
-                 token);
-        }
-
+               
         private async Task SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
@@ -610,6 +603,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendNewsMessageForUser(chatId, buttonNumber, user, token);
+            }
+        }
+
+        private async Task UserListChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendUserListChoise(chatId, token);
             }
         }
 

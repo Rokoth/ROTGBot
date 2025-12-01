@@ -139,16 +139,28 @@ namespace ROTGBot.Service
             return user.IsNotify;
         }
 
-        public async Task<bool> SwitchUserBlock(string login, CancellationToken token)
+        public async Task<bool> UserBlock(string login, CancellationToken token)
         {
             var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
             }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {login} не найден");
             
-            user.IsNotify = !user.IsNotify;
+            user.IsBlock = true;
             await _userRepo.UpdateAsync(user, true, token);
-            return user.IsNotify;
+            return true;
+        }
+
+        public async Task<bool> UserUnBlock(string login, CancellationToken token)
+        {
+            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => s.TGLogin != null && s.TGLogin == login
+            }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {login} не найден");
+
+            user.IsBlock = false;
+            await _userRepo.UpdateAsync(user, true, token);
+            return true;
         }
 
         public async Task SetUserSendDate(Guid userId, CancellationToken token)

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XUnitTests", "XUnitTests\XUnitTests.csproj", "{ADFDB1DB-DFE9-4A7B-96C7-AB3F5B45B078}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbUpdates", "DbUpdates\DbUpdates.csproj", "{D3254D9D-88EF-45C2-9031-A80B899357B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{ADFDB1DB-DFE9-4A7B-96C7-AB3F5B45B078}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADFDB1DB-DFE9-4A7B-96C7-AB3F5B45B078}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADFDB1DB-DFE9-4A7B-96C7-AB3F5B45B078}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3254D9D-88EF-45C2-9031-A80B899357B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3254D9D-88EF-45C2-9031-A80B899357B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3254D9D-88EF-45C2-9031-A80B899357B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3254D9D-88EF-45C2-9031-A80B899357B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

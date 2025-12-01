@@ -24,5 +24,7 @@ namespace ROTGBot.Db.Model
 
         [ColumnName("number")]
         public int? Number { get; set; }
+        [ColumnName("isblock")]
+        public bool IsBlock { get; set; }
     }
 }
