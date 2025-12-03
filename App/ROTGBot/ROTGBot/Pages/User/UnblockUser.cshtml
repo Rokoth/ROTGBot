@@ -4,30 +4,39 @@
     ViewData["Title"] = "Разблокировка пользователя";
 }
 
-<h2>Вы действительно хотите удалить продукт?</h2>
+<h1>Вы действительно хотите удалить роль пользователя?</h1>
+
+<hr />
 <div class="row">
     <div class="col-md-4">
         <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="UserModel.Id" class="form-control" />            
             <div class="form-group p-3 border bg-light">
-                <b>@Html.DisplayNameFor(x => x.Product.Name)</b> :
-                @Html.DisplayFor(x => x.Product.Name)
+                <label asp-for="UserModel.Name" class="control-label"></label>
+                <input id="userNameField" readonly="true" asp-for="UserModel.Name" class="form-control" />
+                <span asp-validation-for="UserModel.Name" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
-                <b>
-                    @Html.DisplayNameFor(x => x.Product.Description)
-                </b>:
-                @Html.DisplayFor(x => x.Product.Description)
+                <label asp-for="UserModel.Login" class="control-label"></label>
+                <input id="roleNameField" asp-for="UserModel.Login" class="form-control" />
+                <span asp-validation-for="UserModel.Login" class="text-danger"></span>
             </div>
-            <div class="form-group p-3 border bg-light">
-                <b>
-                    @Html.DisplayNameFor(x => x.Product.Price)
-                </b>:
-                @Html.DisplayFor(x => x.Product.Price)
-            </div>
-            <div class="form-group p-3 border bg-light">
-                <input type="submit" value="Удалить" class="btn btn-primary" /> |
-                <a class="btn btn-warning" asp-page="Index">Вернуться</a>
+            <div class="form-group p-3 border bg-light row g-0">
+                <div class="col-6 d-flex justify-content-center">
+                    <input type="submit" value="Разблокировать" class="btn btn-primary" />
+                </div>
+                <div class="col-6 d-flex justify-content-center">
+                    <a class="btn btn-warning" asp-page="Index">Вернуться</a>
+                </div>
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+

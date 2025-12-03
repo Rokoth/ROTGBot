@@ -1,17 +1,19 @@
 ﻿using ROTGBot.Contract.Model;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
+using System.Data;
+using System.Linq.Dynamic.Core.Tokenizer;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
 {
     public class UserDataService(IRepository<Db.Model.User> userRepo,
         IRepository<Role> roleRepo,
-        IRepository<UserRole> userRoleRepo) : IUserDataService
+        IRepository<Db.Model.UserRole> userRoleRepo) : IUserDataService
     {
         private readonly IRepository<Db.Model.User> _userRepo = userRepo;
         private readonly IRepository<Role> _roleRepo = roleRepo;
-        private readonly IRepository<UserRole> _userRoleRepo = userRoleRepo;
+        private readonly IRepository<Db.Model.UserRole> _userRoleRepo = userRoleRepo;
 
         public async Task<Contract.Model.User?> GetOrAddUser(long tgId, string tgUserName, string tgFullName, long? chatId, CancellationToken cancellationToken)
         {
@@ -40,7 +42,7 @@ namespace ROTGBot.Service
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
 
-                await _userRoleRepo.AddAsync(new UserRole()
+                await _userRoleRepo.AddAsync(new Db.Model.UserRole()
                 {
                     Id = Guid.NewGuid(),
                     IsDeleted = false,
@@ -58,7 +60,7 @@ namespace ROTGBot.Service
 
         private async Task<Contract.Model.User> Map(Db.Model.User user, CancellationToken cancellationToken)
         {
-            var roles = (await GetUserRoles(user.Id, cancellationToken)).Select(s => Enum.Parse<RoleEnum>(s))?.ToList() ?? [RoleEnum.user];
+            var roles = (await GetUserRoleNames(user.Id, cancellationToken)).Select(s => Enum.Parse<RoleEnum>(s))?.ToList() ?? [RoleEnum.user];
             return new Contract.Model.User()
             {
                 ChatId = user.ChatId,
@@ -73,10 +75,10 @@ namespace ROTGBot.Service
             };
         }
 
-        private async Task<string[]> GetUserRoles(Guid userId, CancellationToken token)
+        private async Task<string[]> GetUserRoleNames(Guid userId, CancellationToken token)
         {
             string[] roles = [];
-            var userRoles = (await _userRoleRepo.GetAsync(new Filter<UserRole>() { Selector = s => s.UserId == userId }, token)).Select(s => s.RoleId).Distinct().ToArray();
+            var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() { Selector = s => s.UserId == userId }, token)).Select(s => s.RoleId).Distinct().ToArray();
             if (userRoles.Length != 0)
             {
                 roles = [.. (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => userRoles.Contains(s.Id) }, token)).Select(s => s.Name)];
@@ -113,7 +115,7 @@ namespace ROTGBot.Service
             {
                 var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
 
-                await _userRoleRepo.AddAsync(new UserRole()
+                await _userRoleRepo.AddAsync(new Db.Model.UserRole()
                 {
                     Id = Guid.NewGuid(),
                     IsDeleted = false,
@@ -144,6 +146,32 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        
+        public Task<List<Contract.Model.User>> GetUsers(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<List<Contract.Model.UserRole>> GetUserRoles(Guid userId, CancellationToken token)
+        {
+            var 
+            List<Contract.Model.UserRole> result = [];
+            var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() { Selector = s => s.UserId == userId }, token)).Distinct().ToArray();
+            var roles = await _roleRepo.GetAsync(new Filter<Role>(), token);
+
+            foreach(var userRole in userRoles)
+            {
+
+                result.Add(new Contract.Model.UserRole()
+                {
+                    RoleId = userRole.RoleId,
+                    RoleName = 
+                });
+            }
+        }
+
+        public Task DeleteUserRole(Contract.Model.UserRole userRole)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

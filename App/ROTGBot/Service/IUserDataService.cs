@@ -1,4 +1,6 @@
-﻿namespace ROTGBot.Service
+﻿using ROTGBot.Contract.Model;
+
+namespace ROTGBot.Service
 {
     public interface IUserDataService
     {
@@ -9,5 +11,7 @@
         Task SetUserSendDate(Guid userId, CancellationToken token);
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
         Task<List<Contract.Model.User>> GetUsers(CancellationToken token);
+        Task<List<UserRole>> GetUserRoles(Guid userId, CancellationToken cancellationToken);
+        Task DeleteUserRole(UserRole userRole);
     }
 }
