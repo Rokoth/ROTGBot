@@ -709,6 +709,7 @@ namespace ROTGBot.Service
                         await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token);
                         await SendForwardMessageTitle(userNews, token);
                         await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
+                        await client.SendMessageAsync(userNews.GroupId.Value, $"Вы можете ответить на обращение", (int?)userNews.ThreadId, token);
                     }
                     else
                     {
