@@ -1,4 +1,73 @@
 ﻿@page
 @model ROTGBot.Pages.News.IndexModel
 @{
+    ViewData["Title"] = "Список обращений";
 }
+
+<h1>Продукты</h1>
+
+<p>
+    <a class="btn btn-primary" id="addProduct" asp-page="Create">Новый</a>
+</p>
+<table class="table" id="productTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.News[0].Number)
+            </th>
+            <td>
+                @Html.DisplayNameFor(model => model.News[0].Title)
+            </td>
+            <th>
+                @Html.DisplayNameFor(model => model.News[0].Description)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.News[0].Messages)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.News[0].CreatedDate)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.News)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Number)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Title)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Messages)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CreatedDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IsModerate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.State)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ThreadId)
+                </td>                
+                <td>
+                    @Html.DisplayFor(modelItem => item.UserId)
+                </td>              
+                <td>
+                    <a class="btn btn-primary" id="edit_@item.Id" asp-page="./Edit" asp-route-id="@item.Id">Редактировать</a>
+                    <a class="btn btn-info" id="details_@item.Id" asp-page="./Details" asp-route-id="@item.Id">Подробно</a>
+                    <a class="btn btn-warning" id="delete_@item.Id" asp-page="./Delete" asp-route-id="@item.Id">Удалить</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

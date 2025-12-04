@@ -10,16 +10,16 @@
     <div class="col-md-4">
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Product.Id" class="form-control" />
+            <input type="hidden" asp-for="News.Id" class="form-control" />
             <div class="form-group p-3 border bg-light">
-                <label asp-for="Product.Name" class="control-label"></label>
-                <input id="nameField" asp-for="Product.Name" class="form-control" />
-                <span asp-validation-for="Product.Name" class="text-danger"></span>
+                <label asp-for="News.Name" class="control-label"></label>
+                <input id="nameField" asp-for="News.Name" class="form-control" />
+                <span asp-validation-for="News.Name" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
-                <label asp-for="Product.Description" class="control-label"></label>
-                <input id="descriptionField" asp-for="Product.Description" class="form-control" />
-                <span asp-validation-for="Product.Description" class="text-danger"></span>
+                <label asp-for="News.Description" class="control-label"></label>
+                <input id="descriptionField" asp-for="News.Description" class="form-control" />
+                <span asp-validation-for="News.Description" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="Product.Price" class="control-label"></label>
