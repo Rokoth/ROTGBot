@@ -343,10 +343,41 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.Report> GetAdminUserReport(CancellationToken token)
         {
+            Contract.Model.Report result = new Contract.Model.Report();
+            result.Type = "AdminUserReport";
+            
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach (var byUser in allNews.GroupBy(s => s.UserId))
+            {
+                var user = await _userRepo.GetAsync(byUser.Key, token);
+                result += $"Пользователь {user.Name} ({user.TGLogin}):\r\n";
+
+                foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
+                {
+                    result += $"{byYear.Key} год:\r\n";
+
+                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                    {
+                        result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
+                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                    }
+                }
+
+                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
+                    $"принято: {byUser.Count(s => s.State == "approved")}, " +
+                    $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
+                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "accepted")} обращений.\r\n\r\n";
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
         }
 
         public Task<Contract.Model.Report> GetAdminModeratorReport(CancellationToken token)
@@ -359,9 +390,36 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        public Task<Contract.Model.Report> GetUserReport(Guid id, CancellationToken token)
+        public async Task<Contract.Model.Report> GetUserReport(Guid id, CancellationToken token)
         {
-            throw new NotImplementedException();
+            Contract.Model.Report result = new()
+            {
+                Type = "UserReport"
+            };
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result += $"{byYear.Key} год:\r\n";
+
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                {
+                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
         }
     }
 }
