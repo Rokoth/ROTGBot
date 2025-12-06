@@ -59,7 +59,7 @@ namespace XUnitTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task CreateNews_Success_Async()
+        public async Task CreateNews_First_Success_Async()
         {
             var _repoMock = new Mock<IRepository<News>>();
             var _repoUserMock = new Mock<IRepository<User>>();
@@ -69,11 +69,14 @@ namespace XUnitTests
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new List<News>()));
 
+            _repoMock.Setup(s => s.AddAsync(It.IsAny<News>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new News()));
+
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
             var result = await newsService.CreateNews(1, Guid.NewGuid(), 1, 1, "news", "test", false, new CancellationToken());
 
-            Assert.Null(result);
+            Assert.True(result);
         }
 
         /// <summary>

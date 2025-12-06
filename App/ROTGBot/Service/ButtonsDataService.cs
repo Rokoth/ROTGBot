@@ -73,6 +73,10 @@ namespace ROTGBot.Service
                     
                 }, true, cancellationToken);
             }
+            else
+            {
+                throw new ArgumentException("Кнопка с таким наименованием уже существует");
+            }
         }
 
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)
