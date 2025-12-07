@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ROTGBot.Contract.Interfaces
+﻿namespace ROTGBot.Contract.Interfaces
 {
     public interface IEntity
     {
