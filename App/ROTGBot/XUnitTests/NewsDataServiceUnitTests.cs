@@ -76,6 +76,13 @@ namespace XUnitTests
                 IsDeleted = false,
                 IsModerate = true,
                 IsMulti = false,
+                ModeratorId = Guid.NewGuid(),
+                State = "accepted",
+                Number = 1,
+                ThreadId = 3,
+                Title = "test",
+                Type = "news",
+                UserId = Guid.NewGuid()
             };
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -85,7 +92,20 @@ namespace XUnitTests
 
             var result = await newsService.GetNewsById(Guid.NewGuid(), new CancellationToken());
 
-            Assert.Null(result);
+            Assert.NotNull(result);
+            Assert.Equal(dbNews.ChatId, result.ChatId);
+            Assert.Equal(dbNews.CreatedDate, result.CreatedDate);
+            Assert.Equal(dbNews.Description, result.Description);
+            Assert.Equal(dbNews.GroupId, result.GroupId);
+            Assert.Equal(dbNews.Id, result.Id);
+            Assert.Equal(dbNews.IsModerate, result.IsModerate);
+            Assert.Equal(dbNews.IsMulti, result.IsMulti);
+            Assert.Equal(dbNews.Number, result.Number);
+            Assert.Equal(dbNews.ThreadId, result.ThreadId);
+            Assert.Equal(dbNews.State, result.State);
+            Assert.Equal(dbNews.Title, result.Title);
+            Assert.Equal(dbNews.Type, result.Type);
+            Assert.Equal(dbNews.UserId, result.UserId);
         }
     }
 }

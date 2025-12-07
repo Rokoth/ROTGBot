@@ -79,12 +79,12 @@ namespace ROTGBot.Service
                 return;
             }
 
-            string? command = null;
-            bool isCommand = false;
+            string? command = null;            
+            var messageText = message.Text ?? message.Caption ?? "Сообщение не содержит текста";
+                         
 
-            if (message.Chat?.Type != "private")
-            {
-                
+            if (!isCommand && message.Chat?.Type != "private")
+            {                
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace ROTGBot.Service
             }
             else if (userNews != null)
             {
-                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, message.Text ?? "", cancellationToken);
+                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, messageText, cancellationToken);
 
                 if (userNews.Type == "news")
                 {
