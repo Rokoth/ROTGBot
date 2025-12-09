@@ -2,6 +2,7 @@
 using ROTGBot.Service;
 using Moq;
 using Telegram.BotAPI.GettingUpdates;
+using Microsoft.Extensions.Logging;
 
 namespace XUnitTests
 {
@@ -25,7 +26,13 @@ namespace XUnitTests
         public async Task HandleUpdates_Success_Async()
         {            
             var wrapperService = new Mock<ITelegramBotWrapper>();
-            
+            var groupsDataService = new Mock<IGroupsDataService>();
+            var userDataService = new Mock<IUserDataService>();
+            var newsDataService = new Mock<INewsDataService>();
+            var buttonDataService = new Mock<IButtonsDataService>();
+            var configuration = new Mock<IConfiguration>();
+            var logger = new Mock<ILogger<TelegramMessageHandler>>();
+
             wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => [
                     new Update()
@@ -34,9 +41,9 @@ namespace XUnitTests
                     }
                 ]);
 
-            var tgMainService = new TelegramMessageHandler(handlerService.Object, wrapperService.Object);
+            var tgMainService = new TelegramMessageHandler(logger.Object, groupsDataService.Object, userDataService.Object, newsDataService.Object, buttonDataService.Object, configuration.Object, wrapperService.Object);
 
-            var result = await tgMainService.Execute(1);
+            var result = await tgMainService.HandleUpdates();
 
             Assert.Equal(5, result);
         }
