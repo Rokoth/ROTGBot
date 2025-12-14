@@ -66,14 +66,14 @@ namespace XUnitTests
             var _repoMessageMock = new Mock<IRepository<NewsMessage>>();
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
-            News news = null;
+            News? news = null;
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(news));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
-            var result = await newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken());
+            var result = await newsService.GetNewsById(Guid.NewGuid(), new CancellationToken());
 
             Assert.Null(result);
         }

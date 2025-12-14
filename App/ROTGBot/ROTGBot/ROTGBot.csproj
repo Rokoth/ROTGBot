@@ -40,6 +40,9 @@
     <None Update="PDNOferta.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="UserReglament.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="version.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

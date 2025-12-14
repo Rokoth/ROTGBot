@@ -1,11 +1,6 @@
-﻿using System;
-
-namespace ROTGBot.Db.Attributes
-{
-    /// <summary>
-    /// Игнорирование поля
-    /// </summary>
-    public class IgnoreAttribute : Attribute
-    {        
-    }
-}
+﻿namespace ROTGBot.Db.Attributes;
+/// <summary>
+/// Игнорирование поля
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public class IgnoreAttribute : Attribute { }
