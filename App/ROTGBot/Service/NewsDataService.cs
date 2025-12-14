@@ -53,12 +53,14 @@ namespace ROTGBot.Service
             {
                 Selector = s => s.UserId == userId
             }, cancellationToken)).FirstOrDefault(s => s.State == "create");
-            return Map(result);
+            return await Map(result);
         }
 
-        private static Contract.Model.News? Map(News? result)
+        private async Task<Contract.Model.News?> Map(News? result)
         {
             if (result == null) return null;
+
+            string? groupName = null; 
 
             return new Contract.Model.News()
             {
@@ -74,7 +76,9 @@ namespace ROTGBot.Service
                 UserId = result.UserId,
                 IsMulti = result.IsMulti,
                 IsModerate = result.IsModerate,
-                Number = result.Number
+                Number = result.Number,
+                GroupName = result.GroupName,
+                ThreadName = result.ThreadName
             };
         }
 
@@ -93,23 +97,23 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.News?> GetNewsById(Guid id, CancellationToken token)
         {
-            return Map(await _newsRepo.GetAsync(id, token));
+            return await Map(await _newsRepo.GetAsync(id, token));
         }
 
         public async Task<List<Contract.Model.News>> GetNewsForApprove(CancellationToken token)
         {
-            return Map((await _newsRepo.GetAsync(new Filter<News>()
+            return await Map((await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.State == "accepted" && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate));
         }
 
-        private static List<Contract.Model.News> Map(IEnumerable<Db.Model.News> news)
+        private async Task<List<Contract.Model.News>> Map(IEnumerable<Db.Model.News> news)
         {
             List<Contract.Model.News> result = [];
             foreach(var item in news)
             {
-                var map = Map(item);
+                var map = await Map(item);
                 if (map != null)
                     result.Add(map);
             }

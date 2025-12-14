@@ -1,9 +1,10 @@
 ﻿@page
+@model ROTGBot.Pages.News.AnswerNewsModel
 @{
     ViewData["Title"] = "Изменение статуса обращения";
 }
 
-<h1>Изменение статуса обращения</h1>
+<h1>Редактировать продукт</h1>
 
 <hr />
 <div class="row">
@@ -22,20 +23,9 @@
                 <span asp-validation-for="News.Description" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
-                <label asp-for="News.Price" class="control-label"></label>
-                <input id="priceField" asp-for="Product.Price" class="form-control" />
+                <label asp-for="Product.Price" class="control-label"></label>
+                <input id="priceField" type="number" asp-for="Product.Price" class="form-control" />
                 <span asp-validation-for="Product.Price" class="text-danger"></span>
-            </div>
-            @Html.LabelFor(model => model.State, htmlAttributes: new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.DropDownListFor(model => model.State, new List<SelectListItem>
-                {
-                new SelectListItem {Text = "Alba", Value = "1", Selected = true },
-                new SelectListItem {Text = "Arad", Value = "2" },
-                new SelectListItem {Text = "Arges", Value = "3" },
-                new SelectListItem {Text = "Bacau", Value = "4" },
-                }, new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.State, "", new { @class = "text-danger" })
             </div>
             <div class="form-group p-3 border bg-light row g-0">
                 <div class="col-6 d-flex justify-content-center">

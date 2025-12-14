@@ -14,5 +14,8 @@
         public bool IsMulti { get; set; }
         public bool IsModerate { get; set; }
         public int? Number { get; set; }
+        public string? GroupName { get; set; }
+        public string? ThreadName { get; set; }
+
     }
 }
