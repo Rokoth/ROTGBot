@@ -24,7 +24,7 @@ namespace ROTGBot.Pages.Reports
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetModeratorReport(userId, //token);
+            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
 
             return Page();
         }

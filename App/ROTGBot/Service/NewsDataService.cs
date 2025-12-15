@@ -402,6 +402,8 @@ namespace ROTGBot.Service
                 Selector = s => s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
+            result.Items = [];
+
             foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
             {
                 result += $"{byYear.Key} год:\r\n";
