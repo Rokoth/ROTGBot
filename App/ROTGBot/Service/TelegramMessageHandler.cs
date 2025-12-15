@@ -81,12 +81,14 @@ namespace ROTGBot.Service
 
             string? command = null;            
             var messageText = message.Text ?? message.Caption ?? "Сообщение не содержит текста";
-                         
+
+            (string commandText, CommandEnum commandType, bool isCommand) = TryParseCommand(messageText);
 
             if (!isCommand && message.Chat?.Type != "private")
             {                
                 return;
             }
+
 
             var tgUser = message.From;
 
@@ -166,6 +168,11 @@ namespace ROTGBot.Service
             {
                 await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
             }
+        }
+
+        private (string commandText, CommandEnum commandType, bool isCommand) TryParseCommand(string messageText)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task<bool> HandleCallback(CallbackQuery? callbackQuery, CancellationToken token)
