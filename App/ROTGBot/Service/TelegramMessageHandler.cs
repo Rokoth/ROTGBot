@@ -276,6 +276,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => UserListChoiseHandle(chId, userNews, tk), token),
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
+                "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -615,6 +617,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendUserListChoise(chatId, token);
+            }
+        }
+
+        private async Task UnblockUserChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendUnblockUserChoise(chatId, token);
             }
         }
 
@@ -1216,6 +1230,28 @@ namespace ROTGBot.Service
                 "Отправьте по одному логины пользователей, которых надо добавить в администраторы и нажмите кнопку Добавить",
                  replyMarkup,
                  token);
+        }
+
+        
+
+        private async Task SendUnblockUserChoise(long chatId, Guid userId, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, userId, null, null, "unblockuser", "Добавление администратора", false, token);
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте запрос с логином или номером пользователя",                 
+                 token);            
+        }
+
+        private async Task SendUserListChoise(long chatId, Guid userId, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, userId, null, null, "listuser", "Список пользователей", false, token);
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте запрос в формате <фильтр> : <количество записей в одном ответе (по умолчанию 10)> : <номер страницы поиска (по умолчанию 1)>",
+                 replyMarkup,
+                 token);
+            1
         }
 
         private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)
