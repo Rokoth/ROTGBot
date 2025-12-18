@@ -85,6 +85,46 @@ namespace XUnitTests
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(CreateOneNewsList()));
+
+            var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
+
+            var result = await newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken());
+
+            Assert.NotNull(result);
+        }
+
+        private static List<News> CreateOneNewsList()=> [ new() {
+            ChatId = 1,
+            CreatedDate = DateTime.Now,
+            Description = "test",
+            GroupId = 2,
+            Id = Guid.NewGuid(),
+            IsDeleted = false,
+            IsModerate = false,
+            IsMulti = false,
+            ModeratorId = null,
+            Number = 2,
+            State = "accepted",
+            ThreadId = 4,
+            Title = "test",
+            Type = "news",
+            UserId = Guid.NewGuid()
+        }];
+
+        /// <summary>
+        /// 0.0.10.2.5
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task GetCurrentNews_Error_Async()
+        {
+            var _repoMock = new Mock<IRepository<News>>();
+            var _repoUserMock = new Mock<IRepository<User>>();
+            var _repoMessageMock = new Mock<IRepository<NewsMessage>>();
+            var _loggerMock = new Mock<ILogger<NewsDataService>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new List<News>()));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
