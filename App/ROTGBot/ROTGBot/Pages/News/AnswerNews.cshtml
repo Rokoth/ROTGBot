@@ -13,23 +13,23 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="News.Id" class="form-control" />
             <div class="form-group p-3 border bg-light">
-                <label asp-for="News.Name" class="control-label"></label>
-                <input id="nameField" asp-for="News.Name" class="form-control" />
-                <span asp-validation-for="News.Name" class="text-danger"></span>
+                <label asp-for="News.Title" class="control-label"></label>
+                <input asp-for="News.Title" class="form-control" />
+                <span asp-validation-for="News.Title" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.Description" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.Description" class="form-control" />
+                <input asp-for="News.Description" class="form-control" />
                 <span asp-validation-for="News.Description" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
-                <label asp-for="Product.Price" class="control-label"></label>
-                <input id="priceField" type="number" asp-for="Product.Price" class="form-control" />
-                <span asp-validation-for="Product.Price" class="text-danger"></span>
+                <label asp-for="News.Number" class="control-label"></label>
+                <input asp-for="News.Number" class="form-control" />
+                <span asp-validation-for="News.Number" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light row g-0">
                 <div class="col-6 d-flex justify-content-center">
-                    <input type="submit" id="editButton" value="Сохранить" class="btn btn-primary" />
+                    <input type="submit" value="Отправить" class="btn btn-primary" />
                 </div>
                 <div class="col-6 d-flex justify-content-center">
                     <a class="btn btn-warning" asp-page="Index">Вернуться</a>
