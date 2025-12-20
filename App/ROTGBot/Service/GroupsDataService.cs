@@ -21,7 +21,7 @@ namespace ROTGBot.Service
 
             if (existsGroups != null)
             {
-                return true;
+                return false;
             }
 
             await _groupsRepo.AddAsync(new Groups()
@@ -34,7 +34,7 @@ namespace ROTGBot.Service
                 SendNews = false
             }, true, token);
 
-            return false;
+            return true;
         }
     }
 }
