@@ -6,7 +6,9 @@
         show,
         block,
         unblock,
-        answer
+        answer,
+        start,
+        unknown
     }
     
 }

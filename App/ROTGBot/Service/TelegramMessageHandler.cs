@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
-using System.Linq.Dynamic.Core.Tokenizer;
-using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
@@ -78,17 +76,15 @@ namespace ROTGBot.Service
             {
                 return;
             }
-
-            string? command = null;            
+                                  
             var messageText = message.Text ?? message.Caption ?? "Сообщение не содержит текста";
 
-            (string commandText, CommandEnum commandType, bool isCommand) = TryParseCommand(messageText);
+            (string? commandText, CommandEnum? commandType, bool isCommand) = TryParseCommand(messageText);
 
             if (!isCommand && message.Chat?.Type != "private")
             {                
                 return;
             }
-
 
             var tgUser = message.From;
 
@@ -109,19 +105,29 @@ namespace ROTGBot.Service
                     cancellationToken);
             }
 
-            if (message.Text == "/start")
+            if (isCommand)
             {
-                await StartCommandHandle(user.ChatId, user, userNews, "all", cancellationToken);
-            }
+                await CommandHandle(commandType, commandText, user.ChatId, user, userNews, "all", cancellationToken);
+            }            
             else if (userNews != null)
             {
-                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, messageText, cancellationToken);
+                await HandleNews(message, messageText, user, userNews, cancellationToken);
+            }
+            else if (message.IsTopicMessage != true)
+            {
+                await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
+            }
+        }
 
-                if (userNews.Type == "news")
+        private async Task HandleNews(Message message, string messageText, Contract.Model.User user, News userNews, CancellationToken cancellationToken)
+        {
+            await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, messageText, cancellationToken);
+
+            if (userNews.Type == "news")
+            {
+                if (userNews.IsMulti)
                 {
-                    if (userNews.IsMulti)
-                    {
-                        var sendButtons = new List<List<InlineKeyboardButton>>()
+                    var sendButtons = new List<List<InlineKeyboardButton>>()
                         {
                             new()
                             {
@@ -136,43 +142,66 @@ namespace ROTGBot.Service
                             }
                         };
 
-                        ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+                    ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-                        await client.SendMessageAsync(user.ChatId,
-                            "Сообщение принято. Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
-                            "для отмены отправки нажмите Отменить.",
-                            replyMarkup: replyMarkup, token: cancellationToken);
-                    }
-                    else
-                    {
-                        await HandleData(user.ChatId, user, "SendNews", cancellationToken);
-                    }
+                    await client.SendMessageAsync(user.ChatId,
+                        "Сообщение принято. Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
+                        "для отмены отправки нажмите Отменить.",
+                        replyMarkup: replyMarkup, token: cancellationToken);
                 }
-
-                if (userNews.Type == "addbutton")
+                else
                 {
-                    await HandleData(user.ChatId, user, "AddButton", cancellationToken);
-                }
-
-                if (userNews.Type == "deletebutton")
-                {
-                    await HandleData(user.ChatId, user, "DeleteButton", cancellationToken);
-                }
-
-                if (userNews.Type == "editbutton")
-                {
-                    await HandleData(user.ChatId, user, "EditButtonApprove", cancellationToken);
+                    await HandleData(user.ChatId, user, "SendNews", cancellationToken);
                 }
             }
-            else if (message.IsTopicMessage != true)
+
+            if (userNews.Type == "addbutton")
             {
-                await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
+                await HandleData(user.ChatId, user, "AddButton", cancellationToken);
+            }
+
+            if (userNews.Type == "deletebutton")
+            {
+                await HandleData(user.ChatId, user, "DeleteButton", cancellationToken);
+            }
+
+            if (userNews.Type == "editbutton")
+            {
+                await HandleData(user.ChatId, user, "EditButtonApprove", cancellationToken);
             }
         }
 
-        private (string commandText, CommandEnum commandType, bool isCommand) TryParseCommand(string messageText)
+        private (string? commandText, CommandEnum? commandType, bool isCommand) TryParseCommand(string messageText)
         {
-            throw new NotImplementedException();
+            if(messageText.StartsWith("\\start", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return (messageText[6..], CommandEnum.start, true);
+            }
+
+            if (messageText.StartsWith("бот", StringComparison.InvariantCultureIgnoreCase))
+            {
+                
+            }
+
+            if (messageText.StartsWith("робот", StringComparison.InvariantCultureIgnoreCase))
+            {
+
+            }
+
+            return (null, null, false);
+        }
+
+        private async Task CommandHandle(CommandEnum? commandType, string? commandText, long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
+        {
+            1
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, cancellationToken);
+            }
+            else
+            {
+                await SendMenuButtons(chatId, user, type, cancellationToken);
+            }
         }
 
         private async Task<bool> HandleCallback(CallbackQuery? callbackQuery, CancellationToken token)
@@ -313,11 +342,11 @@ namespace ROTGBot.Service
                 "GetDonateQR" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendDonateQR(chId, userNews, tk), token),
                 "MenuAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "admin", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "admin", tk), token),
                 "MenuModerator" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "moderator", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "moderator", tk), token),
                 "MenuUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "user", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "user", tk), token),
 
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
@@ -2104,16 +2133,6 @@ namespace ROTGBot.Service
             await _groupsDataService.AddGroupIfNotExists(chatId, title, description, cancellationToken);
         }
 
-        private async Task StartCommandHandle( long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
-        {
-            if (userNews != null)
-            {
-                await SendUserRemember(chatId, userNews, cancellationToken);
-            }
-            else
-            {
-                await SendMenuButtons(chatId, user, type, cancellationToken);
-            }
-        }
+        
     }
 }
