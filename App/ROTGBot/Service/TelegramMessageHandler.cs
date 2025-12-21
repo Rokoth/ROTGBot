@@ -2079,7 +2079,7 @@ namespace ROTGBot.Service
                 [
                     new InlineKeyboardButton("Получить список пользователей")
                     {
-                        CallbackData = "GetUserListChoice"
+                        CallbackData = "UserListChoise"
                     },
                     new InlineKeyboardButton("Разблокировать пользователя")
                     {
