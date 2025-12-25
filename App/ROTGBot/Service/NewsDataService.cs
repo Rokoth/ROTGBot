@@ -165,7 +165,7 @@ namespace ROTGBot.Service
             await SetNewsStatus(id, null, "deleted", true, token);           
         }
 
-        public async Task CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
+        public async Task<Contract.Model.News> CreateNews(long chatId, Guid userId, long? groupId, long? threadId, string type, string title, bool isModerate, CancellationToken token)
         {
             var maxNum = 0;
             if (type == "news")
@@ -174,9 +174,9 @@ namespace ROTGBot.Service
                 {
                     Selector = s => s.Type == "news"
                 }, token)).Max(s => s.Number)?? 0 ) + 1;
-            }                        
+            }
 
-            await _newsRepo.AddAsync(new News()
+            var news = new News()
             {
                 IsDeleted = false,
                 Id = Guid.NewGuid(),
@@ -192,7 +192,11 @@ namespace ROTGBot.Service
                 IsMulti = false,
                 IsModerate = isModerate,
                 Number = maxNum
-            }, true, token);
+            };
+
+            await _newsRepo.AddAsync(news, true, token);
+
+            return Map(news)!;
         }
 
         public async Task<string> GetUserReport(Guid userId, CancellationToken token)

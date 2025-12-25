@@ -304,7 +304,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "user", tk), token),
                 "UserReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserReglament(chId, userNews, tk), token),
-                
+                "ModeratorReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => SendModeratorReglament(chId, userNews, tk), token),
 
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
@@ -537,6 +538,13 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Пользовательский регламент отправки обращений в РО", token: token);
             using var stream = new FileStream("UserReglament.txt", FileMode.Open);
             await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "UserReglament.txt")), token);
+        }
+
+        private async Task SendModeratorReglament(long chatId, News? userNews, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Регламент ообработки обращений в РО", token: token);
+            using var stream = new FileStream("ModeratorReglament.txt", FileMode.Open);
+            await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "ModeratorReglament.txt")), token);
         }
 
         private async Task SendDonateQR( long chatId, News? userNews, CancellationToken token)
