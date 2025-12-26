@@ -291,11 +291,15 @@ namespace ROTGBot.Service
                 "DeleteButton" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => DeleteButtonHandle(userId, chId, userNews, tk), token),
                 "DeleteButtonDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => DeleteButtonDeclineHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => DeleteButtonDeclineHandle(userId, chId, userNews, tk), token),                
                 "UserSearchByNameChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserSearchByNameChoiseHandle(userId, chId, userNews, tk), token),
                 "UserSearchByName" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserSearchByNameHandle(userId, chId, userNews, tk), token),
+                "UserInfoByNewsNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendUserInfoByNewsNumberChoiseHandle(userId, chId, userNews, tk), token),
+                "UserInfoByNewsNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => UserUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageByNumberChoiseHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -604,6 +608,35 @@ namespace ROTGBot.Service
             {
                 await SendNewsMessageForUser(chatId, buttonNumber, user, token);
             }
+        }
+
+        private async Task SendMessageByNumberChoiseHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendMessageByNumberChoise(chatId, user, token);
+            }
+        }
+
+        private async Task SendUserSearchByNameChoiseHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendUserSearchByNameChoise(chatId, user, token);
+            }
+        }
+
+        private async Task SendUserSearchByNameChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task SendSwitchNotifyHandle( long chatId, Guid userId, CancellationToken token)
@@ -1205,6 +1238,11 @@ namespace ROTGBot.Service
                 "Отправьте по одному логины пользователей, которых надо добавить в администраторы и нажмите кнопку Добавить",
                  replyMarkup,
                  token);
+        }
+
+        private async Task SendMessageByNumberChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "sendmessagebynumber", "Добавление администратора", false, token);
         }
 
         private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)
@@ -2020,7 +2058,14 @@ namespace ROTGBot.Service
                         CallbackData = "DeleteButtonChoice"
                     }
                 ],
-                EmptyButton(),                
+                EmptyButton(),
+                [
+                    new InlineKeyboardButton("Информация о пользователе по номеру обращения")
+                    {
+                        CallbackData = "UserInfoByNewsNumber"
+                    }
+                ],
+                EmptyButton(),
                 [
                     new InlineKeyboardButton("Отчёт по обработанным обращениям пользователей")
                     {
