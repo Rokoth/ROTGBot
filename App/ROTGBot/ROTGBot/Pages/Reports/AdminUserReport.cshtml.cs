@@ -23,7 +23,7 @@ namespace ROTGBot.Pages.Reports
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
+            Report = await _newsDataService.GetAdminUserReport(new CancellationToken());
 
             return Page();
         }

@@ -1,4 +1,43 @@
 ﻿@page
 @model ROTGBot.Pages.Reports.ModeratorReportModel
 @{
+    ViewData["Title"] = "Отчёт по обработанным сообщениям";
 }
+
+<h1>Отчет</h1>
+
+<p>
+    <!--Фильтры-->
+</p>
+<table class="table" id="reportTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Description)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Price)
+            </th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Report.Items)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Price)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

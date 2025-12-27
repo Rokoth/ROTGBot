@@ -343,9 +343,11 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.Report> GetAdminUserReport(CancellationToken token)
         {
-            Contract.Model.Report result = new Contract.Model.Report();
-            result.Type = "AdminUserReport";
-            
+            Contract.Model.Report result = new()
+            {
+                Type = "AdminUserReport"
+            };
+
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.IsDeleted == false && s.Type == "news"
@@ -378,6 +380,8 @@ namespace ROTGBot.Service
                 $"принято: {allNews.Count(s => s.State == "approved")}, " +
                 $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
                 $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
         }
 
         public Task<Contract.Model.Report> GetAdminModeratorReport(CancellationToken token)
@@ -385,9 +389,43 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        public Task<Contract.Model.Report> GetModeratorReport(Guid id, CancellationToken token)
+        public async Task<Contract.Model.Report> GetModeratorReport(Guid id, CancellationToken token)
         {
-            throw new NotImplementedException();
+            Contract.Model.Report result = new()
+            {
+                Type = "UserReport"
+            };
+
+            var allNews = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.IsDeleted == false && s.Type == "news"
+            }, token)).OrderBy(s => s.CreatedDate);
+
+            result.Items = [];
+
+            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            {
+                result.Items.Add(new Contract.Model.ReportItem()
+                {
+                    Year = byYear.Key,
+                    Month = 0,
+                    Count
+                });
+
+                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
+                {
+                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
+                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
+                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                }
+            }
+
+            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
+                $"принято: {allNews.Count(s => s.State == "approved")}, " +
+                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
+                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
+
+            return result;
         }
 
         public async Task<Contract.Model.Report> GetUserReport(Guid id, CancellationToken token)
