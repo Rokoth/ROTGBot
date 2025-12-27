@@ -10,8 +10,19 @@ namespace ROTGBot.Pages
         public string Password { get; set; } = default!;
         public bool LoginSended { get; set; } = default!;
 
-        public void OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+            if(!LoginSended)
+            {
+
+                return RedirectToPage("Index");
+            }
+            return Page();
         }
     }
 }

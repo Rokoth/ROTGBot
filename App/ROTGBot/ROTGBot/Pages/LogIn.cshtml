@@ -36,7 +36,14 @@
                 </div>
             }
             <div class="form-group">
-                <input id="authButton" type="submit" value="Отправить " class="btn btn-primary" />
+                @if (!LoginSended)
+                {
+                    <input id="passButton" type="submit" value="Отправить пароль" class="btn btn-primary" />
+                }
+                @if (LoginSended)
+                {
+                    <input id="authButton" type="submit" value="Подтвердить" class="btn btn-primary" />
+                }
                 <a asp-page="Index">Вернуться</a>
             </div>
         </form>
