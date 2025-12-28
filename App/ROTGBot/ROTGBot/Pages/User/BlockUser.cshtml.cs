@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ROTGBot.Pages.User
@@ -6,8 +7,9 @@ namespace ROTGBot.Pages.User
     {
         public Contract.Model.User UserModel { get; set; }
 
-        public void OnGet()
+        public async Task<IActionResult> OnGetAsync(Guid id)
         {
+
         }
     }
 }

@@ -146,7 +146,7 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task<List<Contract.Model.User>> GetUsers(CancellationToken token)
+        public Task<List<Contract.Model.User>> GetUsers(Contract.Filters.Filter<Contract.Model.User> filter, CancellationToken token)
         {
             throw new NotImplementedException();
         }
