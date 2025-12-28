@@ -173,20 +173,36 @@ namespace ROTGBot.Service
 
         private (string? commandText, CommandEnum? commandType, bool isCommand) TryParseCommand(string messageText)
         {
-            if(messageText.StartsWith("\\start", StringComparison.InvariantCultureIgnoreCase))
+            bool isCom = false;
+
+            messageText = messageText.Trim();
+
+            if (messageText.StartsWith("\\start", StringComparison.InvariantCultureIgnoreCase))
             {
                 return (messageText[6..], CommandEnum.start, true);
             }
 
-            if (messageText.StartsWith("бот", StringComparison.InvariantCultureIgnoreCase))
+            string[] appeals = ["бот, ", "робот, ", "бот ", "робот "]; 
+
+            foreach(var app in appeals)
             {
-                
+                if(!messageText.StartsWith(app, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    continue;
+                }
+
+                isCom = true;
+                messageText = messageText[app.Length..];
             }
 
-            if (messageText.StartsWith("робот", StringComparison.InvariantCultureIgnoreCase))
+            if (!isCom)
             {
-
+                return (null, null, false);
             }
+
+            string[] findCommandKeyWords = [""];
+
+
 
             return (null, null, false);
         }
