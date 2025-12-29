@@ -293,7 +293,7 @@ namespace ROTGBot.Service
                 "DeleteButtonDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => DeleteButtonDeclineHandle(userId, chId, userNews, tk), token),                
                 "UserSearchByNameChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendUserSearchByNameChoiseHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => SendUserSearchByNameChoiseHandle(chId, user, userNews, tk), token),
                 "UserSearchByName" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserSearchByNameHandle(userId, chId, userNews, tk), token),
                 "UserInfoByNewsNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -318,7 +318,7 @@ namespace ROTGBot.Service
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
-        }
+        }                
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -427,6 +427,18 @@ namespace ROTGBot.Service
         }
 
         private async Task EditButtonApproveHandle( long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendEditButtonsForUserApprove(chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task UserSearchByNameHandle(Guid userId, long chatId, string search, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -634,10 +646,19 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendUserSearchByNameChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task SendUserInfoByNewsNumberChoiseHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
         {
-            throw new NotImplementedException();
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendUserInfoByNewsNumberChoise(chatId, user, token);
+            }
         }
+
+        
 
         private async Task SendSwitchNotifyHandle( long chatId, Guid userId, CancellationToken token)
         {
@@ -1243,6 +1264,16 @@ namespace ROTGBot.Service
         private async Task SendMessageByNumberChoise(long chatId, Contract.Model.User user, CancellationToken token)
         {
             await _newsDataService.CreateNews(chatId, user.Id, null, null, "sendmessagebynumber", "Добавление администратора", false, token);
+        }
+
+        private async Task SendUserInfoByNewsNumberChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendUserSearchByNameChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)
