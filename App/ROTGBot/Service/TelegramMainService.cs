@@ -31,10 +31,10 @@ namespace ROTGBot.Service
             return updates.Last().UpdateId + 1;
         }
 
-        public async Task SetCommands()
-        {
-            var cancellationToken = new CancellationTokenSource(60000).Token;
-            await _client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]), cancellationToken);
+        public async Task<bool> SetCommands(CancellationToken token)
+        {            
+            await _client.SetMyCommandsAsync(new SetMyCommandsArgs([new("start", "Начать работу")]), token);
+            return true;
         }
     }
 }
