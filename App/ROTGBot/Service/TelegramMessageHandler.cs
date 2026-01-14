@@ -202,20 +202,26 @@ namespace ROTGBot.Service
 
             string[] findCommandKeyWords = [""];
 
+            //todo
+            1
 
 
             return (null, null, false);
         }
 
         private async Task CommandHandle(CommandEnum? commandType, string? commandText, long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
-        {
-            1
+        {            
             if (userNews != null)
             {
                 await SendUserRemember(chatId, userNews, cancellationToken);
             }
             else
             {
+                switch (commandType)
+                {
+                    case CommandEnum.start:
+                }
+
                 await SendMenuButtons(chatId, user, type, cancellationToken);
             }
         }
