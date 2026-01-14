@@ -356,7 +356,7 @@ namespace ROTGBot.Service
             foreach (var byUser in allNews.GroupBy(s => s.UserId))
             {
                 var user = await _userRepo.GetAsync(byUser.Key, token);
-                result += $"Пользователь {user.Name} ({user.TGLogin}):\r\n";
+                result. = $"Пользователь {user.Name} ({user.TGLogin})";
 
                 foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
                 {

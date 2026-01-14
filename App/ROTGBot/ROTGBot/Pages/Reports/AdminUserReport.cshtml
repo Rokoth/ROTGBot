@@ -13,6 +13,9 @@
     <thead>
         <tr>
             <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].User)
+            </th>
+            <th>
                 @Html.DisplayNameFor(model => model.Report.Items[0].Year)
             </th>
             <th>
@@ -28,6 +31,9 @@
         @foreach (var item in Model.Report.Items)
         {
             <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.User)
+                </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.Year)
                 </td>
