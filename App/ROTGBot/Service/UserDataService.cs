@@ -26,6 +26,9 @@ namespace ROTGBot.Service
                 {
                     return null;
                 }
+
+                var allUsers = 
+
                 user = await _userRepo.AddAsync(new Db.Model.User()
                 {
                     Id = Guid.NewGuid(),
@@ -35,7 +38,8 @@ namespace ROTGBot.Service
                     TGLogin = tgUserName,
                     TGId = tgId,
                     ChatId = chatId.Value,
-                    LastSendDate = DateTime.Now.AddHours(-1)
+                    LastSendDate = DateTime.Now.AddHours(-1),
+                    Number = 
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();

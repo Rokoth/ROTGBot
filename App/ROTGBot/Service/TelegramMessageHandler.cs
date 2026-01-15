@@ -304,6 +304,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendMessageByNumberChoiseHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageByNumberHandle(userId, chId, userNews, tk), token),
+                "SendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => SendNewsReplyHandle(userId, chId, userNews, tk), token),
                 "GetPDNOferta" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendPDNOferta(chId, userNews, tk), token),
                 "GetDonateQR" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
