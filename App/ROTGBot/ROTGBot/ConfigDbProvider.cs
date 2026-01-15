@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ROTGBot.Db.Context;
+using ROTGBot.DB.Context;
 
 namespace ROTGBot
 {

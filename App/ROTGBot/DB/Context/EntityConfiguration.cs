@@ -1,10 +1,11 @@
-﻿using ROTGBot.Db.Attributes;
+﻿using ROTGBot.DB.Attributes;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using ROTGBot.DB.Attributes;
 
-namespace ROTGBot.Db.Context
+namespace ROTGBot.DB.Context
 {
     /// <summary>
     /// Построение отношения модели к таблице по атрибутам

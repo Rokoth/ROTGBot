@@ -1,4 +1,4 @@
-﻿namespace ROTGBot.Db.Attributes
+﻿namespace ROTGBot.DB.Attributes
 {
     /// <summary>
     /// Атрибут Имя колонки БД

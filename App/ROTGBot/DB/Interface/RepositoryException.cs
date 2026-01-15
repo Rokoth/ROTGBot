@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace ROTGBot.Db.Interface
+namespace ROTGBot.DB.Interface
 {
     /// <summary>
     /// Wrapper for exceptions in DB methods

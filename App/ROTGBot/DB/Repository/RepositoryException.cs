@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace ROTGBot.Db.Repository
+namespace ROTGBot.DB.Repository
 {
     [Serializable]
     public class RepositoryException : Exception

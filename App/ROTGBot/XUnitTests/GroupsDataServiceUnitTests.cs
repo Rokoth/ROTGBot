@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using ROTGBot.Service;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 using Moq;
 
 namespace XUnitTests
@@ -76,6 +76,30 @@ namespace XUnitTests
             var service = new GroupsDataService(_repoMock.Object);
                        
             await Assert.ThrowsAsync<ArgumentException>(() => service.AddGroupIfNotExists(1, null, "test", new CancellationToken()));
+        }
+
+        /// <summary>
+        /// 0.0.20.2.2
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task AddGroupIfNotExists_Error_RepoError_Async()
+        {
+            var _repoMock = new Mock<IRepository<Groups>>();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<Groups>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(ThrowsRepoException()));
+            _repoMock.Setup(s => s.AddAsync(It.IsAny<Groups>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new Groups()));
+
+            var service = new GroupsDataService(_repoMock.Object);
+
+            await Assert.ThrowsAsync<RepositoryException>(() => service.AddGroupIfNotExists(1, "test", "test", new CancellationToken()));
+        }
+
+        private static List<Groups> ThrowsRepoException()
+        {
+            throw new RepositoryException();
         }
     }
 }

@@ -277,7 +277,13 @@ namespace ROTGBot.Service
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
                 "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => BlockUserChoiseHandle(userId, chId, userNews, tk), token),
+                "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
+                "SendMessageToUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendMessageToUserChoiseHandle(userId, chId, userNews, tk), token),
+                "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => BlockUserHandle(userId, chId, userNews, tk), token),
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -317,6 +323,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
         }
+
+       
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -469,6 +477,18 @@ namespace ROTGBot.Service
             else
             {
                 await AddModeratorMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task UserListHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
+        {
+            if (userNews != null)
+            {
+                await GetUserList(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await UserListMessageNotFound(chatId, token);
             }
         }
 
@@ -629,6 +649,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendUnblockUserChoise(chatId, token);
+            }
+        }
+
+        private async Task BlockUserChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendBlockUserChoise(chatId, token);
             }
         }
 
@@ -1230,9 +1262,7 @@ namespace ROTGBot.Service
                 "Отправьте по одному логины пользователей, которых надо добавить в администраторы и нажмите кнопку Добавить",
                  replyMarkup,
                  token);
-        }
-
-        
+        }        
 
         private async Task SendUnblockUserChoise(long chatId, Guid userId, CancellationToken token)
         {
@@ -1243,6 +1273,15 @@ namespace ROTGBot.Service
                  token);            
         }
 
+        private async Task SendBlockUserChoise(long chatId, Guid userId, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, userId, null, null, "blockuser", "Блокировка пользователя", false, token);
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте запрос с логином или номером пользователя для блокировки, либо нажмите Отмена для отмены действия",
+                 token);
+        }
+
         private async Task SendUserListChoise(long chatId, Guid userId, CancellationToken token)
         {
             await _newsDataService.CreateNews(chatId, userId, null, null, "listuser", "Список пользователей", false, token);
@@ -1250,8 +1289,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId,
                 "Отправьте запрос в формате <фильтр> : <количество записей в одном ответе (по умолчанию 10)> : <номер страницы поиска (по умолчанию 1)>",
                  replyMarkup,
-                 token);
-            1
+                 token);            
         }
 
         private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)

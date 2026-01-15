@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace ROTGBot.Db.Model
+namespace ROTGBot.DB.Model
 {
     public class Filter<T> where T : IEntity
     {

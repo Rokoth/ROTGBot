@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using ROTGBot.Service;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 using Moq;
 
 namespace XUnitTests

@@ -1,5 +1,5 @@
-﻿using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+﻿using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 using System.Data;
 using System.Threading;
 using Telegram.BotAPI.AvailableTypes;

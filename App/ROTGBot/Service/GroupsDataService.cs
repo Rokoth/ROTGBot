@@ -1,5 +1,5 @@
-﻿using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+﻿using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 
 namespace ROTGBot.Service
 {

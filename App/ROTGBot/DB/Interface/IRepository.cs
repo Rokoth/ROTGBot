@@ -1,9 +1,9 @@
-﻿using ROTGBot.Db.Model;
+﻿using ROTGBot.DB.Model;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ROTGBot.Db.Interface
+namespace ROTGBot.DB.Interface
 {
     /// <summary>
     /// DB wrapper class' interface

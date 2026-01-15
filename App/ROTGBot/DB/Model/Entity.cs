@@ -1,8 +1,8 @@
-﻿using ROTGBot.Db.Attributes;
+﻿using ROTGBot.DB.Attributes;
 using System;
 using System.Collections.Generic;
 
-namespace ROTGBot.Db.Model
+namespace ROTGBot.DB.Model
 {
     public abstract class Entity: IEntity
     {

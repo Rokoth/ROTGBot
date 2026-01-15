@@ -1,9 +1,8 @@
-﻿using ROTGBot.Db.Model;
+﻿using ROTGBot.DB.Model;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Reflection;
 
-namespace ROTGBot.Db.Context
+namespace ROTGBot.DB.Context
 {
     /// <summary>
     /// Postgresql context
@@ -36,13 +35,20 @@ namespace ROTGBot.Db.Context
             {
                 if (typeof(IEntity).IsAssignableFrom(type) && !type.IsAbstract)
                 {
-                    var configType = typeof(EntityConfiguration<>).MakeGenericType(type);
-                    var config = Activator.CreateInstance(configType);
-                    GetType().GetMethod(nameof(ApplyConf), BindingFlags.NonPublic | BindingFlags.Instance)?
-                        .MakeGenericMethod(type).Invoke(this, [modelBuilder, config]);
-
+                    BuildAndInvoke(modelBuilder, type);
                 }
             }
+        }
+
+        private void BuildAndInvoke(ModelBuilder modelBuilder, Type type) 
+            => GetType().GetMethod(nameof(ApplyConf), BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)?
+                .MakeGenericMethod(type).Invoke(this, [modelBuilder, GetConfig(type)]);
+
+        private static object? GetConfig(Type type)
+        {
+            var configType = typeof(EntityConfiguration<>).MakeGenericType(type);
+            var config = Activator.CreateInstance(configType);
+            return config;
         }
 
         /// <summary>
@@ -51,10 +57,8 @@ namespace ROTGBot.Db.Context
         /// <typeparam name="T"></typeparam>
         /// <param name="modelBuilder"></param>
         /// <param name="config"></param>
-        private void ApplyConf<T>(ModelBuilder modelBuilder, EntityConfiguration<T> config) where T : class, IEntity
-        {
-            modelBuilder.ApplyConfiguration(config);
-        }
+        private static void ApplyConf<T>(ModelBuilder modelBuilder, EntityConfiguration<T> config) where T : class, IEntity 
+            => modelBuilder.ApplyConfiguration(config);
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
     }

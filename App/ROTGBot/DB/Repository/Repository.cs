@@ -1,18 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
-using System.Collections.Generic;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
-using ROTGBot.Db.Context;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
+using ROTGBot.DB.Context;
 using System.Linq.Expressions;
 
-namespace ROTGBot.Db.Repository
+namespace ROTGBot.DB.Repository
 {
     /// <summary>
     /// Repository - wrapper for db works

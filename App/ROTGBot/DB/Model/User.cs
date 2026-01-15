@@ -1,7 +1,7 @@
-﻿using ROTGBot.Db.Attributes;
+﻿using ROTGBot.DB.Attributes;
 using System;
 
-namespace ROTGBot.Db.Model
+namespace ROTGBot.DB.Model
 {
     [TableName("user")]
     public class User : Entity

@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ROTGBot.Db.Context;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Repository;
+using ROTGBot.DB.Context;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Repository;
 using ROTGBot.Service;
 
 namespace ROTGBot
@@ -63,13 +63,13 @@ namespace ROTGBot
                 options.DefaultPolicy = defPolicy;
             });
 
-            services.AddScoped<IRepository<Db.Model.User>, Repository<Db.Model.User>>();                        
-            services.AddScoped<IRepository<Db.Model.Role>, Repository<Db.Model.Role>>();
-            services.AddScoped<IRepository<Db.Model.UserRole>, Repository<Db.Model.UserRole>>();
-            services.AddScoped<IRepository<Db.Model.News>, Repository<Db.Model.News>>();
-            services.AddScoped<IRepository<Db.Model.NewsMessage>, Repository<Db.Model.NewsMessage>>();
-            services.AddScoped<IRepository<Db.Model.Groups>, Repository<Db.Model.Groups>>();
-            services.AddScoped<IRepository<Db.Model.NewsButton>, Repository<Db.Model.NewsButton>>();
+            services.AddScoped<IRepository<DB.Model.User>, Repository<DB.Model.User>>();                        
+            services.AddScoped<IRepository<DB.Model.Role>, Repository<DB.Model.Role>>();
+            services.AddScoped<IRepository<DB.Model.UserRole>, Repository<DB.Model.UserRole>>();
+            services.AddScoped<IRepository<DB.Model.News>, Repository<DB.Model.News>>();
+            services.AddScoped<IRepository<DB.Model.NewsMessage>, Repository<DB.Model.NewsMessage>>();
+            services.AddScoped<IRepository<DB.Model.Groups>, Repository<DB.Model.Groups>>();
+            services.AddScoped<IRepository<DB.Model.NewsButton>, Repository<DB.Model.NewsButton>>();
 
             services.AddDataServices();           
 

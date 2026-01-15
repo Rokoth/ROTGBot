@@ -4,8 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Common;
 using ROTGBot.Service;
 using Microsoft.EntityFrameworkCore;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Repository;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Repository;
 
 namespace XUnitTests
 {
@@ -31,14 +31,14 @@ namespace XUnitTests
             serviceCollection.Configure<CommonOptions>(config);
             serviceCollection.AddLogging(configure => configure.AddSerilog());
 
-            serviceCollection.AddDbContext<ROTGBot.Db.Context.DbPgContext>(opt => opt.UseNpgsql(ConnectionString));
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.User>, Repository<ROTGBot.Db.Model.User>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Role>, Repository<ROTGBot.Db.Model.Role>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.UserRole>, Repository<ROTGBot.Db.Model.UserRole>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.News>, Repository<ROTGBot.Db.Model.News>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.NewsMessage>, Repository<ROTGBot.Db.Model.NewsMessage>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.Groups>, Repository<ROTGBot.Db.Model.Groups>>();
-            serviceCollection.AddScoped<IRepository<ROTGBot.Db.Model.NewsButton>, Repository<ROTGBot.Db.Model.NewsButton>>();
+            serviceCollection.AddDbContext<ROTGBot.DB.Context.DbPgContext>(opt => opt.UseNpgsql(ConnectionString));
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.User>, Repository<ROTGBot.DB.Model.User>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.Role>, Repository<ROTGBot.DB.Model.Role>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.UserRole>, Repository<ROTGBot.DB.Model.UserRole>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.News>, Repository<ROTGBot.DB.Model.News>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.NewsMessage>, Repository<ROTGBot.DB.Model.NewsMessage>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.Groups>, Repository<ROTGBot.DB.Model.Groups>>();
+            serviceCollection.AddScoped<IRepository<ROTGBot.DB.Model.NewsButton>, Repository<ROTGBot.DB.Model.NewsButton>>();
             serviceCollection.AddDataServices();
 
             ServiceProvider = serviceCollection.BuildServiceProvider();

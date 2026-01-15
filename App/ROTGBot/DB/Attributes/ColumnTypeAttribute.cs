@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ROTGBot.Db.Attributes
+namespace ROTGBot.DB.Attributes
 {
     /// <summary>
     /// Атрибут - тип колонки

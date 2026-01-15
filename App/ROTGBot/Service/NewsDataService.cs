@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 using System.Data;
 using System.Globalization;
 using System.Linq;
@@ -95,7 +95,7 @@ namespace ROTGBot.Service
             }, token)).OrderBy(s => s.CreatedDate));
         }
 
-        private static List<Contract.Model.News> Map(IEnumerable<Db.Model.News> news)
+        private static List<Contract.Model.News> Map(IEnumerable<DB.Model.News> news)
         {
             List<Contract.Model.News> result = [];
             foreach(var item in news)
@@ -107,7 +107,7 @@ namespace ROTGBot.Service
             return result;
         }
 
-        private static List<Contract.Model.NewsMessage> Map(IEnumerable<Db.Model.NewsMessage> news)
+        private static List<Contract.Model.NewsMessage> Map(IEnumerable<DB.Model.NewsMessage> news)
         {
             List<Contract.Model.NewsMessage> result = [];
             foreach (var item in news)

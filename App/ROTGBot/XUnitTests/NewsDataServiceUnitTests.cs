@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using ROTGBot.Service;
-using ROTGBot.Db.Interface;
+using ROTGBot.DB.Interface;
 using Microsoft.Extensions.Logging;
-using ROTGBot.Db.Model;
+using ROTGBot.DB.Model;
 using Moq;
 
 namespace XUnitTests
@@ -41,7 +41,7 @@ namespace XUnitTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task AddNewMessageForNews_Error_Async()
+        public async Task AddNewMessageForNews_Error_TextIsNull_Async()
         {
             var _repoMock = new Mock<IRepository<News>>();
             var _repoUserMock = new Mock<IRepository<User>>();
@@ -52,10 +52,8 @@ namespace XUnitTests
                 .Returns(Task.FromResult(new NewsMessage()));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
-
-            var result = await newsService.AddNewMessageForNews(1, Guid.NewGuid(), null, new CancellationToken());
-
-            Assert.True(result);
+            
+            await Assert.ThrowsAsync<ArgumentException>(() => newsService.AddNewMessageForNews(1, Guid.NewGuid(), null, new CancellationToken()));
         }
 
         [Fact]

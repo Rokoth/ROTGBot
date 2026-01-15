@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ROTGBot.Db.Attributes
+namespace ROTGBot.DB.Attributes
 {
     /// <summary>
     /// Атрибут Имя таблицы (используется в контексте БД в методе создания моделей)

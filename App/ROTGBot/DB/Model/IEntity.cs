@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ROTGBot.Db.Model
+namespace ROTGBot.DB.Model
 {
     public interface IEntity
     {

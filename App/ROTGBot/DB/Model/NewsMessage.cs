@@ -1,6 +1,6 @@
-﻿using ROTGBot.Db.Attributes;
+﻿using ROTGBot.DB.Attributes;
 
-namespace ROTGBot.Db.Model
+namespace ROTGBot.DB.Model
 {
     [TableName("newsmessage")]
     public class NewsMessage : Entity

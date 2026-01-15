@@ -1,21 +1,21 @@
 ﻿using ROTGBot.Contract.Model;
-using ROTGBot.Db.Interface;
-using ROTGBot.Db.Model;
+using ROTGBot.DB.Interface;
+using ROTGBot.DB.Model;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
 {
-    public class UserDataService(IRepository<Db.Model.User> userRepo,
+    public class UserDataService(IRepository<DB.Model.User> userRepo,
         IRepository<Role> roleRepo,
         IRepository<UserRole> userRoleRepo) : IUserDataService
     {
-        private readonly IRepository<Db.Model.User> _userRepo = userRepo;
+        private readonly IRepository<DB.Model.User> _userRepo = userRepo;
         private readonly IRepository<Role> _roleRepo = roleRepo;
         private readonly IRepository<UserRole> _userRoleRepo = userRoleRepo;
 
         public async Task<Contract.Model.User?> GetOrAddUser(long tgId, string tgUserName, string tgFullName, long? chatId, CancellationToken cancellationToken)
         {
-            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => s.TGId == tgId
             }, cancellationToken)).FirstOrDefault();
@@ -27,12 +27,12 @@ namespace ROTGBot.Service
                     return null;
                 }
 
-                var lastUser = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+                var lastUser = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
                 {
                     Sort = "number desc"
                 }, cancellationToken)).FirstOrDefault();
 
-                user = await _userRepo.AddAsync(new Db.Model.User()
+                user = await _userRepo.AddAsync(new DB.Model.User()
                 {
                     Id = Guid.NewGuid(),
                     Description = tgFullName,
@@ -63,7 +63,7 @@ namespace ROTGBot.Service
             return await Map(user, cancellationToken);
         }
 
-        private async Task<Contract.Model.User> Map(Db.Model.User user, CancellationToken cancellationToken)
+        private async Task<Contract.Model.User> Map(DB.Model.User user, CancellationToken cancellationToken)
         {
             var roles = (await GetUserRoles(user.Id, cancellationToken)).Select(s => Enum.Parse<RoleEnum>(s))?.ToList() ?? [RoleEnum.user];
             return new Contract.Model.User()
@@ -95,7 +95,7 @@ namespace ROTGBot.Service
 
         public async Task<IEnumerable<Contract.Model.User>> GetNotifyModerators(CancellationToken token)
         {
-            var result = await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var result = await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => !s.IsDeleted && s.IsNotify
             }, token);
@@ -112,7 +112,7 @@ namespace ROTGBot.Service
 
         public async Task SetRole(string login, RoleEnum role, CancellationToken token)
         {
-            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
             }, token)).FirstOrDefault();
@@ -141,7 +141,7 @@ namespace ROTGBot.Service
 
         public async Task<bool> UserBlock(string login, CancellationToken token)
         {
-            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
             }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {login} не найден");
@@ -153,7 +153,7 @@ namespace ROTGBot.Service
 
         public async Task<bool> UserUnBlock(string login, CancellationToken token)
         {
-            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
             }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {login} не найден");
