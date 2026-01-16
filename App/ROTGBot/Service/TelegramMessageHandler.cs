@@ -220,10 +220,20 @@ namespace ROTGBot.Service
                 switch (commandType)
                 {
                     case CommandEnum.start:
+                        await SendMenuButtons(chatId, user, type, cancellationToken);
+                        break;
+                    case CommandEnum.find:
+                        await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
+                        break;
                 }
 
-                await SendMenuButtons(chatId, user, type, cancellationToken);
+                
             }
+        }
+
+        private async Task FindNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task<bool> HandleCallback(CallbackQuery? callbackQuery, CancellationToken token)
