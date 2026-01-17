@@ -26,12 +26,6 @@ namespace Common
         /// <summary>
         /// Время жизни токена - 1 минута
         /// </summary>
-        public int LifeTime { get; set; } = 60;
-
-        /// <summary>
-        /// получить ключ
-        /// </summary>
-        /// <returns></returns>
-        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(Encoding.ASCII.GetBytes(Key));        
+        public int LifeTime { get; set; } = 60;        
     }
 }

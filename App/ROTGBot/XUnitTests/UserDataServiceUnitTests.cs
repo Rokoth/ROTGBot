@@ -229,31 +229,20 @@ namespace XUnitTests
                     }
                 }));
 
-            _repouserRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<UserRole>>(), It.IsAny<CancellationToken>()))
-                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new List<UserRole>
-                {
-                    new UserRole()
-                    {
-                        Id = Guid.NewGuid(),
-                        IsDeleted = false,
-                        RoleId = userGuid,
-                        UserId = user1Id
-                    }
-                }));
-
             _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
                 .Returns<Filter<Role>, CancellationToken>((f, t) => Task.FromResult(GetRoles(f,
                 moderGuid,
                 userGuid)));
 
+            _repouserRoleMock.Setup(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new UserRole()));
+
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
             var result = await buttonsService.SetRole("test", ROTGBot.Contract.Model.RoleEnum.user, new CancellationToken());
 
-            Assert.NotNull(result);
-            _repoMock.Verify(m => m.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
-            _repoRoleMock.Verify(m => m.AddAsync(It.IsAny<Role>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
-            _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+            Assert.True(result);
+            _repouserRoleMock.Verify(m => m.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);            
         }
 
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)

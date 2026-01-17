@@ -1,12 +1,14 @@
 ﻿using Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ROTGBot.Db.Context;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Repository;
 using ROTGBot.Service;
+using System.Text;
 
 namespace ROTGBot
 {
@@ -49,7 +51,7 @@ namespace ROTGBot
                         //// будет ли валидироваться время существования
                         ValidateLifetime = true,
                         // установка ключа безопасности
-                        IssuerSigningKey = settings.GetSymmetricSecurityKey(),
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.Key)),
                         // валидация ключа безопасности
                         ValidateIssuerSigningKey = true,
                     };
