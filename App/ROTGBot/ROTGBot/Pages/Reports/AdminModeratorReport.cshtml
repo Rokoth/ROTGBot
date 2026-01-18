@@ -9,38 +9,39 @@
 <p>
     <!--Фильтры-->
 </p>
-<table class="table" id="productTable">
+<table class="table" id="reportTable">
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Products[0].Name)
+                @Html.DisplayNameFor(model => model.Report.Items[0].User)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Products[0].Description)
+                @Html.DisplayNameFor(model => model.Report.Items[0].Year)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Products[0].Price)
+                @Html.DisplayNameFor(model => model.Report.Items[0].Month)
             </th>
-            
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Count)
+            </th>
+
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model.Products)
+        @foreach (var item in Model.Report.Items)
         {
             <tr>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Name)
+                    @Html.DisplayFor(modelItem => item.User)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Description)
+                    @Html.DisplayFor(modelItem => item.Year)
                 </td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Price)
+                    @Html.DisplayFor(modelItem => item.Month)
                 </td>
                 <td>
-                    <a class="btn btn-primary" id="edit_@item.Id" asp-page="./Edit" asp-route-id="@item.Id">Редактировать</a>
-                    <a class="btn btn-info" id="details_@item.Id" asp-page="./Details" asp-route-id="@item.Id">Подробно</a>
-                    <a class="btn btn-warning" id="delete_@item.Id" asp-page="./Delete" asp-route-id="@item.Id">Удалить</a>
+                    @Html.DisplayFor(modelItem => item.Count)
                 </td>
             </tr>
         }

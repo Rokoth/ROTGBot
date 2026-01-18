@@ -1,16 +1,22 @@
 ﻿namespace ROTGBot.Contract.Model
-{
-    public class Report
+{    
+    public class AdminUserReport
     {
-        public string Type { get; set; }
-
         public List<ReportItem> Items { get; set; } = new List<ReportItem>();
     }
 
-    public class AdminUserReport
-    {        
-
+    public class AdminModeratorReport
+    {
         public List<ReportItem> Items { get; set; } = new List<ReportItem>();
+    }
+
+    public class ReportItem
+    {
+        public int Year { get; set; }
+
+        public string Month { get; set; } = "-";
+
+        public Dictionary<string, int> Count { get; set; } = [];
     }
 
 }

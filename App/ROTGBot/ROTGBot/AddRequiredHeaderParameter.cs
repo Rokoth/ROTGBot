@@ -6,10 +6,10 @@ namespace ROTGBot
 {
     public class AddRequiredHeaderParameter : IOperationFilter
     {
-        private const string AuthorizationName = "Authorization";
-        private const string DefaultDescription = "access token";
-        private const string StringType = "string";
-        private const string BearerDefaultApiString = "Bearer ";
+        private const string OpenApiParameterName = "Authorization";
+        private const string OpenApiParameterDescription = "access token";
+        private const string OpenApiParameterType = "string";
+        private const string OpenApiParameterBearerDefaultApiString = "Bearer ";
 
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
@@ -17,24 +17,21 @@ namespace ROTGBot
             operation.Parameters.Add(CreateOpenApiParameter());
         }
 
-        private static OpenApiParameter CreateOpenApiParameter()
+        private static OpenApiParameter CreateOpenApiParameter() => new()
         {
-            return new OpenApiParameter
-            {
-                Name = AuthorizationName,
-                In = ParameterLocation.Header,
-                Description = DefaultDescription,
-                Required = true,
-                Schema = CreateOpenApiSchema()
-            };
-        }
+            Name = OpenApiParameterName,
+            In = ParameterLocation.Header,
+            Description = OpenApiParameterDescription,
+            Required = true,
+            Schema = CreateOpenApiSchema()
+        };
 
         private static OpenApiSchema CreateOpenApiSchema()
         {
             return new OpenApiSchema
             {
-                Type = StringType,
-                Default = new OpenApiString(BearerDefaultApiString)
+                Type = OpenApiParameterType,
+                Default = new OpenApiString(OpenApiParameterBearerDefaultApiString)
             };
         }
 
