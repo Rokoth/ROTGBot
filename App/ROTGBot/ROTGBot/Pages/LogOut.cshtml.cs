@@ -5,8 +5,27 @@ namespace ROTGBot.Pages
 {
     public class LogOutModel : PageModel
     {
-        public void OnGet()
+        public string Error { get; set; } = default!;
+        public string Login { get; set; } = default!;
+        public bool IsLogged { get; set; } = false;
+
+        public bool IsError { get; set; } = false;
+
+        public async Task<IActionResult> OnGetAsync()
         {
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+
+
+            if (IsError)
+            {
+                Error
+
+            }
+            return Page();
         }
     }
 }

@@ -8,7 +8,8 @@ namespace ROTGBot.Pages
         public string Error { get; set; } = default!;
         public string Login { get; set; } = default!;
         public string Password { get; set; } = default!;
-        public bool LoginSended { get; set; } = default!;
+        public bool LoginSended { get; set; } = false;
+        public bool PasswordSended { get; set; } = false;
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -19,8 +20,15 @@ namespace ROTGBot.Pages
         {
             if(!LoginSended)
             {
+                LoginSended = true;
+            }
+            else if(!PasswordSended)
+            {
 
-                return RedirectToPage("Index");
+            }
+            else
+            {
+
             }
             return Page();
         }
