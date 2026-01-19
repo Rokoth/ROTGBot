@@ -251,7 +251,7 @@ namespace ROTGBot.Service
                 "AdminModeratorReport" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => GetAdminModeratorReportHandle(chId, user, tk), token),
                 "DeleteNews" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => DeleteNewsHandle(chId, userNews, tk), token),
+                                        (chId, userNews, tk) => DeleteNewsHandle(chId, userNews, tk), token), 
                 "ApproveNewsChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
                                         (chId, userNews, tk) => SendNewsChoiceApproveHandle(chId, offset, tk), token),
                 "ApproveNews" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
@@ -276,13 +276,15 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => UserListChoiseHandle(chId, userNews, tk), token),
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
-                "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => BlockUserChoiseHandle(userId, chId, userNews, tk), token),
+                "BlockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => BlockUserChoiseHandle(chId, userNews, tk), token),
                 "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
+                "CancelUnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => CancelUnblockUserHandle(chId, userNews, tk), token),
                 "SendMessageToUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageToUserChoiseHandle(userId, chId, userNews, tk), token),
-                "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                "BlockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => BlockUserHandle(userId, chId, userNews, tk), token),
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
@@ -640,7 +642,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UnblockUserChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task UnblockUserChoiseHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -648,7 +650,7 @@ namespace ROTGBot.Service
             }
             else
             {
-                await SendUnblockUserChoise(chatId, token);
+                await SendUnblockUserChoise(chatId, userId, token);
             }
         }
 
@@ -1266,10 +1268,24 @@ namespace ROTGBot.Service
 
         private async Task SendUnblockUserChoise(long chatId, Guid userId, CancellationToken token)
         {
-            await _newsDataService.CreateNews(chatId, userId, null, null, "unblockuser", "Добавление администратора", false, token);
+            await _newsDataService.CreateNews(chatId, userId, null, null, "unblockuser", "Разблокировка пользователя", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "CancelUnblockUser"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
 
             await client.SendMessageAsync(chatId,
-                "Отправьте запрос с логином или номером пользователя",                 
+                "Отправьте сообщение с логином или номером пользователя для разблокировки, либо нажмите Отмена для отмены действия",
+                 replyMarkup,
                  token);            
         }
 

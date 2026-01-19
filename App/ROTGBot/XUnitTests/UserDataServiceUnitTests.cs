@@ -145,7 +145,6 @@ namespace XUnitTests
             var _repouserRoleMock = new Mock<IRepository<UserRole>>();
 
             var user1Id = Guid.NewGuid();
-
             var moderGuid = Guid.NewGuid();
             var userGuid = Guid.NewGuid();
 
@@ -156,21 +155,18 @@ namespace XUnitTests
                     {
                         Id = user1Id,
                         IsDeleted = false,
-                        IsNotify = true,
+                        IsNotify = false,
                         ChatId = 1
                     }
                 }));
 
-            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<User>()
+            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new User()
                 {
-                    new()
-                    {
-                        Id = user1Id,
-                        IsDeleted = false,
-                        IsNotify = true,
-                        ChatId = 1
-                    }
+                    Id = user1Id,
+                    IsDeleted = false,
+                    IsNotify = true,
+                    ChatId = 1
                 }));
 
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
