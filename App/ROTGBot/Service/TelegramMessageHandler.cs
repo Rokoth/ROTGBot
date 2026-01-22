@@ -200,10 +200,13 @@ namespace ROTGBot.Service
                 return (null, null, false);
             }
 
-            string[] findCommandKeyWords = [""];
+            Dictionary<CommandEnum, string[]> findCommandKeyWords = new Dictionary<string, string[]>()
+            {
+                { }
+            };
 
             //todo
-            1
+            
 
 
             return (null, null, false);
