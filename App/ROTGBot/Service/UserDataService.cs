@@ -3,6 +3,7 @@ using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Data;
 using System.Linq.Dynamic.Core.Tokenizer;
+using Telegram.BotAPI.AvailableTypes;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -146,9 +147,14 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task<List<Contract.Model.User>> GetUsers(Contract.Filters.Filter<Contract.Model.User> filter, CancellationToken token)
+        public async Task<List<Contract.Model.User>> GetUsers(Contract.Filters.Filter<Contract.Model.User> filter, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var userы = await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Page = filter.Page,
+                Selector = s => (string.IsNullOrEmpty(filter.Name) || s.Name.Contains(filter.Name, StringComparison.OrdinalIgnoreCase))
+            }, token);
+            return await Map(user, token);
         }
 
         public async Task<List<Contract.Model.UserRole>> GetUserRoles(Guid userId, CancellationToken token)

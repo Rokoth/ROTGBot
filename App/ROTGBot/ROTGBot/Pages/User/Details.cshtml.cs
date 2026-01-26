@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ROTGBot.Service;
@@ -21,9 +23,19 @@ namespace ROTGBot.Pages.User
 
         public async Task<IActionResult> OnGetAsync(Guid id)
         {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
+                return RedirectToPage("/Auth");
+
+            var currUserId = Guid.Parse(auth.Principal.Identity.Name);
+
+            //todo: проверка на роль администратора
+
             var user = await _userDataService.GetUser(id, new CancellationToken());
             if (user == null)
                 return NotFound();
+
 
 
             return Page();

@@ -29,5 +29,6 @@ namespace ROTGBot.Contract.Filters
         /// Sort field
         /// </summary>
         public string Sort { get; }
+        public string? Name { get; set; }
     }
 }
