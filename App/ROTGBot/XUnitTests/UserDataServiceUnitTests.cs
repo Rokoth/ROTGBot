@@ -133,6 +133,43 @@ namespace XUnitTests
             _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        /// <summary>
+        /// 0.0.14.2.3
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task GetOrAddUser_UserNotExists_Update_Success_Async()
+        {
+            var _repoMock = new Mock<IRepository<User>>();
+            var _repoRoleMock = new Mock<IRepository<Role>>();
+            var _repouserRoleMock = new Mock<IRepository<UserRole>>();
+
+            var user1Id = Guid.NewGuid();
+
+            var moderGuid = Guid.NewGuid();
+            var userGuid = Guid.NewGuid();
+
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<User>()));
+
+            _repouserRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<UserRole>>(), It.IsAny<CancellationToken>()))
+                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new List<UserRole>()));
+
+            _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
+                .Returns<Filter<Role>, CancellationToken>((f, t) => Task.FromResult(GetRoles(f,
+                moderGuid,
+                userGuid)));
+
+            var userService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+
+            var result = await userService.GetOrAddUser(1, "test", "test", 1, new CancellationToken());
+
+            Assert.NotNull(result);
+            _repoMock.Verify(m => m.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repoRoleMock.Verify(m => m.AddAsync(It.IsAny<Role>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
         {
             var result = new List<Role>

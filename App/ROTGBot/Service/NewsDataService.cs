@@ -341,11 +341,11 @@ namespace ROTGBot.Service
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
 
-        public async Task<Contract.Model.Report> GetAdminUserReport(CancellationToken token)
+        public async Task<Contract.Model.AdminUserReport> GetAdminUserReport(CancellationToken token)
         {
-            Contract.Model.Report result = new()
-            {
-                Type = "AdminUserReport"
+            Contract.Model.AdminUserReport result = new()
+            { 
+                Items = new List<Contract.Model.ByUserReportItem>()
             };
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
@@ -355,12 +355,20 @@ namespace ROTGBot.Service
 
             foreach (var byUser in allNews.GroupBy(s => s.UserId))
             {
+                Contract.Model.ByUserReportItem reportItem = new Contract.Model.ByUserReportItem()
+                {
+                    ChildItems = new List<Contract.Model.ByYearReportItem>()
+                };
                 var user = await _userRepo.GetAsync(byUser.Key, token);
-                result. = $"Пользователь {user.Name} ({user.TGLogin})";
+                reportItem.User = $"{user.Name} ({user.TGLogin})";
 
                 foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
                 {
-                    result += $"{byYear.Key} год:\r\n";
+                    Contract.Model.ByYearReportItem byYearReportItem = new Contract.Model.ByYearReportItem()
+                    {
+                        ChildItems = new List<Contract.Model.IReportItem>()
+                    };
+                    byYearReportItem.Year = $"{byYear.Key}";
 
                     foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                     {

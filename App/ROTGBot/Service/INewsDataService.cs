@@ -23,7 +23,7 @@ namespace ROTGBot.Service
 
         Task<AdminUserReport> GetAdminUserReport(CancellationToken token);
         Task<AdminModeratorReport> GetAdminModeratorReport(CancellationToken token);
-        Task<Report> GetModeratorReport(Guid id, CancellationToken token);
-        Task<Report> GetUserReport(Guid id, CancellationToken token);
+        Task<ModeratorReport> GetModeratorReport(Guid id, CancellationToken token);
+        Task<UserReport> GetUserReport(Guid id, CancellationToken token);
     }
 }
