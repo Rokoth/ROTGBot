@@ -7,7 +7,37 @@
 <h1>Пользователи</h1>
 
 <p>
-    <div class="btn btn-primary" onclick="Filter()">Применить фильтр</div>
+    <div class="row">
+        <div class="col-md-4">
+            <form method="post">
+                <div class="form-group p-3 border bg-light">
+                    <b>@Html.DisplayNameFor(x => x.Filter.Name)</b> :
+                    @Html.DisplayFor(x => x.Filter.Name)
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    <b>
+                        @Html.DisplayNameFor(x => x.Filter.Sort)
+                    </b>:
+                    @Html.DisplayFor(x => x.Filter.Sort)
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    <b>
+                        @Html.DisplayNameFor(x => x.Filter.Page)
+                    </b>:
+                    @Html.DisplayFor(x => x.Filter.Page)
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    <b>
+                        @Html.DisplayNameFor(x => x.Filter.Size)
+                    </b>:
+                    @Html.DisplayFor(x => x.Filter.Size)
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    <input type="submit" value="Обновить" class="btn btn-primary" />
+                </div>
+            </form>
+        </div>
+    </div>
 </p>
 
 <p>

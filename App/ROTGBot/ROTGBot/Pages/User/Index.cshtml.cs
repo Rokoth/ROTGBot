@@ -34,5 +34,21 @@ namespace ROTGBot.Pages.User
 
             return Page();
         }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
+                return RedirectToPage("/Auth");
+
+            var currUserId = Guid.Parse(auth.Principal.Identity.Name);
+
+            //todo: проверка на роль администратора
+
+            Users = await _userDataService.GetUsers(Filter, new CancellationToken());
+
+            return Page();
+        }
     }
 }
