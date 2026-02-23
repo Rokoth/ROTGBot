@@ -299,7 +299,7 @@ namespace ROTGBot.Service
                 "UserInfoByNewsNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserInfoByNewsNumberChoiseHandle(userId, chId, userNews, tk), token),
                 "UserInfoByNewsNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => UserUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => SendUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageByNumberChoiseHandle(chId, user, userNews, tk), token),
                 "SendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -1286,9 +1286,27 @@ namespace ROTGBot.Service
                  token);
         }
 
-        private async Task SendUserInfoByNewsNumberChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task SendUserInfoByNewsNumberChoise(long chatId,Guid userId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            await _newsDataService.CreateNews(chatId, userId, null, null, "searchuserbynews", "Поиск пользователя по номеру обращения", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineUserSearchByNumber"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте номер обращения для поиска пользователя",
+                 replyMarkup,
+                 token);
         }
 
         private async Task SendUserSearchByNameChoise(long chatId, Contract.Model.User user, CancellationToken token)
