@@ -25,7 +25,7 @@ namespace ROTGBot.Service
             using var scope = _serviceProvider.CreateScope();
             var scopeProvider = scope.ServiceProvider;
             var _mainService = scopeProvider.GetRequiredService<ITelegramMainService>();
-            await _mainService.SetCommands();
+            await _mainService.SetCommands(_cancellationToken);
 
             while (isRunning && !_cancellationToken.IsCancellationRequested)
             {     

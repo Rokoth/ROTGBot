@@ -346,5 +346,7 @@ namespace ROTGBot.Service
             userNews.IsMulti = true;           
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
+
+        
     }
 }
