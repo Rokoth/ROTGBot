@@ -176,33 +176,24 @@ namespace XUnitTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task AddNewButton_Some_Error_Async()
+        public async Task AddNewButton_RepoError_Async()
         {
             var _repoMock = new Mock<IRepository<NewsButton>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<NewsButton>()
-                {
-                    new()
-                    {
-                        ButtonName = "chat",
-                        ButtonNumber = 1,
-                        ChatId = 1,
-                        ChatName = "chat",
-                        Id = Guid.NewGuid(),
-                        IsDeleted = false,
-                        ThreadId = 1,
-                        ThreadName = "chat",
-                        ToSend = true
-                    }
-                }));
+                .Returns(GenerateRepoError());
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<NewsButton>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new NewsButton()));
 
             var buttonsService = new ButtonsDataService(_repoMock.Object);
 
-            await Assert.ThrowsAsync<ArgumentException>(() => buttonsService.AddNewButton(1, 1, null, "chat", new CancellationToken()));
+            await Assert.ThrowsAsync<RepositoryException>(() => buttonsService.AddNewButton(1, 1, "chat", "chat", new CancellationToken()));
+        }
+
+        private static Task<List<NewsButton>> GenerateRepoError()
+        {
+            throw new RepositoryException("some error");
         }
     }
 }

@@ -16,6 +16,6 @@ namespace ROTGBot.Contract.Interfaces
         /// <summary>
         /// Поле сортировки
         /// </summary>
-        string Sort { get; }
+        string? Sort { get; }
     }
 }

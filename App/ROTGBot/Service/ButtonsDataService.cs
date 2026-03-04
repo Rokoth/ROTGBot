@@ -24,7 +24,7 @@ namespace ROTGBot.Service
 
             var exists = allButtons.FirstOrDefault(s => s.ChatId == chatId && s.ThreadId == threadId);
 
-            if (exists != null || threadName == null)
+            if (exists != null)
             {
                 return false;
             }

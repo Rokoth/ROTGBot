@@ -345,7 +345,7 @@ namespace ROTGBot.Service
         {
             Contract.Model.AdminUserReport result = new()
             { 
-                Items = new List<Contract.Model.ByUserReportItem>()
+                Items = []
             };
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
@@ -355,23 +355,29 @@ namespace ROTGBot.Service
 
             foreach (var byUser in allNews.GroupBy(s => s.UserId))
             {
-                Contract.Model.ByUserReportItem reportItem = new Contract.Model.ByUserReportItem()
+                Contract.Model.ByUserReportItem reportItem = new()
                 {
-                    ChildItems = new List<Contract.Model.ByYearReportItem>()
+                    ChildItems = []
                 };
                 var user = await _userRepo.GetAsync(byUser.Key, token);
                 reportItem.User = $"{user.Name} ({user.TGLogin})";
 
                 foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
                 {
-                    Contract.Model.ByYearReportItem byYearReportItem = new Contract.Model.ByYearReportItem()
+                    Contract.Model.ByYearReportItem byYearReportItem = new()
                     {
-                        ChildItems = new List<Contract.Model.IReportItem>()
+                        ChildItems = [],
+                        Year = $"{byYear.Key}"
                     };
-                    byYearReportItem.Year = $"{byYear.Key}";
 
                     foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                     {
+                        byYearReportItem.ChildItems.Add(new Contract.Model.ByMonthReportItem()
+                        {
+                            Month = GetMonthName(byMonth.Key),
+                            ChildItems = []
+                        });
+
                         result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                             $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                             $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
@@ -435,9 +441,10 @@ namespace ROTGBot.Service
             return result;
         }
 
-        public async Task<Contract.Model.Report> GetModeratorReport(Guid id, CancellationToken token)
+
+        public async Task<Contract.Model.ModeratorReport> GetModeratorReport(Guid id, CancellationToken token)
         {
-            Contract.Model.Report result = new()
+            Contract.Model.ModeratorReport result = new()
             {
                 Type = "UserReport"
             };
@@ -473,10 +480,10 @@ namespace ROTGBot.Service
 
             return result;
         }
-
-        public async Task<Contract.Model.Report> GetUserReport(Guid id, CancellationToken token)
+                
+        public async Task<Contract.Model.UserReport> GetUserReport(Guid id, CancellationToken token)
         {
-            Contract.Model.Report result = new()
+            Contract.Model.UserReport result = new()
             {
                 Type = "UserReport"
             };
@@ -507,5 +514,7 @@ namespace ROTGBot.Service
 
             return result;
         }
+
+        
     }
 }

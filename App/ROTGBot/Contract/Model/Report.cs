@@ -42,7 +42,7 @@
 
     public class ByMonthReportItem
     {
-        public string Year { get; set; } = default!;
+        public string Month { get; set; } = default!;
 
         public List<ByTypeReportItem> ChildItems { get; set; }
     }
