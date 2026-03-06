@@ -22,10 +22,9 @@ namespace ROTGBot.Pages
 
             if (IsError)
             {
-                Error
-
+                return Page();
             }
-            return Page();
+            return RedirectToPage("./Index");
         }
     }
 }

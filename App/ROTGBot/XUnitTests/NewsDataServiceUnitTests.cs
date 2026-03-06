@@ -77,6 +77,7 @@ namespace XUnitTests
             var result = await newsService.CreateNews(1, Guid.NewGuid(), 1, 1, "news", "test", false, new CancellationToken());
 
             Assert.True(result);
+            _repoMock.Verify(s => s.AddAsync(It.Is<News>(s => s.Number == 1), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         /// <summary>
