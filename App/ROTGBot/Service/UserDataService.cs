@@ -110,25 +110,35 @@ namespace ROTGBot.Service
             return users.Where(s => s.IsModerator);
         }
 
-        public async Task SetRole(string login, RoleEnum role, CancellationToken token)
+        public async Task<bool> SetRole(string login, RoleEnum role, CancellationToken token)
         {
             var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
             {
                 Selector = s => s.TGLogin != null && s.TGLogin == login
             }, token)).FirstOrDefault();
 
-            if (user != null)
+            if (user == null)
             {
-                var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
-
-                await _userRoleRepo.AddAsync(new UserRole()
-                {
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,
-                    RoleId = newRole.Id,
-                    UserId = user.Id
-                }, true, token);
+                throw new ArgumentException("Пользователь с таким логином не найден");
             }
+            var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
+
+            var userRoles = await _userRoleRepo.GetAsync(new Filter<UserRole>() { Selector = s => s.UserId == user.Id }, token);
+
+            if(userRoles.Any(s => s.RoleId == newRole.Id))
+            {
+                throw new ArgumentException("Роль уже назначена");
+            }
+
+            await _userRoleRepo.AddAsync(new UserRole()
+            {
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                RoleId = newRole.Id,
+                UserId = user.Id
+            }, true, token);
+
+            return true;
         }
 
         public async Task<bool> SwitchUserNotify(Guid userId, CancellationToken token)

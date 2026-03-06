@@ -554,6 +554,18 @@ namespace ROTGBot.Service
             }
         }
 
+        private async Task CancelUnblockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await CancelUnblockUser(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await CancelUnblockUserMessageNotFound(chatId, token);
+            }
+        }        
+
         private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", token: token);
@@ -1090,6 +1102,12 @@ namespace ROTGBot.Service
         private async Task AddAdminModeratorDeclined( Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
+        private async Task CancelUnblockUser(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
 

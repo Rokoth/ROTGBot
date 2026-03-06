@@ -203,21 +203,18 @@ namespace XUnitTests
                     }
                 }));
 
-            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<User>()
+            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new User()
                 {
-                    new()
-                    {
-                        Id = user1Id,
-                        IsDeleted = false,
-                        IsNotify = true,
-                        ChatId = 1
-                    }
+                    Id = user1Id,
+                    IsDeleted = false,
+                    IsNotify = true,
+                    ChatId = 1
                 }));
 
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
-            var result = await buttonsService.SwitchUserNotify(user1Id, new CancellationToken());
+            var result = await buttonsService.SetRole("test", ROTGBot.Contract.Model.RoleEnum.user, new CancellationToken());
 
             Assert.True(result);
         }
