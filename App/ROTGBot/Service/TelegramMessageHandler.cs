@@ -200,14 +200,25 @@ namespace ROTGBot.Service
                 return (null, null, false);
             }
 
-            Dictionary<CommandEnum, string[]> findCommandKeyWords = new Dictionary<string, string[]>()
+            Dictionary<CommandEnum, string[]> findCommandKeyWords = new()
             {
-                { }
+                { CommandEnum.unknown, Array.Empty<string>() },
+                { CommandEnum.answer, new string[]{ "ответь", "ответ", "отправь", "отправить" } },
+                { CommandEnum.show, new string[]{ "показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров" } }
             };
 
             //todo
             
-
+            foreach(var commandKW in findCommandKeyWords)
+            {
+                foreach(var keyWord in commandKW.Value)
+                {
+                    if(messageText.StartsWith(keyWord, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return ();
+                    }
+                }
+            }
 
             return (null, null, false);
         }
@@ -377,11 +388,11 @@ namespace ROTGBot.Service
                 "GetDonateQR" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendDonateQR(chId, userNews, tk), token),
                 "MenuAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "admin", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(CommandEnum.start, string.Empty, chId, user, userNews, "admin", tk), token),
                 "MenuModerator" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "moderator", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(CommandEnum.start, string.Empty, chId, user, userNews, "moderator", tk), token),
                 "MenuUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => CommandHandle(chId, user, userNews, "user", tk), token),
+                                        (chId, userNews, tk) => CommandHandle(CommandEnum.start, string.Empty, chId, user, userNews, "user", tk), token),
 
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
