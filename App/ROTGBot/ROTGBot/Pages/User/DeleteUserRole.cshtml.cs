@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ROTGBot.Contract.Model;
@@ -14,6 +16,15 @@ namespace ROTGBot.Pages.User
 
         public async Task<IActionResult> OnGetAsync([FromQuery]Guid userId, Guid roleId)
         {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
+                return RedirectToPage("/Auth");
+
+            var currUserId = Guid.Parse(auth.Principal.Identity.Name);
+
+            //todo: проверка на роль администратора
+
             List<UserRole> userRoles = await _userDataService.GetUserRoles(userId, new CancellationToken());
             var userRole = userRoles.FirstOrDefault(s => s.RoleId == roleId);
             if(userRole == null)
@@ -26,7 +37,16 @@ namespace ROTGBot.Pages.User
 
         public async Task<IActionResult> OnPostAsync()
         {
-            await _userDataService.DeleteUserRole(UserRole);
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
+                return RedirectToPage("/Auth");
+
+            var currUserId = Guid.Parse(auth.Principal.Identity.Name);
+
+            //todo: проверка на роль администратора
+
+            await _userDataService.DeleteUserRole(UserRole, new CancellationToken());
             return Redirect("Details");
         }
     }

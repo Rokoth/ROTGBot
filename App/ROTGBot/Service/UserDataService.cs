@@ -149,17 +149,31 @@ namespace ROTGBot.Service
 
         public async Task<List<Contract.Model.User>> GetUsers(Contract.Filters.Filter<Contract.Model.User> filter, CancellationToken token)
         {
-            var userы = await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            var users = await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Page = filter.Page,
                 Selector = s => (string.IsNullOrEmpty(filter.Name) || s.Name.Contains(filter.Name, StringComparison.OrdinalIgnoreCase))
             }, token);
-            return await Map(user, token);
+            
+            var result = new List<Contract.Model.User>();
+            await foreach(var item in Map(users, token))
+            {
+                result.Add(item);
+            }
+            return result;
+        }
+
+        private async IAsyncEnumerable<Contract.Model.User> Map(List<Db.Model.User> users, CancellationToken token)
+        {           
+            foreach(var item in users)
+            {
+                yield return await Map(item, token);                
+            }
         }
 
         public async Task<List<Contract.Model.UserRole>> GetUserRoles(Guid userId, CancellationToken token)
         {
-            var 
+            //var 
             List<Contract.Model.UserRole> result = [];
             var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() { Selector = s => s.UserId == userId }, token)).Distinct().ToArray();
             var roles = await _roleRepo.GetAsync(new Filter<Role>(), token);
@@ -175,9 +189,21 @@ namespace ROTGBot.Service
             }
         }
 
-        public Task DeleteUserRole(Contract.Model.UserRole userRole)
+        public async Task DeleteUserRole(Contract.Model.UserRole userRole, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() 
+            { 
+                Selector = s => s.UserId == userRole.UserId && s.IsDeleted == false 
+            }, token)).Distinct().ToArray();
+
+            var toDelete = userRoles.FirstOrDefault(s => s.RoleId == userRole.UserId);
+
+            if (toDelete == null)
+            {
+                throw new Exception("Данная роль пользователю не назначена");
+            }
+
+            await _userRoleRepo.DeleteAsync(toDelete, true, token);
         }
     }
 }

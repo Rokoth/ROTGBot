@@ -2,18 +2,273 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
-using System.Linq.Dynamic.Core.Tokenizer;
-using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
 
 namespace ROTGBot.Service
 {
+
+    public class SendMessageWrapper : ISendMessageWrapper
+    {
+        public Task SendUserRemember(long chatId, News? news, CancellationToken token)
+        {
+            return (news?.Type) switch
+            {
+                "news" => SendNewsMessageForUserRemember(news, chatId, token),
+                "addadmin" => SendAddAdminForAdminRemember(chatId, token),
+                "addmoderator" => SendAddModeratorForAdminRememeber(chatId, token),
+                "editbutton" => SendEditButtonForAdminRemember(chatId, token),
+                "addbutton" => SendAddButtonForAdminRemember(chatId, token),
+                "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
+                _ => Task.CompletedTask,
+            };
+        }
+
+        public async Task SendMenuButtons(long chatId, Contract.Model.User user, string type, CancellationToken token)
+        {
+            if (type == "all")
+            {
+                if (user.IsModerator || user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Выберите раздел",
+                        replyMarkup: new InlineKeyboardMarkup(GetMenuButtons(user)), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "Панель пользователя",
+                        replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
+                }
+            }
+
+            if (type == "user")
+            {
+                await client.SendMessageAsync(chatId, "Панель пользователя",
+                         replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
+            }
+
+            if (type == "moderator")
+            {
+                if (user.IsModerator)
+                {
+                    await client.SendMessageAsync(chatId, "Панель модератора",
+                        replyMarkup: new InlineKeyboardMarkup(GetModeratorButtons(user)), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
+                }
+            }
+
+            if (type == "admin")
+            {
+                if (user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Панель администратора",
+                        replyMarkup: new InlineKeyboardMarkup(GetAdminButtons()), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
+                }
+            }
+        }
+    }
+
+    public enum MessageType
+    {
+        Unknown,
+        SwitchNotify,
+        SendNewsChoice,
+        SendNews,
+        SendNewsMulti,
+        UserReport,
+        ModeratorReport,
+        AdminUserReport,
+        AdminModeratorReport,
+        DeleteNews,
+        ApproveNewsChoice,
+        ApproveNews,
+        DeclineNews,
+        AddAdminChoice,
+        AddModeratorChoice,
+        EditButtonsChoice,
+        AddButtonChoice,
+        GetButtonChoice,
+        DeleteButtonChoice,
+        AddAdmin,
+        AddAdminDecline,
+        AddModerator,
+        AddModeratorDecline,
+        EditButton,
+        EditButtonApprove,
+        EditButtonDecline,
+        AddButton,
+        AddButtonDecline,
+        DeleteButton,
+        DeleteButtonDecline,
+        GetPDNOferta,
+        GetDonateQR,
+        MenuAdmin,
+        MenuModerator,
+        MenuUser        
+    }
+
+    public class DataHandler : IDataHandler
+    {
+        public async Task<bool> HandleData(
+            long chatId,
+            Contract.Model.User user,
+            string? dataReq,
+            CancellationToken token)
+        {
+            if (dataReq == null || dataReq == "-") return false;
+
+            string data = dataReq;
+            Guid? newsId = null;
+            int? buttonNumber = null;
+            int offset = 0;
+            if (data.StartsWith("ApproveNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId1))
+            {
+                data = "ApproveNews";
+                newsId = newsId1;
+            }
+
+            if (data.StartsWith("DeclineNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId2))
+            {
+                data = "DeclineNews";
+                newsId = newsId2;
+            }
+
+            if (data.StartsWith("SendNewsChoice_") && int.TryParse(data.Split("_")[1], out int buttonNumber2))
+            {
+                data = "SendNewsChoice";
+                buttonNumber = buttonNumber2;
+            }
+
+            if (data.StartsWith("ApproveNewsChoice_") && int.TryParse(data.Split("_")[1], out int offset1))
+            {
+                data = "ApproveNewsChoice";
+                offset = offset1;
+            }
+
+            var roles = user.Roles;
+            var userId = user.Id;
+
+            MessageType messageType = MessageType.Unknown;
+            if(Enum.TryParse(data, true, out MessageType mt))
+            {
+                messageType = mt;
+            }
+            else
+            {
+                await SendUserNotImplemented(chatId, token);
+            }
+
+            if(!await CheckRights(chatId, user, messageType, token))
+            {
+
+            }
+
+                return messageType switch
+                {
+                    MessageType.SwitchNotify => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
+                                            (chId, userNews, tk) => SendSwitchNotifyHandle(chId, user.Id, tk), token),
+                    MessageType.SendNewsChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                            (chId, userNews, tk) => SendNewsChoiceHandle(chId, user, userNews, buttonNumber.Value, tk), token),
+                    MessageType.SendNews => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                            (chId, userNews, tk) => SendNewsHandle(userId, chId, userNews, tk), token),
+                    MessageType.SendNewsMulti => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => SendNewsMultiHandle(chId, userNews, tk), token),
+                    MessageType.UserReport => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => GetUserReportHandle(chId, user, tk), token),
+                    MessageType.ModeratorReport => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => GetModeratorReportHandle(chId, user, tk), token),
+                    MessageType.AdminUserReport => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => GetAdminUserReportHandle(chId, user, tk), token),
+                    MessageType.AdminModeratorReport => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => GetAdminModeratorReportHandle(chId, user, tk), token),
+                    MessageType.DeleteNews => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => DeleteNewsHandle(chId, userNews, tk), token),
+                    MessageType.ApproveNewsChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
+                                           (chId, userNews, tk) => SendNewsChoiceApproveHandle(chId, offset, tk), token),
+                    MessageType.ApproveNews => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
+                                           (chId, userNews, tk) => SendNewsApproveHandle(userId, chId, newsId.Value, tk), token),
+                    MessageType.DeclineNews => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
+                                           (chId, userNews, tk) => SendNewsDeclineHandle(userId, chId, newsId.Value, tk), token),
+                    MessageType.AddAdminChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendAddAdminChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.AddModeratorChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendAddModeratorChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.EditButtonsChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendEditButtonsChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.AddButtonChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendAddButtonChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.GetButtonChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendGetButtonChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.DeleteButtonChoice => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => SendDeleteButtonChoiceHandle(chId, user, userNews, tk), token),
+                    MessageType.AddAdmin => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddAdminHandle(userId, chId, userNews, tk), token),
+                    MessageType.AddAdminDecline => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddAdminDeclineHandle(userId, chId, userNews, tk), token),
+                    MessageType.AddModerator => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddModeratorHandle(userId, chId, userNews, tk), token),
+                    MessageType.AddModeratorDecline => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddModeratorDeclineHandle(userId, chId, userNews, tk), token),
+                    MessageType.EditButton => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => EditButtonHandle(userId, chId, userNews, tk), token),
+                    MessageType.EditButtonApprove => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => EditButtonApproveHandle(chId, userNews, tk), token),
+                    MessageType.EditButtonDecline => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => EditButtonDeclineHandle(userId, chId, userNews, tk), token),
+                    MessageType.AddButton => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddButtonHandle(userId, chId, userNews, tk), token),
+                    MessageType.AddButtonDecline => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => AddButtonDeclineHandle(userId, chId, userNews, tk), token),
+                    MessageType.DeleteButton => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => DeleteButtonHandle(userId, chId, userNews, tk), token),
+                    MessageType.DeleteButtonDecline => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                           (chId, userNews, tk) => DeleteButtonDeclineHandle(userId, chId, userNews, tk), token),
+                    MessageType.GetPDNOferta => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => SendPDNOferta(chId, userNews, tk), token),
+                    MessageType.GetDonateQR => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => SendDonateQR(chId, userNews, tk), token),
+                    MessageType.MenuAdmin => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "admin", tk), token),
+                    MessageType.MenuModerator => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                           (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "moderator", tk), token),
+                    MessageType.MenuUser => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                            (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "user", tk), token),
+
+                    _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                            (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
+                };
+        }
+
+        private async Task SendUserNotImplemented(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Действие не реализовано", token);
+        }
+        private async Task<bool> CheckRights(long chatId, Contract.Model.User user, MessageType messageType, CancellationToken token)
+        {            
+            if (!user.Roles.Contains(role))
+            {
+                await SendUserHasNoRights(chatId, token);
+                return false;
+            }            
+
+            return true;
+        }
+
+        private async Task SendUserHasNoRights(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "У вас нет прав на это действие", token);
+        }
+    }
+
     public class TelegramMessageHandler : ITelegramMessageHandler
     {
-        private const string HelloMessage = "Привет, {0}! Для работы нажмите кнопку меню - Старт или введите /start";
-
         private readonly ILogger<TelegramMessageHandler> _logger;
 
         private readonly IGroupsDataService _groupsDataService;
@@ -21,6 +276,8 @@ namespace ROTGBot.Service
         private readonly INewsDataService _newsDataService;
         private readonly IButtonsDataService _buttonsDataService;
         private readonly ITelegramBotWrapper client;
+        private readonly IHandler<Message> _messageHandler;
+        private readonly ISendMessageWrapper _sendMessageWrapper;
 
         private readonly int TimeoutSpan = 10;
 
@@ -30,6 +287,8 @@ namespace ROTGBot.Service
             IUserDataService userDataService,
             INewsDataService newsDataService,
             IButtonsDataService buttonsDataService,
+            IHandler<Message> messageHandler,
+            ISendMessageWrapper sendMessageWrapper,
             IConfiguration configuration,
             ITelegramBotWrapper wrapper)
         {
@@ -40,6 +299,8 @@ namespace ROTGBot.Service
             _buttonsDataService = buttonsDataService;
             var botSettings = configuration.GetSection("BotSettings").Get<BotSettings>();
             client = wrapper;
+            _messageHandler = messageHandler;
+            _sendMessageWrapper = sendMessageWrapper;
         }
 
         public async Task HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken)
@@ -50,7 +311,7 @@ namespace ROTGBot.Service
             {
                 try
                 {
-                    await HandleMessage(update.Message, cancellationToken);
+                    await _messageHandler.Handle(update.Message, cancellationToken);
                     await HandleCallback(update.CallbackQuery, cancellationToken);
                     await HandleMyChatMember(update.MyChatMember, cancellationToken);
                 }
@@ -58,104 +319,6 @@ namespace ROTGBot.Service
                 {
                     _logger.LogError(ex, "Ошибка при обработке события");
                 }
-            }
-        }
-
-        private async Task HandleMessage(Message? message, CancellationToken cancellationToken)
-        {
-            if (message == null)
-                return;
-
-            _logger.LogInformation("Message update: {name}. {message}", message.Chat.Username, message.Text);
-
-            if (message.From == null)
-            {
-                await SendTestConnectionMessage(message, "Не удалось получить информацию по отправителю", cancellationToken);
-                return;
-            }
-
-            if (message.Chat?.Id == null || message.Chat?.Type != "private")
-            {
-                return;
-            }
-
-            var tgUser = message.From;
-
-            var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
-
-            if (user == null)
-                return;
-
-            var userNews = await _newsDataService.GetCurrentNews(user.Id, cancellationToken);
-
-            if (user.IsAdmin && message.IsTopicMessage == true)
-            {
-                await _buttonsDataService.AddNewButton(
-                    message.Chat.Id,
-                    message.MessageThreadId,
-                    message.Chat.Title ?? $"{message.Chat.FirstName} {message.Chat.LastName}",
-                    (message.ForumTopicCreated ?? message.ReplyToMessage?.ForumTopicCreated)?.Name,
-                    cancellationToken);
-            }
-
-            if (message.Text == "/start")
-            {
-                await StartCommandHandle(user.ChatId, user, userNews, "all", cancellationToken);
-            }
-            else if (userNews != null)
-            {
-                await _newsDataService.AddNewMessageForNews(message.MessageId, userNews.Id, message.Text ?? "", cancellationToken);
-
-                if (userNews.Type == "news")
-                {
-                    if (userNews.IsMulti)
-                    {
-                        var sendButtons = new List<List<InlineKeyboardButton>>()
-                        {
-                            new()
-                            {
-                                new InlineKeyboardButton("Подтвердить отправку")
-                                {
-                                    CallbackData = "SendNews"
-                                },
-                                new InlineKeyboardButton("Отменить")
-                                {
-                                    CallbackData = "DeleteNews"
-                                }
-                            }
-                        };
-
-                        ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
-
-                        await client.SendMessageAsync(user.ChatId,
-                            "Сообщение принято. Вы можете отправить ещё одно или несколько сообщений, или нажмите кнопку Подтвердить отправку, если отправили все нужные данные; " +
-                            "для отмены отправки нажмите Отменить.",
-                            replyMarkup: replyMarkup, token: cancellationToken);
-                    }
-                    else
-                    {
-                        await HandleData(user.ChatId, user, "SendNews", cancellationToken);
-                    }
-                }
-
-                if (userNews.Type == "addbutton")
-                {
-                    await HandleData(user.ChatId, user, "AddButton", cancellationToken);
-                }
-
-                if (userNews.Type == "deletebutton")
-                {
-                    await HandleData(user.ChatId, user, "DeleteButton", cancellationToken);
-                }
-
-                if (userNews.Type == "editbutton")
-                {
-                    await HandleData(user.ChatId, user, "EditButtonApprove", cancellationToken);
-                }
-            }
-            else if (message.IsTopicMessage != true)
-            {
-                await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
             }
         }
 
@@ -1061,15 +1224,9 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
         }
 
-        private async Task SendUserHasNoRights(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "У вас нет прав на это действие", token);
-        }
+        
 
-        private async Task SendUserNotImplemented(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Действие не реализовано", token);
-        }
+        
 
         private async Task DeleteNewsMessageAccepted(long chatId, News userNews, CancellationToken token)
         {

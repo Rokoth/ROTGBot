@@ -12,6 +12,7 @@ namespace ROTGBot.Service
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
         Task<List<Contract.Model.User>> GetUsers(Contract.Filters.Filter<User> filter, CancellationToken token);
         Task<List<UserRole>> GetUserRoles(Guid userId, CancellationToken cancellationToken);
-        Task DeleteUserRole(UserRole userRole);
+        Task DeleteUserRole(UserRole userRole, CancellationToken token);
+        Task UnblockUser(Guid id, CancellationToken cancellationToken);
     }
 }
