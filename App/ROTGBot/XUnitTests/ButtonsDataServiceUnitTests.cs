@@ -108,19 +108,8 @@ namespace XUnitTests
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new List<NewsButton>()
-                {
-                    new()
-                    {
-                        ButtonName = "chat",
-                        ButtonNumber = 1,
-                        ChatId = 1,
-                        ChatName = "chat",
-                        Id = Guid.NewGuid(),
-                        IsDeleted = false,
-                        ThreadId = 1,
-                        ThreadName = "chat",
-                        ToSend = true
-                    }
+                { 
+                    GenerateButton(1), GenerateButton(2), GenerateButton(3)
                 }));
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<NewsButton>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
@@ -129,6 +118,24 @@ namespace XUnitTests
             var buttonsService = new ButtonsDataService(_repoMock.Object);
 
             var result = await buttonsService.GetAllButtons(new CancellationToken());
+
+
+        }
+
+        private static NewsButton GenerateButton(int buttonNumber)
+        {
+            return new()
+            {
+                ButtonName = $"ButtonName{buttonNumber}",
+                ButtonNumber = buttonNumber,
+                ChatId = buttonNumber,
+                ChatName = $"ChatName{buttonNumber}",
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                ThreadId = buttonNumber,
+                ThreadName = $"ThreadName{buttonNumber}",
+                ToSend = true
+            };
         }
 
         /// <summary>
