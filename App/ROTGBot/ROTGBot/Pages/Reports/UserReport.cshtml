@@ -1,4 +1,43 @@
 ﻿@page
 @model ROTGBot.Pages.Reports.UserReportModel
 @{
+    ViewData["Title"] = "Отчёт по отправленным сообщениям";
 }
+
+<h1>Отчет</h1>
+
+<p>
+    <!--Фильтры-->
+</p>
+<table class="table" id="reportTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Year)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].ChildItems)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Report.Items[0].Total)
+            </th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Report.Items)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Year)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ChildItems)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Total)
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
