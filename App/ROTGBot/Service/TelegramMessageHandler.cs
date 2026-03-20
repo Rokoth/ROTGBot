@@ -21,6 +21,8 @@ namespace ROTGBot.Service
         private readonly ITelegramBotWrapper client;
 
         private readonly int TimeoutSpan = 10;
+        private static readonly string[] ShowKeyWords = ["показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров"];
+        private static readonly string[] AnswerKeyWords = ["ответь", "ответ", "отправь", "отправить"];
 
         public TelegramMessageHandler(
             ILogger<TelegramMessageHandler> logger,
@@ -182,7 +184,7 @@ namespace ROTGBot.Service
                 return (messageText[6..], CommandEnum.start, true);
             }
 
-            string[] appeals = ["бот, ", "робот, ", "бот ", "робот "]; 
+            string[] appeals = ["бот,", "робот,", "бот ","робот "]; 
 
             foreach(var app in appeals)
             {
@@ -192,7 +194,8 @@ namespace ROTGBot.Service
                 }
 
                 isCom = true;
-                messageText = messageText[app.Length..];
+                messageText = messageText[app.Length..].Trim();
+                break;
             }
 
             if (!isCom)
@@ -203,19 +206,18 @@ namespace ROTGBot.Service
             Dictionary<CommandEnum, string[]> findCommandKeyWords = new()
             {
                 { CommandEnum.unknown, Array.Empty<string>() },
-                { CommandEnum.answer, new string[]{ "ответь", "ответ", "отправь", "отправить" } },
-                { CommandEnum.show, new string[]{ "показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров" } }
+                { CommandEnum.answer, AnswerKeyWords },
+                { CommandEnum.show, ShowKeyWords }
             };
-
-            //todo
-            
+                                    
             foreach(var commandKW in findCommandKeyWords)
             {
                 foreach(var keyWord in commandKW.Value)
                 {
                     if(messageText.StartsWith(keyWord, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        return ();
+                        messageText = messageText[keyWord.Length..].Trim();
+                        return (messageText, commandKW.Key, true);
                     }
                 }
             }
@@ -228,21 +230,26 @@ namespace ROTGBot.Service
             if (userNews != null)
             {
                 await SendUserRemember(chatId, userNews, cancellationToken);
+                return;
             }
-            else
-            {
-                switch (commandType)
-                {
-                    case CommandEnum.start:
-                        await SendMenuButtons(chatId, user, type, cancellationToken);
-                        break;
-                    case CommandEnum.find:
-                        await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
-                        break;
-                }
 
-                
+            switch (commandType)
+            {
+                case CommandEnum.start:
+                    await SendMenuButtons(chatId, user, type, cancellationToken);
+                    break;
+                case CommandEnum.find:
+                    await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
+                    break;
+                case CommandEnum.show:
+                    await ShowNewsOrUsers(chatId, commandText, user, type, cancellationToken);
+                    break;
             }
+        }
+
+        private async Task ShowNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            var words = commandText.Split(" ");
         }
 
         private async Task FindNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
