@@ -440,7 +440,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UserSearchByNameHandle(Guid userId, long chatId, string search, News? userNews, CancellationToken token)
+        private async Task UserSearchByNameHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
