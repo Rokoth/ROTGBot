@@ -138,6 +138,11 @@ namespace ROTGBot.Service
                     }
                 }
 
+                if (userNews.Type == "userlist")
+                {
+                    await HandleData(user.ChatId, user, "UserList", cancellationToken);
+                }
+
                 if (userNews.Type == "addbutton")
                 {
                     await HandleData(user.ChatId, user, "AddButton", cancellationToken);
@@ -204,11 +209,19 @@ namespace ROTGBot.Service
             string data = dataReq;
             Guid? newsId = null;
             int? buttonNumber = null;
+            int? userNumber = null;
             int offset = 0;
+            
             if (data.StartsWith("ApproveNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId1))
             {
                 data = "ApproveNews";
                 newsId = newsId1;
+            }
+
+            if (data.StartsWith("SendMessageToUser_") && int.TryParse(data.Split("_")[1], out int userNumber1))
+            {
+                data = "SendMessageToUser";
+                userNumber = userNumber1;
             }
 
             if (data.StartsWith("DeclineNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId2))
@@ -289,7 +302,7 @@ namespace ROTGBot.Service
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendMessageToUserHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => SendMessageToUserHandle(userId, chId, userNumber, userNews, tk), token),
                 "AddAdminDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminDeclineHandle(userId, chId, userNews, tk), token),
                 "AddModerator" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -324,9 +337,7 @@ namespace ROTGBot.Service
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
-        }
-
-       
+        }               
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -419,6 +430,18 @@ namespace ROTGBot.Service
             else
             {
                 await AddAdminMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task BlockUserHandle(Guid userId, long chatId, int userNumber, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await BlockUserAccepted(userId, chatId, userNumber, userNews, token);
+            }
+            else
+            {
+                await BlockUserMessageNotFound(chatId, token);
             }
         }
 
@@ -2159,7 +2182,7 @@ namespace ROTGBot.Service
                     },
                     new InlineKeyboardButton("Отправить сообщение пользователю")
                     {
-                        CallbackData = "SendMessageToUser"
+                        CallbackData = "SendMessageToUserChoise"
                     }
                 ],
                 EmptyButton(),                
