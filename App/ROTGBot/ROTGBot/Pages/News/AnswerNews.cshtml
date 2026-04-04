@@ -27,6 +27,16 @@
                 <input asp-for="News.Number" class="form-control" />
                 <span asp-validation-for="News.Number" class="text-danger"></span>
             </div>
+            <div class="form-group p-3 border bg-light">
+                <label asp-for="News.Messages" class="control-label"></label>
+                <input asp-for="News.Messages" class="form-control" />
+                <span asp-validation-for="News.Messages" class="text-danger"></span>
+            </div>
+            <div class="form-group p-3 border bg-light">
+                <label asp-for="Answer" class="control-label"></label>
+                <input asp-for="Answer" class="form-control" />
+                <span asp-validation-for="Answer" class="text-danger"></span>
+            </div>
             <div class="form-group p-3 border bg-light row g-0">
                 <div class="col-6 d-flex justify-content-center">
                     <input type="submit" value="Отправить" class="btn btn-primary" />

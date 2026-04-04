@@ -56,8 +56,9 @@ namespace ROTGBot.Pages.News
 
             //todo: проверить права
 
-            
+            var result = await _messageHandler.SendNewsAnswer(News, Answer, new CancellationToken());
 
+            return RedirectToPage("/News/Index");
         }
     }
 }

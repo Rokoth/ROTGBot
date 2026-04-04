@@ -53,14 +53,16 @@ namespace ROTGBot.Service
             {
                 Selector = s => s.UserId == userId
             }, cancellationToken)).FirstOrDefault(s => s.State == "create");
-            return await Map(result);
+            return await Map(result, cancellationToken);
         }
 
-        private async Task<Contract.Model.News?> Map(News? result)
+        private async Task<Contract.Model.News?> Map(News? result, CancellationToken token)
         {
             if (result == null) return null;
 
-            string? groupName = null; 
+            string? groupName = null;
+
+            var messages = await GetNewsMessages(result.Id, token);
 
             return new Contract.Model.News()
             {
@@ -78,7 +80,8 @@ namespace ROTGBot.Service
                 IsModerate = result.IsModerate,
                 Number = result.Number,
                 GroupName = result.GroupName,
-                ThreadName = result.ThreadName
+                ThreadName = result.ThreadName,
+                Messages = string.Join("\r\n", messages.Select(s => s.TextValue))
             };
         }
 
@@ -97,7 +100,7 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.News?> GetNewsById(Guid id, CancellationToken token)
         {
-            return await Map(await _newsRepo.GetAsync(id, token));
+            return await Map(await _newsRepo.GetAsync(id, token), token);
         }
 
         public async Task<List<Contract.Model.News>> GetNewsForApprove(CancellationToken token)
@@ -105,15 +108,15 @@ namespace ROTGBot.Service
             return await Map((await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.State == "accepted" && s.Type == "news"
-            }, token)).OrderBy(s => s.CreatedDate));
+            }, token)).OrderBy(s => s.CreatedDate), token);
         }
 
-        private async Task<List<Contract.Model.News>> Map(IEnumerable<Db.Model.News> news)
+        private async Task<List<Contract.Model.News>> Map(IEnumerable<Db.Model.News> news, CancellationToken token)
         {
             List<Contract.Model.News> result = [];
             foreach(var item in news)
             {
-                var map = await Map(item);
+                var map = await Map(item, token);
                 if (map != null)
                     result.Add(map);
             }

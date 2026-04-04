@@ -17,5 +17,7 @@
         public string? GroupName { get; set; }
         public string? ThreadName { get; set; }
 
+        public string Messages { get; set; }
+
     }
 }
