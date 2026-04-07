@@ -114,7 +114,7 @@ namespace XUnitTests
 
             var buttonsService = new ButtonsDataService(_repoMock.Object);
 
-            var result = await buttonsService.AddNewButton(1, 1, "chat", "chat", new CancellationToken());
+            var result = await buttonsService.AddParentButton("chat", null, new CancellationToken());
 
             Assert.True(result);
         }

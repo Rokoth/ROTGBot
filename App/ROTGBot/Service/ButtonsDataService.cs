@@ -45,34 +45,38 @@ namespace ROTGBot.Service
             return true;
         }
 
-        public async Task AddParentButton(string name, int? parent, CancellationToken cancellationToken)
+        public async Task<bool> AddParentButton(string name, int? parent, CancellationToken cancellationToken)
         {            
             var exists = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
                 Selector = s => !s.IsDeleted && s.ParentId == parent && s.ButtonName == name
             }, cancellationToken);
 
+            if (exists.Count != 0)
+            {
+                throw new ArgumentException("Кнопка уже существует");
+            }
+
             var allButtons = await _newsButtonRepo.GetAsync(new Filter<NewsButton>()
             {
                 Selector = s => !s.IsDeleted
             }, cancellationToken);
-
-
-            if (exists.Count == 0)
+            
+            await _newsButtonRepo.AddAsync(new NewsButton()
             {
-                await _newsButtonRepo.AddAsync(new NewsButton()
-                {                    
-                    ChatName = name,
-                    Id = Guid.NewGuid(),
-                    IsDeleted = false,                    
-                    ToSend = true,
-                    ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
-                    IsParent = true,
-                    ParentId = parent,
-                    ButtonName = name
-                    
-                }, true, cancellationToken);
-            }
+                ChatName = name,
+                Id = Guid.NewGuid(),
+                IsDeleted = false,
+                ToSend = true,
+                ButtonNumber = allButtons.Count != 0 ? allButtons.Max(s => s.ButtonNumber) + 1 : 1,
+                IsParent = true,
+                ParentId = parent,
+                ButtonName = name
+
+            }, true, cancellationToken);
+
+            return true;
+
         }
 
         public async Task<List<Contract.Model.NewsButton>> GetActiveButtons(CancellationToken token)

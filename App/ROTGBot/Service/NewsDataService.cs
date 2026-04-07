@@ -372,15 +372,29 @@ namespace ROTGBot.Service
 
                     foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                     {
-                        byYearReportItem.ChildItems.Add(new Contract.Model.ByMonthReportItem()
+                        var byMonthReportItem = new Contract.Model.ByMonthReportItem()
                         {
                             Month = GetMonthName(byMonth.Key),
                             ChildItems = []
+                        };
+
+                        byMonthReportItem.ChildItems.Add(new Contract.Model.ByTypeReportItem()
+                        {
+                            Type = Contract.Model.ReportType.Accepted,
+                            Count = byMonth.Count()
+                        });
+
+                        byMonthReportItem.ChildItems.Add(new Contract.Model.ByTypeReportItem()
+                        {
+                            Type = Contract.Model.ReportType.Accepted,
+                            Count = byMonth.Count()
                         });
 
                         result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
                             $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
                             $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+
+                        byYearReportItem.ChildItems.Add();
                     }
                 }
 
@@ -485,26 +499,58 @@ namespace ROTGBot.Service
         {
             Contract.Model.UserReport result = new()
             {
-                Type = "UserReport"
+                Items = [],
+                Total = []
             };
 
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false && s.Type == "news"
+                Selector = s => s.IsDeleted == false && s.Type == "news" && s.UserId == id
             }, token)).OrderBy(s => s.CreatedDate);
 
             result.Items = [];
 
             foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
             {
-                result += $"{byYear.Key} год:\r\n";
+                var byYearReport = new Contract.Model.ByYearReportItem()
+                {
+                    Total = new List<Contract.Model.ByTypeReportItem>(),
+                    ChildItems = new List<Contract.Model.ByMonthReportItem>(),
+                    Year = byYear.Key.ToString()
+                };                
 
                 foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
                 {
-                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
-                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
+                    Contract.Model.ByMonthReportItem byMonthReportItem = new Contract.Model.ByMonthReportItem()
+                    {
+                        Month = GetMonthName(byMonth.Key),
+                        ChildItems = new List<Contract.Model.ByTypeReportItem>()
+                        {
+                            new Contract.Model.ByTypeReportItem()
+                            {
+                                Type = Contract.Model.ReportType.Sended,
+                                Count = byMonth.Count()
+                            },
+                            new Contract.Model.ByTypeReportItem()
+                            {
+                                Type = Contract.Model.ReportType.Accepted,
+                                Count = byMonth.Count() - byMonth.Count(s => s.State == "declined")
+                            },
+                            new Contract.Model.ByTypeReportItem()
+                            {
+                                Type = Contract.Model.ReportType.Approved,
+                                Count = byMonth.Count(s => s.State == "approved")
+                            },
+                            new Contract.Model.ByTypeReportItem()
+                            {
+                                Type = Contract.Model.ReportType.Sended,
+                                Count = byMonth.Count(s => s.State == "declined")
+                            },
+                        }
+                    };                    
                 }
+
+                result.Items.Add();
             }
 
             result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
