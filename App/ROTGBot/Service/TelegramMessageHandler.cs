@@ -286,7 +286,7 @@ namespace ROTGBot.Service
                 "AddAdmin" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminHandle(userId, chId, userNews, tk), token),
                 "UserListChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => UserListChoiseHandle(chId, userNews, tk), token),
+                                        (chId, userNews, tk) => UserListChoiseHandle(userId, chId, userNews, tk), token),
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
                 "BlockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -505,11 +505,11 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UserListHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
+        private async Task UserListHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await GetUserList(moderatorId, chatId, userNews, token);
+                await GetUserList(userId, chatId, userNews, token);
             }
             else
             {
@@ -665,7 +665,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UserListChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task UserListChoiseHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -673,7 +673,7 @@ namespace ROTGBot.Service
             }
             else
             {
-                await SendUserListChoise(chatId, token);
+                await SendUserListChoise(chatId, userId, token);
             }
         }
 
@@ -1133,8 +1133,8 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
-
-        private async Task AddModeratorAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
+                
+        private async Task AddModeratorAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
@@ -1150,6 +1150,17 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Модераторы добавлены", token);
         }
 
+        private async Task GetUserList(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            var search
+                        
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Модераторы добавлены", token);
+        }
+
         private async Task SendNewsMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет неподтвержденных обращений", token);
@@ -1159,6 +1170,11 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление администратора", token);
         }
+
+        private async Task UserListMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на поиск пользователей", token);
+        }        
 
         private async Task EditButtonMessageNotFound(long chatId, CancellationToken token)
         {
@@ -1344,8 +1360,7 @@ namespace ROTGBot.Service
             await _newsDataService.CreateNews(chatId, userId, null, null, "listuser", "Список пользователей", false, token);
 
             await client.SendMessageAsync(chatId,
-                "Отправьте запрос в формате <фильтр> : <количество записей в одном ответе (по умолчанию 10)> : <номер страницы поиска (по умолчанию 1)>",
-                 replyMarkup,
+                "Отправьте запрос в формате <фильтр(текстовое поле для фильтрации по имени или логину)>:<количество записей в одном ответе (по умолчанию 10)>:<номер страницы поиска (по умолчанию 1)>",                 
                  token);            
         }
 
