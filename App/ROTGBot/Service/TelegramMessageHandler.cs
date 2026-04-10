@@ -9,113 +9,43 @@ using Telegram.BotAPI.GettingUpdates;
 namespace ROTGBot.Service
 {
 
-    public class SendMessageWrapper : ISendMessageWrapper
-    {
-        public Task SendUserRemember(long chatId, News? news, CancellationToken token)
-        {
-            return (news?.Type) switch
-            {
-                "news" => SendNewsMessageForUserRemember(news, chatId, token),
-                "addadmin" => SendAddAdminForAdminRemember(chatId, token),
-                "addmoderator" => SendAddModeratorForAdminRememeber(chatId, token),
-                "editbutton" => SendEditButtonForAdminRemember(chatId, token),
-                "addbutton" => SendAddButtonForAdminRemember(chatId, token),
-                "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
-                _ => Task.CompletedTask,
-            };
-        }
-
-        public async Task SendMenuButtons(long chatId, Contract.Model.User user, string type, CancellationToken token)
-        {
-            if (type == "all")
-            {
-                if (user.IsModerator || user.IsAdmin)
-                {
-                    await client.SendMessageAsync(chatId, "Выберите раздел",
-                        replyMarkup: new InlineKeyboardMarkup(GetMenuButtons(user)), token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "Панель пользователя",
-                        replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
-                }
-            }
-
-            if (type == "user")
-            {
-                await client.SendMessageAsync(chatId, "Панель пользователя",
-                         replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
-            }
-
-            if (type == "moderator")
-            {
-                if (user.IsModerator)
-                {
-                    await client.SendMessageAsync(chatId, "Панель модератора",
-                        replyMarkup: new InlineKeyboardMarkup(GetModeratorButtons(user)), token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
-                }
-            }
-
-            if (type == "admin")
-            {
-                if (user.IsAdmin)
-                {
-                    await client.SendMessageAsync(chatId, "Панель администратора",
-                        replyMarkup: new InlineKeyboardMarkup(GetAdminButtons()), token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
-                }
-            }
-        }
-    }
-
-    public enum MessageType
-    {
-        Unknown,
-        SwitchNotify,
-        SendNewsChoice,
-        SendNews,
-        SendNewsMulti,
-        UserReport,
-        ModeratorReport,
-        AdminUserReport,
-        AdminModeratorReport,
-        DeleteNews,
-        ApproveNewsChoice,
-        ApproveNews,
-        DeclineNews,
-        AddAdminChoice,
-        AddModeratorChoice,
-        EditButtonsChoice,
-        AddButtonChoice,
-        GetButtonChoice,
-        DeleteButtonChoice,
-        AddAdmin,
-        AddAdminDecline,
-        AddModerator,
-        AddModeratorDecline,
-        EditButton,
-        EditButtonApprove,
-        EditButtonDecline,
-        AddButton,
-        AddButtonDecline,
-        DeleteButton,
-        DeleteButtonDecline,
-        GetPDNOferta,
-        GetDonateQR,
-        MenuAdmin,
-        MenuModerator,
-        MenuUser        
-    }
-
     public class DataHandler : IDataHandler
     {
+
+        private readonly ILogger<DataHandler> _logger;
+
+        private readonly IGroupsDataService _groupsDataService;
+        private readonly IUserDataService _userDataService;
+        private readonly INewsDataService _newsDataService;
+        private readonly IButtonsDataService _buttonsDataService;
+        private readonly ITelegramBotWrapper client;
+        private readonly IHandler<Message> _messageHandler;
+        private readonly ISendMessageWrapper _sendMessageWrapper;
+
+        private readonly int TimeoutSpan = 10;
+
+        public DataHandler(
+            ILogger<DataHandler> logger,
+            IGroupsDataService groupsDataService,
+            IUserDataService userDataService,
+            INewsDataService newsDataService,
+            IButtonsDataService buttonsDataService,
+            IHandler<Message> messageHandler,
+            ISendMessageWrapper sendMessageWrapper,
+            IConfiguration configuration,
+            ITelegramBotWrapper wrapper)
+        {
+            _logger = logger;
+            _groupsDataService = groupsDataService;
+            _userDataService = userDataService;
+            _newsDataService = newsDataService;
+            _buttonsDataService = buttonsDataService;
+            var botSettings = configuration.GetSection("BotSettings").Get<BotSettings>();
+            client = wrapper;
+            _messageHandler = messageHandler;
+            _sendMessageWrapper = sendMessageWrapper;
+        }
+
         public async Task<bool> HandleData(
             long chatId,
             Contract.Model.User user,
@@ -167,7 +97,7 @@ namespace ROTGBot.Service
 
             if(!await CheckRights(chatId, user, messageType, token))
             {
-
+                return false;
             }
 
                 return messageType switch
@@ -246,10 +176,23 @@ namespace ROTGBot.Service
                 };
         }
 
+        Dictionary<MessageType, RoleEnum[]> rights = new Dictionary<MessageType, RoleEnum[]>()
+        {
+            { MessageType.SwitchNotify, new RoleEnum[]{ RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.SendNewsChoice, new RoleEnum[]{ RoleEnum.user, RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.SendNews, new RoleEnum[]{ RoleEnum.user, RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.SendNewsMulti, new RoleEnum[]{ RoleEnum.user, RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.UserReport, new RoleEnum[]{ RoleEnum.user, RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.ModeratorReport, new RoleEnum[]{ RoleEnum.moderator, RoleEnum.administrator } },
+            { MessageType.AdminUserReport, new RoleEnum[]{ RoleEnum.administrator } },
+            { MessageType.AdminModeratorReport, new RoleEnum[]{ RoleEnum.administrator } }
+        };
+        
         private async Task SendUserNotImplemented(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Действие не реализовано", token);
         }
+
         private async Task<bool> CheckRights(long chatId, Contract.Model.User user, MessageType messageType, CancellationToken token)
         {            
             if (!user.Roles.Contains(role))

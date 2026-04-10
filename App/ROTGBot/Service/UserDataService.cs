@@ -205,5 +205,18 @@ namespace ROTGBot.Service
 
             await _userRoleRepo.DeleteAsync(toDelete, true, token);
         }
+
+        public async Task UnblockUser(Guid id, CancellationToken cancellationToken)
+        {
+            var user = await _userRepo.GetAsync(id, cancellationToken);
+            user.IsBlocked = true;            
+        }
+
+        public async Task<bool> BlockUser(Guid id, CancellationToken cancellationToken)
+        {
+            var user = await _userRepo.GetAsync(id, cancellationToken);
+            user.IsBlocked = true;
+            return true;
+        }
     }
 }

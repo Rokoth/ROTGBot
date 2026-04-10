@@ -92,7 +92,10 @@ namespace XUnitTests
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<News>()));
+                .Returns(Task.FromResult(new List<News>()
+                {
+                    new News()
+                }));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 

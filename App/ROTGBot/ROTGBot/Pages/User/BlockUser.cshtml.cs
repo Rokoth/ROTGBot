@@ -30,6 +30,7 @@ namespace ROTGBot.Pages.User
             if (user == null)
             {
                 IsError = true;
+                Error = "Пользователь не найден";
                 return Page();
             }
             UserModel = new Contract.Model.User()
@@ -57,6 +58,9 @@ namespace ROTGBot.Pages.User
             {
                 return RedirectToPage("Index");
             }
+            IsError = true;
+            Error = "Не удалось заблокировать пользователя";
+            return Page();
         }
     }
 }

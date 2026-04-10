@@ -1,0 +1,41 @@
+﻿namespace ROTGBot.Service
+{
+    public enum MessageType
+    {
+        Unknown,
+        SwitchNotify,
+        SendNewsChoice,
+        SendNews,
+        SendNewsMulti,
+        UserReport,
+        ModeratorReport,
+        AdminUserReport,
+        AdminModeratorReport,
+        DeleteNews,
+        ApproveNewsChoice,
+        ApproveNews,
+        DeclineNews,
+        AddAdminChoice,
+        AddModeratorChoice,
+        EditButtonsChoice,
+        AddButtonChoice,
+        GetButtonChoice,
+        DeleteButtonChoice,
+        AddAdmin,
+        AddAdminDecline,
+        AddModerator,
+        AddModeratorDecline,
+        EditButton,
+        EditButtonApprove,
+        EditButtonDecline,
+        AddButton,
+        AddButtonDecline,
+        DeleteButton,
+        DeleteButtonDecline,
+        GetPDNOferta,
+        GetDonateQR,
+        MenuAdmin,
+        MenuModerator,
+        MenuUser        
+    }
+}
