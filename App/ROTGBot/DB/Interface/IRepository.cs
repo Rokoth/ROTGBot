@@ -1,7 +1,4 @@
 ﻿using ROTGBot.Db.Model;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ROTGBot.Db.Interface
 {
