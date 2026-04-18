@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
-using System.Linq.Dynamic.Core.Tokenizer;
-using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
@@ -152,6 +150,18 @@ namespace ROTGBot.Service
                 {
                     await HandleData(user.ChatId, user, "EditButtonApprove", cancellationToken);
                 }
+
+                if (userNews.Type == "searchuserbynews")
+                {
+                    await HandleData(user.ChatId, user, "UserInfoByNewsNumber", cancellationToken);
+                }
+
+                if (userNews.Type == "searchuserbyname")
+                {
+                    await HandleData(user.ChatId, user, "UserSearchByName", cancellationToken);
+                }
+
+                
             }
             else if (message.IsTopicMessage != true)
             {
@@ -229,6 +239,12 @@ namespace ROTGBot.Service
                 offset = offset1;
             }
 
+            if (data.StartsWith("SendNewsReply_") && Guid.TryParse(data.Split("_")[1], out Guid newsId3))
+            {
+                data = "SendNewsReply";
+                newsId = newsId3;
+            }                        
+
             var roles = user.Roles;
             var userId = user.Id;
 
@@ -296,16 +312,24 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendUserSearchByNameChoiseHandle(chId, user, userNews, tk), token),
                 "UserSearchByName" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserSearchByNameHandle(userId, chId, userNews, tk), token),
+                "DeclineUserSearchByName" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => DeclineUserSearchByNameHandle(userId, chId, userNews, tk), token),
                 "UserInfoByNewsNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserInfoByNewsNumberChoiseHandle(chId, user, userNews, tk), token),
                 "UserInfoByNewsNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),
+                "DeclineUserSearchByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => DeclineUserSearchByNumberHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendMessageByNumberChoiseHandle(chId, user, userNews, tk), token),
+                                        (chId, userNews, tk) => SendMessageByNumberChoiseHandle(chId, user.Id, userNews, tk), token),
                 "SendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageByNumberHandle(userId, chId, userNews, tk), token),
-                "SendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                "DeclineSendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => DeclineSendMessageByNumberHandle(userId, chId, userNews, tk), token),
+                "SendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
                                         (chId, userNews, tk) => SendNewsReplyHandle(userId, chId, userNews, tk), token),
+                "DeclineSendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
+                                        (chId, userNews, tk) => DeclineSendNewsReplyHandle(userId, chId, userNews, tk), token),
                 "GetPDNOferta" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendPDNOferta(chId, userNews, tk), token),
                 "GetDonateQR" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
@@ -444,11 +468,11 @@ namespace ROTGBot.Service
         {
             if (userNews != null)
             {
-                await SendEditButtonsForUserApprove(chatId, userNews, token);
+                await SendUserSearchByNameApprove(chatId, userNews, token);
             }
             else
             {
-                await EditButtonMessageNotFound(chatId, token);
+                await UserSearchByNameMessageNotFound(chatId, token);
             }
         }
 
@@ -488,7 +512,18 @@ namespace ROTGBot.Service
             }
         }
 
-        
+        private async Task SendMessageByNumberHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendMessageByNumberAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendMessageByNumberMessageNotFound(chatId, token);
+            }
+        }
+
 
         private async Task AddModeratorHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
@@ -638,7 +673,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendMessageByNumberChoiseHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private async Task SendMessageByNumberChoiseHandle(long chatId, Guid userId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -646,11 +681,11 @@ namespace ROTGBot.Service
             }
             else
             {
-                await SendMessageByNumberChoise(chatId, user, token);
+                await SendMessageByNumberChoise(chatId, userId, token);
             }
         }
 
-        private async Task SendUserSearchByNameChoiseHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private async Task SendUserSearchByNameChoiseHandle(long chatId, Guid userId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -658,7 +693,7 @@ namespace ROTGBot.Service
             }
             else
             {
-                await SendUserSearchByNameChoise(chatId, user, token);
+                await SendUserSearchByNameChoise(chatId, userId, token);
             }
         }
 
@@ -836,6 +871,24 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
         }
+
+        private async Task SendUserSearchByNameApprove(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return;
+            }
+
+            await ParseAndSetRole(messages, RoleEnum.administrator, token);
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
+        }
+
+        
 
         private async Task ParseAndSetRole(IEnumerable<NewsMessage> messages, RoleEnum role, CancellationToken token)
         {
@@ -1296,9 +1349,9 @@ namespace ROTGBot.Service
         {
             await _newsDataService.CreateNews(chatId, userId, null, null, "sendmessagebynumber", "Отправка сообщения пользователю", false, token);
 
-            var button1 = new InlineKeyboardButton("Добавить")
+            var button1 = new InlineKeyboardButton("Отменить")
             {
-                CallbackData = "AddAdmin"
+                CallbackData = "DeclineSendMessageByNumber"
             };
             ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
                 new List<List<InlineKeyboardButton>>()
@@ -1310,7 +1363,7 @@ namespace ROTGBot.Service
                 });
 
             await client.SendMessageAsync(chatId,
-                "Отправьте сообщение в виде <>",
+                "Отправьте номер пользователя, которому хотите отправить сообщение, затем само сообщение. Для отмены нажмите кнопку \"Отменить\"",
                  replyMarkup,
                  token);
         }
@@ -1338,9 +1391,27 @@ namespace ROTGBot.Service
                  token);
         }
 
-        private async Task SendUserSearchByNameChoise(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task SendUserSearchByNameChoise(long chatId, Guid userId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            await _newsDataService.CreateNews(chatId, userId, null, null, "searchuserbyname", "Поиск пользователя по имени", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineUserSearchByName"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте имя или логин для поиска пользователя",
+                 replyMarkup,
+                 token);
         }
 
         private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)
