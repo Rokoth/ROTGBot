@@ -19,11 +19,9 @@ namespace ROTGBot.Pages.News
 
         [BindProperty]
         public Contract.Model.News News { get; set; } = default!;
+              
 
-        [BindProperty]
-        public Contract.Filters.NewsFilter Filter { get; set; } = default!;
-
-        public async Task<IActionResult> OnGet()
+        public async Task<IActionResult> OnGet(Guid id)
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -31,7 +29,12 @@ namespace ROTGBot.Pages.News
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            News = _newsDataService.GetNewsByFilter();
+            News = await _newsDataService.GetNewsById(id, new CancellationToken());
+
+            if(News == null)
+            {
+                throw new ArgumentException("Новость не найдена");
+            }
 
             return Page();
         }
