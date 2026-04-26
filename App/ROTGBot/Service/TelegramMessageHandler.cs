@@ -254,8 +254,9 @@ namespace ROTGBot.Service
 
         private async Task FindNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
-            var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
-            foreach ()
+            var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            
+            foreach (var word in words)
             {
 
             }
