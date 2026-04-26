@@ -13,6 +13,8 @@ namespace ROTGBot.Pages
         public string Password { get; set; } = default!;
         public bool LoginSended { get; set; } = false;
         public bool PasswordSended { get; set; } = false;
+        public bool IsAuth { get; set; } = false;
+        public bool IsError { get; set; } = false;
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -24,14 +26,22 @@ namespace ROTGBot.Pages
             if(!LoginSended)
             {
                 LoginSended = true;
+                
             }
             else if(!PasswordSended)
             {
                 PasswordSended = true;
             }
+            else if(IsAuth)
+            {
+                return RedirectToAction("Index");
+            }
             else
             {
-
+                IsError = true;
+                LoginSended = false;
+                PasswordSended = false;
+                Error = "Неверный логин или пароль";
             }
             return Page();
         }
