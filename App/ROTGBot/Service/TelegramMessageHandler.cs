@@ -294,7 +294,7 @@ namespace ROTGBot.Service
                 "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
                 "CancelUnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
-                                        (chId, userNews, tk) => CancelUnblockUserHandle(chId, userNews, tk), token),
+                                        (chId, userNews, tk) => CancelUnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageToUserChoiseHandle(userId, chId, userNews, tk), token),
                 "BlockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -442,6 +442,18 @@ namespace ROTGBot.Service
             else
             {
                 await BlockUserMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task UnblockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await UnblockUserAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await UnblockUserMessageNotFound(chatId, token);
             }
         }
 
@@ -861,6 +873,24 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
         }
 
+        private async Task UnblockUserAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return;
+            }
+
+            var 
+
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
+        }
+
+        
+
         private async Task ParseAndSetRole(IEnumerable<NewsMessage> messages, RoleEnum role, CancellationToken token)
         {
             foreach (var message in messages)
@@ -1181,6 +1211,12 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Нет задач на добавление кнопок", token);
         }
 
+        private async Task CancelUnblockUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на разблокировку пользователя", token);
+        }
+
+        
         private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
