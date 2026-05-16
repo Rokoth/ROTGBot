@@ -4,16 +4,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ROTGBot.Contract.Model;
+using ROTGBot.Service;
 
 namespace ROTGBot.Pages.User
 {
-    public class AddUserRoleModel : PageModel
+    public class AddUserRoleModel(IUserDataService userDataService) : PageModel
     {
+        private readonly IUserDataService _userDataService = userDataService;
+
         public UserRole UserRole { get; set; }
 
         public List<SelectListItem> Roles { get; set; }
 
-        public async Task<IActionResult> OnGetAsync()
+        public async Task<IActionResult> OnGetAsync(Guid id)
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -24,16 +27,18 @@ namespace ROTGBot.Pages.User
 
             //todo: проверка на роль администратора
 
+            var roles = await _userDataService.GetRoles(new CancellationToken());
+
             var user = await _userDataService.GetUser(id, new CancellationToken());
             if (user == null)
-            {
-                IsError = true;
-                return Page();
+            {                
+                return NotFound("Пользователь не найден");
             }
-            UserModel = new Contract.Model.User()
+            UserRole = new UserRole()
             {
-                Name = user.Name,
-                TGLogin = user.TGLogin
+                UserId = user.Id,
+                UserName = $"{user.Name} ({user.TGLogin})",
+                RoleId = 
             };
             return Page();
         }

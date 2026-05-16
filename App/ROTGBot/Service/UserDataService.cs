@@ -9,11 +9,11 @@ using User = Telegram.BotAPI.AvailableTypes.User;
 namespace ROTGBot.Service
 {
     public class UserDataService(IRepository<Db.Model.User> userRepo,
-        IRepository<Role> roleRepo,
+        IRepository<Db.Model.Role> roleRepo,
         IRepository<Db.Model.UserRole> userRoleRepo) : IUserDataService
     {
         private readonly IRepository<Db.Model.User> _userRepo = userRepo;
-        private readonly IRepository<Role> _roleRepo = roleRepo;
+        private readonly IRepository<Db.Model.Role> _roleRepo = roleRepo;
         private readonly IRepository<Db.Model.UserRole> _userRoleRepo = userRoleRepo;
 
         public async Task<Contract.Model.User?> GetOrAddUser(long tgId, string tgUserName, string tgFullName, long? chatId, CancellationToken cancellationToken)
@@ -41,7 +41,7 @@ namespace ROTGBot.Service
                     LastSendDate = DateTime.Now.AddHours(-1)
                 }, true, cancellationToken);
 
-                var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
+                var userRole = (await _roleRepo.GetAsync(new Filter<Db.Model.Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
 
                 await _userRoleRepo.AddAsync(new Db.Model.UserRole()
                 {
@@ -82,7 +82,7 @@ namespace ROTGBot.Service
             var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() { Selector = s => s.UserId == userId }, token)).Select(s => s.RoleId).Distinct().ToArray();
             if (userRoles.Length != 0)
             {
-                roles = [.. (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => userRoles.Contains(s.Id) }, token)).Select(s => s.Name)];
+                roles = [.. (await _roleRepo.GetAsync(new Filter<Db.Model.Role>() { Selector = s => userRoles.Contains(s.Id) }, token)).Select(s => s.Name)];
             }
 
             return roles;
@@ -114,7 +114,7 @@ namespace ROTGBot.Service
 
             if (user != null)
             {
-                var newRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
+                var newRole = (await _roleRepo.GetAsync(new Filter<Db.Model.Role>() { Selector = s => s.Name == Enum.GetName(typeof(RoleEnum), role) }, token)).First();
 
                 await _userRoleRepo.AddAsync(new Db.Model.UserRole()
                 {
@@ -152,7 +152,11 @@ namespace ROTGBot.Service
             var users = await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Page = filter.Page,
-                Selector = s => (string.IsNullOrEmpty(filter.Name) || s.Name.Contains(filter.Name, StringComparison.OrdinalIgnoreCase))
+                Size = filter.Size,
+                Sort = filter.Sort,
+                Selector = s => (string.IsNullOrEmpty(filter.Name)
+                || s.Name.Contains(filter.Name, StringComparison.OrdinalIgnoreCase) 
+                || s.TGLogin.Contains(filter.Name, StringComparison.OrdinalIgnoreCase))
             }, token);
             
             var result = new List<Contract.Model.User>();
@@ -176,7 +180,7 @@ namespace ROTGBot.Service
             //var 
             List<Contract.Model.UserRole> result = [];
             var userRoles = (await _userRoleRepo.GetAsync(new Filter<Db.Model.UserRole>() { Selector = s => s.UserId == userId }, token)).Distinct().ToArray();
-            var roles = await _roleRepo.GetAsync(new Filter<Role>(), token);
+            var roles = await _roleRepo.GetAsync(new Filter<Db.Model.Role>(), token);
 
             foreach(var userRole in userRoles)
             {
@@ -217,6 +221,11 @@ namespace ROTGBot.Service
             var user = await _userRepo.GetAsync(id, cancellationToken);
             user.IsBlocked = true;
             return true;
+        }
+
+        public Task<List<Contract.Model.Role>> GetRoles(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

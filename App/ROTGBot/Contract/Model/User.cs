@@ -20,4 +20,10 @@ namespace ROTGBot.Contract.Model
         public DateTime LastSendDate { get; set; }
     }
 
+    public class Role : Entity
+    {        
+        public string Name { get; set; } = "";       
+        public string? Description { get; set; }
+    }
+
 }

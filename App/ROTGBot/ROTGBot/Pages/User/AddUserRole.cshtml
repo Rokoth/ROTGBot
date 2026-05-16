@@ -22,10 +22,9 @@
                 <div class="col-md-10">
                     @Html.DropDownListFor(model => model.UserRole.RoleId, new List<SelectListItem>
                     {
-                    new SelectListItem {Text = "Пользователь", Value = "1", Selected = true },
-                    new SelectListItem {Text = "Модератор", Value = "2" },
-                    new SelectListItem {Text = "Arges", Value = "3" },
-                    new SelectListItem {Text = "Bacau", Value = "4" },
+                        new SelectListItem {Text = "Пользователь", Value = "1", Selected = true },
+                        new SelectListItem {Text = "Модератор", Value = "2" },
+                        new SelectListItem {Text = "Администратор", Value = "3" }
                     }, new { @class = "form-control" })
                     @Html.ValidationMessageFor(model => model.UserRole.RoleId, "", new { @class = "text-danger" })
                 </div>
