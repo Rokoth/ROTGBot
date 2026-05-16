@@ -84,14 +84,28 @@ namespace XUnitTests
             var _repoMessageMock = new Mock<IRepository<NewsMessage>>();
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
+            var dbResult = CreateOneNewsList();
+
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(CreateOneNewsList()));
+                .Returns(Task.FromResult(dbResult));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
             var result = await newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken());
 
+            var expected = dbResult.First();
             Assert.NotNull(result);
+            Assert.Equal(expected.ChatId, result.ChatId);
+            Assert.Equal(expected.CreatedDate, result.CreatedDate);
+            Assert.Equal(expected.Description, result.Description);
+            Assert.Equal(expected.GroupId, result.GroupId);
+            Assert.Equal(expected.IsModerate, result.IsModerate);
+            Assert.Equal(expected.IsMulti, result.IsMulti);
+            Assert.Equal(expected.Number, result.Number);
+            Assert.Equal(expected.State, result.State);
+            Assert.Equal(expected.Title, result.Title);
+            Assert.Equal(expected.Type, result.Type);
+            Assert.Equal(expected.ThreadId, result.ThreadId);
         }
 
         private static List<News> CreateOneNewsList()=> [ new() {
