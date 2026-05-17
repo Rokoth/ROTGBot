@@ -9,6 +9,14 @@
 <p>
     <!--Фильтры-->
 </p>
+
+@foreach (var item in Model.Report.Items)
+{
+    <div>@Html.DisplayNameFor(modelItem => item.User) : @Html.DisplayFor(modelItem => item.User)</div>
+}
+
+<div>@Html.DisplayNameFor(modelItem => Model.Report.Total) : @Html.DisplayFor(modelItem => Model.Report.Total)</div>
+
 <table class="table" id="reportTable">
     <thead>
         <tr>
@@ -16,7 +24,7 @@
                 @Html.DisplayNameFor(model => model.Report.Items[0].User)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Year)
+                @Html.DisplayNameFor(model => model.Report.Items[0].)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Report.Items[0].Month)
