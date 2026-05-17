@@ -290,7 +290,7 @@ namespace ROTGBot.Service
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
                 "BlockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => BlockUserChoiseHandle(chId, userNews, tk), token),
+                                        (chId, userNews, tk) => BlockUserChoiseHandle(chId, userId, userNews, tk), token),
                 "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
                 "CancelUnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
@@ -337,7 +337,17 @@ namespace ROTGBot.Service
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
-        }               
+        }
+
+        private async Task SendMessageToUserHandle(Guid userId, long chId, int? userNumber, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendMessageToUserChoiseHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -433,16 +443,26 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task BlockUserHandle(Guid userId, long chatId, int userNumber, News? userNews, CancellationToken token)
+        private async Task BlockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
-                await BlockUserAccepted(userId, chatId, userNumber, userNews, token);
+                await BlockUserAccepted(userId, chatId, userNews, token);
             }
             else
             {
                 await BlockUserMessageNotFound(chatId, token);
             }
+        }
+
+        private async Task BlockUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task BlockUserAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task UnblockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
@@ -455,6 +475,11 @@ namespace ROTGBot.Service
             {
                 await UnblockUserMessageNotFound(chatId, token);
             }
+        }
+
+        private async Task UnblockUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task EditButtonHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
@@ -701,7 +726,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task BlockUserChoiseHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task BlockUserChoiseHandle(long chatId, Guid userId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -709,7 +734,7 @@ namespace ROTGBot.Service
             }
             else
             {
-                await SendBlockUserChoise(chatId, token);
+                await SendBlockUserChoise(chatId, userId, token);
             }
         }
 
@@ -882,8 +907,7 @@ namespace ROTGBot.Service
                 await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
                 return;
             }
-
-            var 
+                         
 
             await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
