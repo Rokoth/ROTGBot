@@ -36,7 +36,7 @@ namespace ROTGBot.Pages.User
             if (user == null)
                 return NotFound();
 
-
+            UserModel = user;
 
             return Page();
         }
