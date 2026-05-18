@@ -28,10 +28,12 @@ namespace Common
         /// </summary>
         public int LifeTime { get; set; } = 60;
 
+        public string DefaultEncoding { get; set; } = "ASCII";
+
         /// <summary>
         /// получить ключ
         /// </summary>
         /// <returns></returns>
-        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(Encoding.ASCII.GetBytes(Key));        
+        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(Encoding.GetEncoding(DefaultEncoding).GetBytes(Key));        
     }
 }

@@ -147,7 +147,8 @@ namespace XUnitTests
         {
             var _repoMock = new Mock<IRepository<NewsButton>>();
 
-            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+            _repoMock.SetupSequence(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<NewsButton>()))
                 .Returns(Task.FromResult(new List<NewsButton>()
                 {
                     new()
@@ -170,6 +171,8 @@ namespace XUnitTests
             var buttonsService = new ButtonsDataService(_repoMock.Object);
 
             var result = await buttonsService.AddParentButton("test", null, new CancellationToken());
+
+            Assert.True(result);
         }
     }
 }
