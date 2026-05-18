@@ -16,7 +16,7 @@ namespace ROTGBot.Pages.News
         {
             _logger = logger;
             _newsDataService = newsDataService;
-            Filter = new Contract.Filters.NewsFilter()
+            Filter = new Contract.Filters.NewsFilter(null, null, 10, 0, "Title")
             {
 
             };
@@ -36,7 +36,7 @@ namespace ROTGBot.Pages.News
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            News = _newsDataService.GetNewsByFilter();
+            News = _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
 
             return Page();
         }
