@@ -4,9 +4,10 @@ using ROTGBot.Service;
 
 namespace ROTGBot.Pages
 {
-    public class LogInModel(IUserDataService userDataService) : PageModel
+    public class LogInModel(IUserDataService userDataService, ITelegramMessageHandler telegramMessageHandler) : PageModel
     {
         private readonly IUserDataService _userDataService = userDataService;
+        private readonly ITelegramMessageHandler _telegramMessageHandler = telegramMessageHandler;
 
         public string Error { get; set; } = default!;
         public string Login { get; set; } = default!;
@@ -26,7 +27,14 @@ namespace ROTGBot.Pages
             if(!LoginSended)
             {
                 LoginSended = true;
-                
+                (bool success, string result) = await _telegramMessageHandler.CreateAndSendPassword(Login, new CancellationToken());
+                if (!success)
+                {
+                    IsError = true;
+                    LoginSended = false;
+                    PasswordSended = false;
+                    Error = $"Неверный логин: {result}";
+                }
             }
             else if(!PasswordSended)
             {
