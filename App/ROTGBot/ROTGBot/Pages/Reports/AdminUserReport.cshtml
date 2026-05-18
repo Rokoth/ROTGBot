@@ -10,48 +10,51 @@
     <!--Фильтры-->
 </p>
 
-@foreach (var item in Model.Report.Items)
+@foreach (var byUser in Model.Report.Items)
 {
-    <div>@Html.DisplayNameFor(modelItem => item.User) : @Html.DisplayFor(modelItem => item.User)</div>
+    <div>@Html.DisplayNameFor(modelItem => byUser.User) : @Html.DisplayFor(modelItem => byUser.User)</div>
+
+    @foreach (var byYear in byUser.ChildItems)
+    {
+        <div>@Html.DisplayNameFor(modelItem => byYear.Year) : @Html.DisplayFor(modelItem => byYear.Year)</div>
+
+        @foreach (var byMonth in byYear.ChildItems)
+        {
+            <div>@Html.DisplayNameFor(modelItem => byMonth.Month) : @Html.DisplayFor(modelItem => byMonth.Month)</div>
+
+            <table class="table" id="reportTable">
+                <thead>
+                    <tr>
+                        <th>
+                            @Html.DisplayNameFor(model => byMonth.ChildItems[0].Type)
+                        </th>
+                        <th>
+                            @Html.DisplayNameFor(model => byMonth.ChildItems[0].Count)
+                        </th>      
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in byMonth.ChildItems)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Type)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Count)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+                       
+        }
+
+        <div>@Html.DisplayNameFor(modelItem => byYear.Total) : @Html.DisplayFor(modelItem => byYear.Total)</div>
+    }        
+
+    <div>@Html.DisplayNameFor(modelItem => byUser.Total) : @Html.DisplayFor(modelItem => byUser.Total)</div>
 }
 
+
 <div>@Html.DisplayNameFor(modelItem => Model.Report.Total) : @Html.DisplayFor(modelItem => Model.Report.Total)</div>
-
-<table class="table" id="reportTable">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].User)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Month)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Count)
-            </th>
-
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Report.Items)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.User)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Year)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Month)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Count)
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>

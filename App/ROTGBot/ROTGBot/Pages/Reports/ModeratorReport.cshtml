@@ -9,11 +9,12 @@
 <p>
     <!--Фильтры-->
 </p>
+
 <table class="table" id="reportTable">
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Name)
+                @Html.DisplayNameFor(model => model.Report.Items[0].Year)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Report.Items[0].Description)
@@ -41,3 +42,5 @@
         }
     </tbody>
 </table>
+
+<div>@Html.DisplayNameFor(model => model.Report.Total) : @Html.DisplayFor(model => model.Report.Total)</div>

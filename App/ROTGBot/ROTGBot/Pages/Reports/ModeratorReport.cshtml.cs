@@ -14,7 +14,7 @@ namespace ROTGBot.Pages.Reports
         private readonly INewsDataService _newsDataService = newsDataService;
 
         [BindProperty]
-        public Report Report { get; set; } = default!;
+        public ModeratorReport Report { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync()
         {
