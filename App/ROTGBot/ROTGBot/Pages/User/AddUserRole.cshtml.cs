@@ -29,6 +29,14 @@ namespace ROTGBot.Pages.User
 
             var roles = await _userDataService.GetRoles(new CancellationToken());
 
+            Roles = [.. roles.Select(s => new SelectListItem()
+            {
+                Text = s.Description,
+                Value = s.Id.ToString(),
+                Selected = s.Name == "user",
+                Disabled = false
+            })];
+
             var user = await _userDataService.GetUser(id, new CancellationToken());
             if (user == null)
             {                
@@ -38,7 +46,7 @@ namespace ROTGBot.Pages.User
             {
                 UserId = user.Id,
                 UserName = $"{user.Name} ({user.TGLogin})",
-                RoleId = 
+                RoleId = roles.First(s => s.Name == "user").Id
             };
             return Page();
         }

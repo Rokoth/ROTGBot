@@ -20,12 +20,7 @@
             <div class="form-group p-3 border bg-light">
                 @Html.LabelFor(model => model.UserRole.RoleId, htmlAttributes: new { @class = "control-label col-md-2" })
                 <div class="col-md-10">
-                    @Html.DropDownListFor(model => model.UserRole.RoleId, new List<SelectListItem>
-                    {
-                        new SelectListItem {Text = "Пользователь", Value = "1", Selected = true },
-                        new SelectListItem {Text = "Модератор", Value = "2" },
-                        new SelectListItem {Text = "Администратор", Value = "3" }
-                    }, new { @class = "form-control" })
+                    @Html.DropDownListFor(model => model.UserRole.RoleId, Model.Roles, new { @class = "form-control" })
                     @Html.ValidationMessageFor(model => model.UserRole.RoleId, "", new { @class = "text-danger" })
                 </div>
             </div>
