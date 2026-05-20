@@ -16,10 +16,7 @@ namespace ROTGBot.Pages.News
         {
             _logger = logger;
             _newsDataService = newsDataService;
-            Filter = new Contract.Filters.NewsFilter(null, null, 10, 0, "Title")
-            {
-
-            };
+            Filter = new Contract.Filters.NewsFilter(null, null, 10, 0, "Title");
         }
 
         [BindProperty]
@@ -28,13 +25,28 @@ namespace ROTGBot.Pages.News
         [BindProperty]
         public Contract.Filters.NewsFilter Filter { get; set; } = default!;
 
-        public async Task<IActionResult> OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
+            //todo: проверка роли            
+
+            News = _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
+
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+                return RedirectToPage("/Auth");
+            var userId = Guid.Parse(auth.Principal.Identity.Name);
+            //todo: проверка роли            
 
             News = _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
 

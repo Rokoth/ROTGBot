@@ -1,4 +1,5 @@
-﻿using ROTGBot.Contract.Model;
+﻿using ROTGBot.Contract.Filters;
+using ROTGBot.Contract.Model;
 
 namespace ROTGBot.Service
 {
@@ -20,5 +21,6 @@ namespace ROTGBot.Service
         Task SetNewsDeclined(Guid id, Guid moderatorId, CancellationToken token);
         Task SetNewsDeleted(Guid id, CancellationToken token);
         Task SetNewsMulti(Guid id, CancellationToken token);
+        List<News> GetNewsByFilter(NewsFilter filter, CancellationToken cancellationToken);
     }
 }
