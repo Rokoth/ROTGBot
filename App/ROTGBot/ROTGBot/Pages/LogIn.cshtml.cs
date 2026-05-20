@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ROTGBot.Service;
+using System.Security.Claims;
 
 namespace ROTGBot.Pages
 {
@@ -38,7 +39,15 @@ namespace ROTGBot.Pages
             }
             else if(!PasswordSended)
             {
+                var identity = await GetIdentity();
                 PasswordSended = true;
+                if(identity == null)
+                {
+                    IsError = true;
+                    LoginSended = false;
+                    PasswordSended = false;
+                    Error = $"Неверный логин или пароль";
+                }
             }
             else if(IsAuth)
             {
@@ -53,5 +62,24 @@ namespace ROTGBot.Pages
             }
             return Page();
         }
+
+        private Task<ClaimsIdentity> GetIdentity() 
+        {
+            if (client != null)
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimsIdentity.DefaultNameClaimType, client.Id.ToString()),
+                    new Claim(ClaimsIdentity.DefaultRoleClaimType, roleType)
+                };
+                ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, authType,
+                    ClaimsIdentity.DefaultNameClaimType,
+                    ClaimsIdentity.DefaultRoleClaimType);
+                return claimsIdentity;
+            }
+            // если пользователя/клиента не найдено
+            return null;
+        }
     }
+     
 }
