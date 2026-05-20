@@ -16,7 +16,22 @@ namespace ROTGBot.Pages.Reports
         [BindProperty]
         public ModeratorReport Report { get; set; } = default!;
 
+        public ModeratorReportFilter Filter { get; set; } = default!;
+
         public async Task<IActionResult> OnGetAsync()
+        {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+                return RedirectToPage("/Auth");
+            var userId = Guid.Parse(auth.Principal.Identity.Name);
+
+            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
+
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 

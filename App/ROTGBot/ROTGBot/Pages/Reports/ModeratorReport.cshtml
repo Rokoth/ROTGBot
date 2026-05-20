@@ -10,37 +10,45 @@
     <!--Фильтры-->
 </p>
 
-<table class="table" id="reportTable">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Year)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Report.Items[0].Price)
-            </th>
 
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Report.Items)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Description)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Price)
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+@foreach (var byYear in Model.Report.Items)
+{
+    <div>@Html.DisplayNameFor(modelItem => byYear.Year) : @Html.DisplayFor(modelItem => byYear.Year)</div>
 
-<div>@Html.DisplayNameFor(model => model.Report.Total) : @Html.DisplayFor(model => model.Report.Total)</div>
+    @foreach (var byMonth in byYear.ChildItems)
+    {
+        <div>@Html.DisplayNameFor(modelItem => byMonth.Month) : @Html.DisplayFor(modelItem => byMonth.Month)</div>
+
+        <table class="table" id="reportTable">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => byMonth.ChildItems[0].Type)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => byMonth.ChildItems[0].Count)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in byMonth.ChildItems)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Type)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Count)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    }
+
+    <div>@Html.DisplayNameFor(modelItem => byYear.Total) : @Html.DisplayFor(modelItem => byYear.Total)</div>
+}
+
+
+<div>@Html.DisplayNameFor(modelItem => Model.Report.Total) : @Html.DisplayFor(modelItem => Model.Report.Total)</div>
