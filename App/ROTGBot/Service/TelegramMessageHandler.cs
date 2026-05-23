@@ -157,6 +157,16 @@ namespace ROTGBot.Service
                 {
                     await HandleData(user.ChatId, user, "EditButtonApprove", cancellationToken);
                 }
+
+                if (userNews.Type == "sendmessagetouser")
+                {
+                    await HandleData(user.ChatId, user, "SendMessageToUser", cancellationToken);
+                }
+
+                if (userNews.Type == "blockuser")
+                {
+                    await HandleData(user.ChatId, user, "BlockUser", cancellationToken);
+                }
             }
             else if (message.IsTopicMessage != true)
             {
@@ -209,19 +219,12 @@ namespace ROTGBot.Service
             string data = dataReq;
             Guid? newsId = null;
             int? buttonNumber = null;
-            int? userNumber = null;
             int offset = 0;
             
             if (data.StartsWith("ApproveNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId1))
             {
                 data = "ApproveNews";
                 newsId = newsId1;
-            }
-
-            if (data.StartsWith("SendMessageToUser_") && int.TryParse(data.Split("_")[1], out int userNumber1))
-            {
-                data = "SendMessageToUser";
-                userNumber = userNumber1;
             }
 
             if (data.StartsWith("DeclineNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId2))
@@ -295,6 +298,10 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => UnblockUserChoiseHandle(userId, chId, userNews, tk), token),
                 "CancelUnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => CancelUnblockUserHandle(userId, chId, userNews, tk), token),
+                "CancelBlockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => CancelBlockUserHandle(userId, chId, userNews, tk), token),
+                "CancelSendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => CancelSendMessageToUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendMessageToUserChoiseHandle(userId, chId, userNews, tk), token),
                 "BlockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -302,7 +309,7 @@ namespace ROTGBot.Service
                 "UnblockUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UnblockUserHandle(userId, chId, userNews, tk), token),
                 "SendMessageToUser" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendMessageToUserHandle(userId, chId, userNumber, userNews, tk), token),
+                                        (chId, userNews, tk) => SendMessageToUserHandle(userId, chId, userNews, tk), token),
                 "AddAdminDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => AddAdminDeclineHandle(userId, chId, userNews, tk), token),
                 "AddModerator" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -337,16 +344,6 @@ namespace ROTGBot.Service
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
-        }
-
-        private async Task SendMessageToUserHandle(Guid userId, long chId, int? userNumber, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task SendMessageToUserChoiseHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
         }
 
         private async Task<bool> SendWithCheckRights(
@@ -460,12 +457,19 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task BlockUserAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        private async Task UnblockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
-            throw new NotImplementedException();
+            if (userNews != null)
+            {
+                await UnblockUserAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await UnblockUserMessageNotFound(chatId, token);
+            }
         }
 
-        private async Task UnblockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        private async Task SendMessageToUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -624,7 +628,31 @@ namespace ROTGBot.Service
             {
                 await CancelUnblockUserMessageNotFound(chatId, token);
             }
-        }        
+        }
+
+        private async Task CancelBlockUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await CancelBlockUser(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await CancelBlockUserMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task CancelSendMessageToUserHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await CancelSendMessageToUser(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await CancelSendMessageToUserMessageNotFound(chatId, token);
+            }
+        }
 
         private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
         {
@@ -723,6 +751,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendUnblockUserChoise(chatId, userId, token);
+            }
+        }
+
+        private async Task SendMessageToUserChoiseHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendMessageToUserChoise(chatId, userId, token);
             }
         }
 
@@ -913,7 +953,29 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
         }
 
-        
+        private async Task BlockUserAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return;
+            }
+
+            var userLogin = messages.FirstOrDefault().TextValue;
+
+            if(string.IsNullOrEmpty(userLogin))
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return;
+            }
+
+            var result = await _userDataService.UserBlock(userLogin, token);
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Пользователь заблокирован", token);
+        }
 
         private async Task ParseAndSetRole(IEnumerable<NewsMessage> messages, RoleEnum role, CancellationToken token)
         {
@@ -1187,7 +1249,19 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
-                
+
+        private async Task CancelBlockUser(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
+        private async Task CancelSendMessageToUser(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
         private async Task AddModeratorAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
@@ -1241,7 +1315,16 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Нет задач на разблокировку пользователя", token);
         }
 
-        
+        private async Task CancelBlockUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на блокировку пользователя", token);
+        }
+
+        private async Task CancelSendMessageToUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на отправку сообщения пользователю", token);
+        }
+
         private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
@@ -1407,12 +1490,49 @@ namespace ROTGBot.Service
                  token);            
         }
 
+        private async Task SendMessageToUserChoise(long chatId, Guid userId, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, userId, null, null, "sendmessagetouser", "Разблокировка пользователя", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "CancelSendMessageToUser"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте сообщение с логином или номером пользователя, затем сообщение для отправки, либо нажмите Отмена для отмены действия",
+                 replyMarkup,
+                 token);
+        }
+
         private async Task SendBlockUserChoise(long chatId, Guid userId, CancellationToken token)
         {
             await _newsDataService.CreateNews(chatId, userId, null, null, "blockuser", "Блокировка пользователя", false, token);
 
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "CancelBlockUser"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
             await client.SendMessageAsync(chatId,
                 "Отправьте запрос с логином или номером пользователя для блокировки, либо нажмите Отмена для отмены действия",
+                replyMarkup,
                  token);
         }
 

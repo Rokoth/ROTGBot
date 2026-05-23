@@ -88,7 +88,7 @@ namespace XUnitTests
             var _repoMock = new Mock<IRepository<Groups>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<Groups>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(ThrowsRepoException()));
+                .Returns(()=> Task.FromResult(ThrowsRepoException()));
             _repoMock.Setup(s => s.AddAsync(It.IsAny<Groups>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Groups()));
 

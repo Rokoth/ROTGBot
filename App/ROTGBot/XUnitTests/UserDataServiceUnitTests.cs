@@ -148,16 +148,13 @@ namespace XUnitTests
             var moderGuid = Guid.NewGuid();
             var userGuid = Guid.NewGuid();
 
-            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<User>()
+            _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new User()
                 {
-                    new()
-                    {
-                        Id = user1Id,
-                        IsDeleted = false,
-                        IsNotify = false,
-                        ChatId = 1
-                    }
+                    Id = user1Id,
+                    IsDeleted = false,
+                    IsNotify = false,
+                    ChatId = 1
                 }));
 
             _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
@@ -248,7 +245,7 @@ namespace XUnitTests
 
             var userService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
-            await Assert.ThrowsAsync<RepositoryException>(() => userService.SwitchUserNotify(user1Id, new CancellationToken()););
+            await Assert.ThrowsAsync<RepositoryException>(() => userService.SwitchUserNotify(user1Id, new CancellationToken()));
         }
 
         private static User GetErrorResult()
