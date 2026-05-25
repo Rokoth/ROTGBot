@@ -5,6 +5,7 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ROTGBot.Service
 {
@@ -350,6 +351,15 @@ namespace ROTGBot.Service
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
 
-        
+        public async Task<List<Contract.Model.News>> GetNewsByFilter(Contract.Filters.NewsFilter filter, CancellationToken cancellationToken)
+        {
+            var allNews = await _newsRepo.GetAsync(new Filter<News>(), cancellationToken);
+            if(allNews.Count == 0)
+            {
+                return [];
+            }
+
+            var result = await Map(allNews, cancellationToken);
+        }
     }
 }
