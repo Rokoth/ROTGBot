@@ -1,6 +1,7 @@
 ﻿using Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using ROTGBot.Contract.Model;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -1020,7 +1021,19 @@ namespace ROTGBot.Service
 
         private async Task SendUserInfoByNewsNumberAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
         {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
+            if (messages?.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
+
+            if(string.IsNullOrEmpty(messages?.FirstOrDefault()?.TextValue) || !int.TryParse(messages?.FirstOrDefault().TextValue, out int newsNumber))
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
 
             var searchNews = await _newsDataService.GetNewsByNumber(newsNumber, token);
 
@@ -1030,7 +1043,16 @@ namespace ROTGBot.Service
                 return;
             }
 
-            
+            var searchUserId = searchNews.UserId;
+            var searchUser = await _userDataService.GetUser(searchUserId, token);
+
+            if (searchUser == null)
+            {
+                await client.SendMessageAsync(chatId, "Пользователь не найден", token);
+                return;
+            }
+
+            await client.SendMessageAsync(chatId, $"Новость отправлена пользователем {searchUser.Name} ({searchUser.TGLogin}), номер: {searchUser.Number}", token);
 
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
         }
@@ -1235,6 +1257,11 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Нет задач на добавление кнопок", token);
         }
 
+        private async Task SendUserInfoByNewsNumberMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на поиск пользователя", token);
+        }
+        
         private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
