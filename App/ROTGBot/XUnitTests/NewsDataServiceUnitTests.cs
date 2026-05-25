@@ -83,7 +83,7 @@ namespace XUnitTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task CreateNews_Success_Async()
+        public async Task CreateNews_Success_NoOld_Async()
         {
             var _repoMock = new Mock<IRepository<News>>();
             var _repoUserMock = new Mock<IRepository<User>>();
@@ -91,18 +91,26 @@ namespace XUnitTests
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
             News? news = null;
-
+            
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(news));
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<News>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(news));
+                .Returns(Task.FromResult(new News()));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
-            var result = await newsService.CreateNews(1, Guid.NewGuid(), 1, 1, "news", "test", false, new CancellationToken());
+            var result = await newsService.CreateNews(2, Guid.NewGuid(), 3, 5, "news", "test", false, new CancellationToken());
 
             Assert.NotNull(result);
+            Assert.Equal("create", result.State);
+            Assert.Equal(2, result.ChatId);
+            Assert.Equal(3, result.GroupId);
+            Assert.Equal(5, result.ThreadId);
+            Assert.Equal("news", result.Type);
+            Assert.Equal(1, result.Number);
+            Assert.Equal("test", result.Title);
+            Assert.False(result.IsModerate);
         }
     }
 }
