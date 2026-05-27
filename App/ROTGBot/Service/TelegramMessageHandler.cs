@@ -207,7 +207,9 @@ namespace ROTGBot.Service
             {
                 { CommandEnum.unknown, Array.Empty<string>() },
                 { CommandEnum.answer, AnswerKeyWords },
-                { CommandEnum.show, ShowKeyWords }
+                { CommandEnum.show, ShowKeyWords },
+                { CommandEnum.block, ShowKeyWords },
+                { CommandEnum.unblock, ShowKeyWords }
             };
                                     
             foreach(var commandKW in findCommandKeyWords)
@@ -244,7 +246,23 @@ namespace ROTGBot.Service
                 case CommandEnum.show:
                     await ShowNewsOrUsers(chatId, commandText, user, type, cancellationToken);
                     break;
+                case CommandEnum.block:
+                    await BlockUser(chatId, commandText, user, type, cancellationToken);
+                    break;
+                case CommandEnum.unblock:
+                    await UnBlockUser(chatId, commandText, user, type, cancellationToken);
+                    break;
             }
+        }
+
+        private async Task UnBlockUser(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task BlockUser(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task ShowNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
