@@ -45,7 +45,7 @@ namespace ROTGBot.Service
         public Task SendMessageAsync(long chatId, string message, int? threadId, CancellationToken token)
         => Execute(client => client.SendMessageAsync(chatId, message, messageThreadId: threadId, cancellationToken: token));
 
-        public Task SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token)
+        public Task<bool> SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token)
             => Execute(client => client.SetMyCommandsAsync(args, cancellationToken: token));
 
         private async Task<T> Execute<T>(Func<TelegramBotClient, Task<T>> execFunc)

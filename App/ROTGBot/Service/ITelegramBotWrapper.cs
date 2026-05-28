@@ -11,7 +11,7 @@ namespace ROTGBot.Service
     {
         Task<IEnumerable<Update>> GetUpdatesAsync(int offset, CancellationToken token);
 
-        Task SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token);
+        Task<bool> SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token);
 
         Task AnswerCallbackQueryAsync(AnswerCallbackQueryArgs args, CancellationToken token);
 

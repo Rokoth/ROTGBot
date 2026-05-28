@@ -53,7 +53,7 @@ namespace XUnitTests
                 .ReturnsAsync([]);
 
             wrapperService.Setup(s => s.SetMyCommandsAsync(It.IsAny<SetMyCommandsArgs>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Task.CompletedTask);
+                .ReturnsAsync(true);
 
             var tgMainService = new TelegramMainService(handlerService.Object, wrapperService.Object);
 
