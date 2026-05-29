@@ -227,7 +227,7 @@ namespace ROTGBot.Service
             return (null, null, false);
         }
 
-        private async Task CommandHandle(CommandEnum? commandType, string? commandText, long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
+        private async Task CommandHandle(CommandEnum? commandType, string commandText, long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
         {            
             if (userNews != null)
             {
@@ -255,25 +255,28 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UnBlockUser(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task UnBlockUser(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        private async Task BlockUser(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task BlockUser(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        private async Task ShowNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task ShowNewsOrUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
             var words = commandText.Split(" ");
         }
 
-        private async Task FindNewsOrUsers(long chatId, string? commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task FindNewsOrUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
-            var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToArray();
-            
+            var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ")
+                .Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).GroupBy(s => s).ToDictionary(s => s.Key, s=> s.Count());
+
+            var found = words.ToDictionary(s => s.Key, s => 0);
+
             foreach (var word in words)
             {
 
