@@ -14,6 +14,14 @@ namespace ROTGBot.Contract.Model
 
         public List<RoleEnum> Roles { get; set; } = [];
 
+        public string RolesString => string.Join(", ", Roles.Select(s => s switch
+        {
+            RoleEnum.administrator => "Администратор",
+            RoleEnum.moderator => "Модератор",
+            RoleEnum.user => "Пользователь",
+            _ => "Неизвестно",
+        }));
+
         public bool IsAdmin => Roles.Contains(RoleEnum.administrator);
         public bool IsModerator => Roles.Contains(RoleEnum.moderator);
 
