@@ -1029,7 +1029,7 @@ namespace ROTGBot.Service
                 return;
             }
 
-            if(string.IsNullOrEmpty(messages?.FirstOrDefault()?.TextValue) || !int.TryParse(messages?.FirstOrDefault().TextValue, out int newsNumber))
+            if(messages?.FirstOrDefault()?.TextValue != null || !int.TryParse(messages?.FirstOrDefault().TextValue, out int newsNumber))
             {
                 await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
                 return;
