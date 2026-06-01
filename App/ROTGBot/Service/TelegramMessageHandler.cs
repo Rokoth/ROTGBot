@@ -2099,5 +2099,10 @@ namespace ROTGBot.Service
                 await SendMenuButtons(chatId, user, type, cancellationToken);
             }
         }
+
+        public Task<bool> SendNewsAnswer(News news, string answer, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

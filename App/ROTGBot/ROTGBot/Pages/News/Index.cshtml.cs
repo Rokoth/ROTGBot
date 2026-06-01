@@ -34,7 +34,7 @@ namespace ROTGBot.Pages.News
             var userId = Guid.Parse(auth.Principal.Identity.Name);
             //todo: проверка роли            
 
-            News = _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
+            News = await _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
 
             return Page();
         }
@@ -48,7 +48,7 @@ namespace ROTGBot.Pages.News
             var userId = Guid.Parse(auth.Principal.Identity.Name);
             //todo: проверка роли            
 
-            News = _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
+            News = await _newsDataService.GetNewsByFilter(Filter, new CancellationToken());
 
             return Page();
         }

@@ -53,7 +53,7 @@ namespace ROTGBot.Pages.News
 
             //todo: отправка
 
-
+            return Page();
         }
     }
 }

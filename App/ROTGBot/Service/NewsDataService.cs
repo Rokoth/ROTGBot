@@ -360,6 +360,8 @@ namespace ROTGBot.Service
             }
 
             var result = await Map(allNews, cancellationToken);
+
+            return result;
         }
     }
 }
