@@ -2099,5 +2099,10 @@ namespace ROTGBot.Service
                 await SendMenuButtons(chatId, user, type, cancellationToken);
             }
         }
+
+        public Task<(bool success, string result)> CreateAndSendPassword(string login, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

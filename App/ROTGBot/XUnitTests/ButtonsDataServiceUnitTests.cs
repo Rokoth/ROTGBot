@@ -106,10 +106,8 @@ namespace XUnitTests
         {
             var _repoMock = new Mock<IRepository<NewsButton>>();
 
-            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<NewsButton>(){}));
-
-            _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+            _repoMock.SetupSequence(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new List<NewsButton>(){}))
                 .Returns(Task.FromResult(new List<NewsButton>()
                 {
                     new()
@@ -125,6 +123,7 @@ namespace XUnitTests
                         ToSend = true
                     }
                 }));
+            
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<NewsButton>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new NewsButton()));
