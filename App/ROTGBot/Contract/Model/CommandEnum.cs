@@ -3,12 +3,13 @@
     public enum CommandEnum
     {
         find,
-        show,
+        showuser,
         block,
         unblock,
         answer,
         start,
-        unknown
+        unknown,
+        shownews
     }
     
 }

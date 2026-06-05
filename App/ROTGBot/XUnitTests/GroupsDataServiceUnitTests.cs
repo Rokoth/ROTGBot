@@ -88,7 +88,7 @@ namespace XUnitTests
             var _repoMock = new Mock<IRepository<Groups>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<Groups>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(GetGroupsException()));
+                .Returns(GetGroupsException);
             _repoMock.Setup(s => s.AddAsync(It.IsAny<Groups>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Groups()));
 
@@ -97,7 +97,7 @@ namespace XUnitTests
             await Assert.ThrowsAsync<RepositoryException>(() => service.AddGroupIfNotExists(1, "test", "test", new CancellationToken()));
         }
 
-        private static List<Groups> GetGroupsException()
+        private static async Task<List<Groups>> GetGroupsException()
         {
             throw new RepositoryException("RepositoryException");
         }

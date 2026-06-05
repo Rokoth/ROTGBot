@@ -21,7 +21,8 @@ namespace ROTGBot.Service
         private readonly ITelegramBotWrapper client;
 
         private readonly int TimeoutSpan = 10;
-        private static readonly string[] ShowKeyWords = ["показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров"];
+        private static readonly string[] ShowUserKeyWords = ["показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров"];
+        private static readonly string[] ShowNewsKeyWords = ["показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей"];
         private static readonly string[] AnswerKeyWords = ["ответь", "ответ", "отправь", "отправить"];
 
         public TelegramMessageHandler(
@@ -207,9 +208,10 @@ namespace ROTGBot.Service
             {
                 { CommandEnum.unknown, Array.Empty<string>() },
                 { CommandEnum.answer, AnswerKeyWords },
-                { CommandEnum.show, ShowKeyWords },
-                { CommandEnum.block, ShowKeyWords },
-                { CommandEnum.unblock, ShowKeyWords }
+                { CommandEnum.showuser, ShowUserKeyWords },
+                { CommandEnum.shownews, ShowNewsKeyWords },
+                { CommandEnum.block, BlockKeyWords },
+                { CommandEnum.unblock, UnBlockKeyWords }
             };
                                     
             foreach(var commandKW in findCommandKeyWords)
@@ -243,8 +245,11 @@ namespace ROTGBot.Service
                 case CommandEnum.find:
                     await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
                     break;
-                case CommandEnum.show:
-                    await ShowNewsOrUsers(chatId, commandText, user, type, cancellationToken);
+                case CommandEnum.showuser:
+                    await ShowUsers(chatId, commandText, user, type, cancellationToken);
+                    break;
+                case CommandEnum.shownews:
+                    await ShowNews(chatId, commandText, user, type, cancellationToken);
                     break;
                 case CommandEnum.block:
                     await BlockUser(chatId, commandText, user, type, cancellationToken);
@@ -265,7 +270,30 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task ShowNewsOrUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task ShowUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            var words = commandText.Split(" ").Select(s => s.Trim().ToLower()).ToList();
+            int? count = null;
+            int? daysCount = null;
+
+            var keyWordIndex = words.IndexOf("по");
+            if(keyWordIndex > 0 && words.Count() > (keyWordIndex + 1) && int.TryParse(words[keyWordIndex + 1], out int countT))
+            {
+                count = countT;
+            }
+
+            List<string> daysKeyWords = ["день", "дней", "дня", "сутки", "суток"];
+            foreach(var kw in daysKeyWords)
+            {
+                var kwIndex = words.IndexOf(kw);
+                if (kwIndex > 0 && words.Count() > (kwIndex + 1) && int.TryParse(words[kwIndex + 1], out int countD))
+                {
+                    daysCount = countD;
+                }
+            }
+        }
+
+        private async Task ShowNews(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
         {
             var words = commandText.Split(" ");
         }
