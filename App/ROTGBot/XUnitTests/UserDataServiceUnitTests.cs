@@ -200,13 +200,27 @@ namespace XUnitTests
                     }
                 }));
 
-            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new User()
+            _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
+               .Returns(Task.FromResult(new List<Role>()
+               {
+                    new()
+                    {
+                        Id = moderGuid,
+                        IsDeleted = false,
+                        Name = "moderator"
+                    }
+               }));
+
+            _repouserRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<UserRole>>(), It.IsAny<CancellationToken>()))
+               .Returns(Task.FromResult(new List<UserRole>()));
+
+            _repouserRoleMock.Setup(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new UserRole()
                 {
                     Id = user1Id,
                     IsDeleted = false,
-                    IsNotify = true,
-                    ChatId = 1
+                    UserId = user1Id,
+                    RoleId = moderGuid
                 }));
 
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);

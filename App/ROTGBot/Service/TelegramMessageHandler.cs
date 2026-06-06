@@ -947,10 +947,31 @@ namespace ROTGBot.Service
                 await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
                 return;
             }
-                         
 
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-            await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
+            var message = messages.OrderByDescending(s => s.TGMessageId).FirstOrDefault();
+
+            try
+            {
+                var result = await _userDataService.UserUnBlock(message.TextValue, token);
+                await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+                await client.SendMessageAsync(chatId, "Пользователь разблокирован", token);
+            }
+            catch (ArgumentException ex)
+            {
+                var button1 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "CancelUnblockUser"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button1
+                    }
+                    });
+                await client.SendMessageAsync(chatId, "Пользователь не найден, попробуйте еще раз или отмените запрос", token);
+            }
         }
 
         private async Task BlockUserAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
