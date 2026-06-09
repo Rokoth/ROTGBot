@@ -87,100 +87,146 @@ namespace ROTGBot.Service
         public async Task<bool> HandleData(
             long chatId,
             Contract.Model.User user,
-            string? dataReq,
+            string? data,
             CancellationToken token)
         {
-            if (dataReq == null || dataReq == "-") return false;
-
-            string data = dataReq;
-            Guid? newsId = null;
-            int? buttonNumber = null;
-            int offset = 0;
-            if (data.StartsWith("ApproveNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId1))
-            {
-                data = "ApproveNews";
-                newsId = newsId1;
-            }
-
-            if (data.StartsWith("DeclineNews_") && Guid.TryParse(data.Split("_")[1], out Guid newsId2))
-            {
-                data = "DeclineNews";
-                newsId = newsId2;
-            }
-
-            if (data.StartsWith("SendNewsChoice_") && int.TryParse(data.Split("_")[1], out int buttonNumber2))
-            {
-                data = "SendNewsChoice";
-                buttonNumber = buttonNumber2;
-            }
-
-            if (data.StartsWith("ApproveNewsChoice_") && int.TryParse(data.Split("_")[1], out int offset1))
-            {
-                data = "ApproveNewsChoice";
-                offset = offset1;
-            }
-
+            if (data == null || data == "-") return false;
+                        
             var roles = user.Roles;
             var userId = user.Id;
-
-            MessageType messageType = MessageType.Unknown;
-            if(Enum.TryParse(data, true, out MessageType mt))
-            {
-                messageType = mt;
-            }
-            else
+                       
+            if (!GetMessageType(data, out MessageType messageType, out string newData))
             {
                 await SendUserNotImplemented(chatId, token);
             }
 
-            if(!await CheckRights(chatId, user, messageType, token))
+            if (!await CheckRights(chatId, user, messageType, token))
             {
                 return false;
             }
 
-                return messageType switch
-                {
-                    MessageType.SwitchNotify => await SendSwitchNotifyHandle(chId, user.Id, tk),
-                    MessageType.SendNewsChoice => await SendNewsChoiceHandle(chId, user, userNews, buttonNumber.Value, tk),
-                    MessageType.SendNews => await SendNewsHandle(userId, chId, userNews, tk),
-                    MessageType.SendNewsMulti => await SendNewsMultiHandle(chId, userNews, tk),
-                    MessageType.UserReport => await GetUserReportHandle(chId, user, tk),
-                    MessageType.ModeratorReport => await GetModeratorReportHandle(chId, user, tk),
-                    MessageType.AdminUserReport => await GetAdminUserReportHandle(chId, user, tk),
-                    MessageType.AdminModeratorReport => await GetAdminModeratorReportHandle(chId, user, tk),
-                    MessageType.DeleteNews => await DeleteNewsHandle(chId, userNews, tk),
-                    MessageType.ApproveNewsChoice => await SendNewsChoiceApproveHandle(chId, offset, tk),
-                    MessageType.ApproveNews => await SendNewsApproveHandle(userId, chId, newsId.Value, tk),
-                    MessageType.DeclineNews => await SendNewsDeclineHandle(userId, chId, newsId.Value, tk),
-                    MessageType.AddAdminChoice => await SendAddAdminChoiceHandle(chId, user, userNews, tk),
-                    MessageType.AddModeratorChoice => await SendAddModeratorChoiceHandle(chId, user, userNews, tk),
-                    MessageType.EditButtonsChoice => await SendEditButtonsChoiceHandle(chId, user, userNews, tk),
-                    MessageType.AddButtonChoice => await  SendAddButtonChoiceHandle(chId, user, userNews, tk),
-                    MessageType.GetButtonChoice => await SendGetButtonChoiceHandle(chId, user, userNews, tk),
-                    MessageType.DeleteButtonChoice => await SendDeleteButtonChoiceHandle(chId, user, userNews, tk),
-                    MessageType.AddAdmin => await AddAdminHandle(userId, chId, userNews, tk),
-                    MessageType.AddAdminDecline => await AddAdminDeclineHandle(userId, chId, userNews, tk),
-                    MessageType.AddModerator => await AddModeratorHandle(userId, chId, userNews, tk),
-                    MessageType.AddModeratorDecline => await AddModeratorDeclineHandle(userId, chId, userNews, tk),
-                    MessageType.EditButton => await EditButtonHandle(userId, chId, userNews, tk),
-                    MessageType.EditButtonApprove => await EditButtonApproveHandle(chId, userNews, tk),
-                    MessageType.EditButtonDecline => await EditButtonDeclineHandle(userId, chId, userNews, tk),
-                    MessageType.AddButton => await AddButtonHandle(userId, chId, userNews, tk),
-                    MessageType.AddButtonDecline => await AddButtonDeclineHandle(userId, chId, userNews, tk),
-                    MessageType.DeleteButton => await DeleteButtonHandle(userId, chId, userNews, tk),
-                    MessageType.DeleteButtonDecline => await DeleteButtonDeclineHandle(userId, chId, userNews, tk),
-                    MessageType.GetPDNOferta => await SendPDNOferta(chId, userNews, tk),
-                    MessageType.GetDonateQR => await SendDonateQR(chId, userNews, tk),
-                    MessageType.MenuAdmin => await StartCommandHandle(chId, user, userNews, "admin", tk),
-                    MessageType.MenuModerator => await StartCommandHandle(chId, user, userNews, "moderator", tk),
-                    MessageType.MenuUser => await StartCommandHandle(chId, user, userNews, "user", tk),
+            var userNews = await _newsDataService.GetCurrentNews(user.Id, token);
 
-                    _ => await SendUserNotImplemented(chId, token)
-                };
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, messageType, token);
+            }
+
+            return messageType switch
+            {
+                MessageType.SwitchNotify => await SendSwitchNotifyHandle(chatId, user.Id, token),
+                MessageType.SendNewsChoice => await SendNewsChoiceHandle(chatId, user, userNews, newData, token),
+                MessageType.SendNews => await SendNewsHandle(userId, chatId, userNews, token),
+                MessageType.SendNewsMulti => await SendNewsMultiHandle(chatId, userNews, token),
+                MessageType.UserReport => await GetUserReportHandle(chatId, user, token),
+                MessageType.ModeratorReport => await GetModeratorReportHandle(chatId, user, token),
+                MessageType.AdminUserReport => await GetAdminUserReportHandle(chatId, user, token),
+                MessageType.AdminModeratorReport => await GetAdminModeratorReportHandle(chatId, user, token),
+                MessageType.DeleteNews => await DeleteNewsHandle(chatId, userNews, token),
+                MessageType.ApproveNewsChoice => await SendNewsChoiceApproveHandle(chatId, newData, token),
+                MessageType.ApproveNews => await SendNewsApproveHandle(userId, chatId, data, token),
+                MessageType.DeclineNews => await SendNewsDeclineHandle(userId, chatId, data, token),
+                MessageType.AddAdminChoice => await SendAddAdminChoiceHandle(chatId, user, userNews, token),
+                MessageType.AddModeratorChoice => await SendAddModeratorChoiceHandle(chatId, user, userNews, token),
+                MessageType.EditButtonsChoice => await SendEditButtonsChoiceHandle(chatId, user, userNews, token),
+                MessageType.AddButtonChoice => await SendAddButtonChoiceHandle(chatId, user, userNews, token),
+                MessageType.GetButtonChoice => await SendGetButtonChoiceHandle(chatId, user, userNews, token),
+                MessageType.DeleteButtonChoice => await SendDeleteButtonChoiceHandle(chatId, user, userNews, token),
+                MessageType.AddAdmin => await AddAdminHandle(userId, chatId, userNews, token),
+                MessageType.AddAdminDecline => await AddAdminDeclineHandle(userId, chatId, userNews, token),
+                MessageType.AddModerator => await AddModeratorHandle(userId, chatId, userNews, token),
+                MessageType.AddModeratorDecline => await AddModeratorDeclineHandle(userId, chatId, userNews, token),
+                MessageType.EditButton => await EditButtonHandle(userId, chatId, userNews, token),
+                MessageType.EditButtonApprove => await EditButtonApproveHandle(chatId, userNews, token),
+                MessageType.EditButtonDecline => await EditButtonDeclineHandle(userId, chatId, userNews, token),
+                MessageType.AddButton => await AddButtonHandle(userId, chatId, userNews, token),
+                MessageType.AddButtonDecline => await AddButtonDeclineHandle(userId, chatId, userNews, token),
+                MessageType.DeleteButton => await DeleteButtonHandle(userId, chatId, userNews, token),
+                MessageType.DeleteButtonDecline => await DeleteButtonDeclineHandle(userId, chatId, userNews, token),
+                MessageType.GetPDNOferta => await SendPDNOferta(chatId, userNews, token),
+                MessageType.GetDonateQR => await SendDonateQR(chatId, userNews, token),
+                MessageType.MenuAdmin => await StartCommandHandle(chatId, user, userNews, "admin", token),
+                MessageType.MenuModerator => await StartCommandHandle(chatId, user, userNews, "moderator", token),
+                MessageType.MenuUser => await StartCommandHandle(chatId, user, userNews, "user", token),
+
+                _ => await SendUserNotImplemented(chatId, token)
+            };
         }
 
-        
-        
+        private Task SendUserRemember(long chatId, News? news, MessageType messageType, CancellationToken token)
+        {
+            MessageType[] toSendRememberTypes = new MessageType[]
+            {
+
+            };
+
+            return (news?.Type) switch
+            {
+                "news" => SendNewsMessageForUserRemember(news, chatId, token),
+                "addadmin" => SendAddAdminForAdminRemember(chatId, token),
+                "addmoderator" => SendAddModeratorForAdminRememeber(chatId, token),
+                "editbutton" => SendEditButtonForAdminRemember(chatId, token),
+                "addbutton" => SendAddButtonForAdminRemember(chatId, token),
+                "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
+                _ => Task.CompletedTask,
+            };
+        }
+
+        private static bool GetMessageType(string data, out MessageType mt, out string newData)
+        {
+            newData = data;
+            if(Enum.TryParse(data, true, out mt))
+            {
+                return true;
+            }
+
+            if(!data.Contains('_'))
+            {
+                return false;
+            }
+
+            var splitted = data.Split("_");
+
+            if (Enum.TryParse(splitted[0], true, out mt))
+            {
+                newData = splitted[1];
+                return true;
+            }
+
+            return false;
+        }
+
+        private async Task SendSwitchNotifyHandle(long chatId, Guid userId, CancellationToken token)
+        {
+            var isNotify = await _userDataService.SwitchUserNotify(userId, token);
+
+            await client.SendMessageAsync(chatId, $"Уведомления {(isNotify ? "включены" : "выключены")}", token);
+        }
+
+        private async Task SendNewsChoiceHandle(long chatId, Contract.Model.User user, News? userNews, string data, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsMessageForUser(chatId, buttonNumber, user, token);
+            }
+        }
+
+        private async Task SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendNewsMessageAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsMessageNotFound(chatId, token);
+            }
+        }
+
         private async Task SendUserNotImplemented(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Действие не реализовано", token);
@@ -197,9 +243,259 @@ namespace ROTGBot.Service
             return true;
         }
 
+        private async Task SendNewsMultiHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SetNewsMulti(chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task GetUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetUserReport(user.Id, token);
+            await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям:\r\n {report}", token);
+        }
+
+        private async Task GetModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetModeratorReport(user.Id, token);
+            await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям:\r\n {report}", token);
+        }
+
+        private async Task GetAdminUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetAdminUserReport(token);
+            await client.SendMessageAsync(chatId, $"Отчёт по отправленным пользователями обращениям:\r\n {report}", token);
+        }
+
+        private async Task GetAdminModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            var report = await _newsDataService.GetAdminModeratorReport(token);
+            await client.SendMessageAsync(chatId, $"Отчёт по обработанным модераторами обращениям:\r\n {report}", token);
+        }
+
         private async Task SendUserHasNoRights(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "У вас нет прав на это действие", token);
+        }
+
+        private async Task DeleteNewsHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await DeleteNewsMessageAccepted(chatId, userNews, token);
+            }
+            else
+            {
+                await DeleteNewsMessageNotFound(chatId, token);
+            }
+        }
+
+
+
+
+
+
+
+        private async Task AddAdminHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminAccepted(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await AddAdminMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task EditButtonHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await EditButtonAccepted(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task EditButtonApproveHandle(long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendEditButtonsForUserApprove(chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task AddButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddButtonAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await DeleteButtonAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task AddModeratorHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddModeratorAccepted(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await AddModeratorMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task AddAdminDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await AddAdminMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task EditButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task AddModeratorDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await AddModeratorMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task AddButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task DeleteButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendPDNOferta(long chatId, News? userNews, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", token: token);
+            using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
+            await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "PDNOferta.txt")), token);
+        }
+
+        private async Task SendDonateQR(long chatId, News? userNews, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Отправить пожертвование можно, используя ссылку", token: token);
+            await client.SendMessageAsync(chatId, "https://t.me/c/1627860016/6606/746066", token: token);
+            //await client.SendPhotoAsync(new SendPhotoArgs(chatId, ),  token);
+        }
+
+        private async Task SendNewsApproveHandle(Guid moderatorId, long chatId, string data, CancellationToken token)
+        {
+            var userNews = await _newsDataService.GetNewsById(newsId, token);
+            if (userNews != null)
+            {
+                await SendNewsMessageApproved(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendNewsDeclineHandle(Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
+        {
+            var userNews = await _newsDataService.GetNewsById(newsId, token);
+            if (userNews != null)
+            {
+                await SendNewsMessageDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendNewsChoiceApproveHandle(long chatId, string data, CancellationToken token)
+        {
+            var userNewses = await _newsDataService.GetNewsForApprove(token);
+            var allCount = userNewses.Count;
+
+            if(!int.TryParse(data, out int offset))
+            {
+                await client.SendMessageAsync(chatId, "Неверная ссылка кнопки, отмените текущее задание и попробуйте снова", token: token);
+            }
+
+            offset = Math.Min(offset, allCount - 1);
+
+            var userNews = userNewses.Skip(offset).FirstOrDefault();
+
+            if (userNews != null)
+            {
+                await SendNewsMessageForApprove(chatId, userNews, GetExistsPrev(offset), GetExistsNext(offset, allCount), offset, token);
+            }
+            else
+            {
+                await ApproveNewsMessageNotFound(chatId, token);
+            }
         }
     }
 
@@ -429,280 +725,15 @@ namespace ROTGBot.Service
             return result;
         }
 
-        private async Task DeleteNewsHandle( long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await DeleteNewsMessageAccepted(chatId, userNews, token);
-            }
-            else
-            {
-                await DeleteNewsMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await SendNewsMessageAccepted(userId, chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task GetUserReportHandle( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var report = await _newsDataService.GetUserReport(user.Id, token);
-            await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям:\r\n {report}", token);
-        }
-
-        private async Task GetModeratorReportHandle( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var report = await _newsDataService.GetModeratorReport(user.Id, token);
-            await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям:\r\n {report}", token);
-        }
-
-        private async Task GetAdminUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var report = await _newsDataService.GetAdminUserReport(token);
-            await client.SendMessageAsync(chatId, $"Отчёт по отправленным пользователями обращениям:\r\n {report}", token);
-        }
-
-        private async Task GetAdminModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var report = await _newsDataService.GetAdminModeratorReport(token);
-            await client.SendMessageAsync(chatId, $"Отчёт по обработанным модераторами обращениям:\r\n {report}", token);
-        }
-
-        private async Task SendNewsMultiHandle( long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await SetNewsMulti(chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddAdminHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminAccepted(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddAdminMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task EditButtonHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await EditButtonAccepted(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task EditButtonApproveHandle( long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await SendEditButtonsForUserApprove(chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddButtonAccepted(userId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await DeleteButtonAccepted(userId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddModeratorHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddModeratorAccepted(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddModeratorMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddAdminDeclineHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddAdminMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task EditButtonDeclineHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddModeratorDeclineHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddModeratorMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task AddButtonDeclineHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task DeleteButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await AddAdminModeratorDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", token: token);
-            using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
-            await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "PDNOferta.txt")),  token);
-        }
-
-        private async Task SendDonateQR( long chatId, News? userNews, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Отправить пожертвование можно, используя ссылку", token: token);
-            await client.SendMessageAsync(chatId, "https://t.me/c/1627860016/6606/746066", token: token);
-            //await client.SendPhotoAsync(new SendPhotoArgs(chatId, ),  token);
-        }
-
-        private async Task SendNewsApproveHandle( Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
-        {
-            var userNews = await _newsDataService.GetNewsById(newsId, token);
-            if (userNews != null)
-            {
-                await SendNewsMessageApproved(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task SendNewsDeclineHandle( Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
-        {
-            var userNews = await _newsDataService.GetNewsById(newsId, token);
-            if (userNews != null)
-            {
-                await SendNewsMessageDeclined(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageNotFound(chatId, token);
-            }
-        }
-
-        private async Task SendNewsChoiceApproveHandle( long chatId, int offset, CancellationToken token)
-        {
-            var userNewses = await _newsDataService.GetNewsForApprove(token);
-
-            var allCount = userNewses.Count;
-
-            offset = Math.Min(offset, allCount - 1);
-
-            var userNews = userNewses.Skip(offset).FirstOrDefault();
-
-            if (userNews != null)
-            {
-                await SendNewsMessageForApprove(chatId, userNews, GetExistsPrev(offset), GetExistsNext(offset, allCount), offset, token);
-            }
-            else
-            {
-                await ApproveNewsMessageNotFound(chatId, token);
-            }
-        }
+        
 
         private static bool GetExistsNext(int offset, int allCount) => offset < allCount - 1;
 
         private static bool GetExistsPrev(int offset) => offset > 0;
 
-        private async Task SendNewsChoiceHandle( long chatId, Contract.Model.User user, News? userNews, int buttonNumber, CancellationToken token)
-        {
-            if (userNews != null)
-            {
-                await SendUserRemember(chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageForUser(chatId, buttonNumber, user, token);
-            }
-        }
+        
 
-        private async Task SendSwitchNotifyHandle( long chatId, Guid userId, CancellationToken token)
-        {
-            var isNotify = await _userDataService.SwitchUserNotify(userId, token);
-
-            await client.SendMessageAsync(chatId, $"Уведомления {(isNotify ? "включены" : "выключены")}", token);
-        }
+        
 
         private async Task SendAddAdminChoiceHandle( long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
         {
@@ -1879,19 +1910,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" отклонено", token);
         }
 
-        private Task SendUserRemember( long chatId, News? news, CancellationToken token)
-        {
-            return (news?.Type) switch
-            {
-                "news" => SendNewsMessageForUserRemember(news, chatId, token),
-                "addadmin" => SendAddAdminForAdminRemember(chatId, token),
-                "addmoderator" => SendAddModeratorForAdminRememeber(chatId, token),
-                "editbutton" => SendEditButtonForAdminRemember(chatId, token),
-                "addbutton" => SendAddButtonForAdminRemember(chatId, token),
-                "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
-                _ => Task.CompletedTask,
-            };
-        }
+        
 
         private async Task SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
         {
