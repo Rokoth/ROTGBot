@@ -61,8 +61,6 @@ namespace ROTGBot.Service
         {
             if (result == null) return null;
 
-            string? groupName = null;
-
             var messages = await GetNewsMessages(result.Id, token);
 
             return new Contract.Model.News()

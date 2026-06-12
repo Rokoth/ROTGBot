@@ -2100,9 +2100,15 @@ namespace ROTGBot.Service
             }
         }
 
-        public Task<bool> SendNewsAnswer(News news, string answer, CancellationToken cancellationToken)
+        public async Task<bool> SendNewsAnswer(News news, string answer, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var userId = news.UserId;
+            var user = await _userDataService.GetUser(userId, cancellationToken);
+
+            await client.SendMessageAsync(user.ChatId, $"В ответ на Ваше обращение №{news.Number} от {news.CreatedDate} ({news.Title}):", cancellationToken);
+            await client.SendMessageAsync(user.ChatId, answer, cancellationToken);
+
+            return true;
         }
     }
 }
