@@ -66,6 +66,7 @@
         Sended,
         Accepted,
         Approved,
-        Declined
+        Declined,
+        ToApprove
     }
 }
