@@ -343,74 +343,19 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.AdminUserReport> GetAdminUserReport(CancellationToken token)
         {
-            Contract.Model.AdminUserReport result = new()
-            { 
-                Items = []
-            };
-
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
-            foreach (var byUser in allNews.GroupBy(s => s.UserId))
+            return new Contract.Model.AdminUserReport()
             {
-                Contract.Model.ByUserReportItem reportItem = new()
-                {
-                    ChildItems = []
-                };
-                var user = await _userRepo.GetAsync(byUser.Key, token);
-                reportItem.User = $"{user.Name} ({user.TGLogin})";
-
-                foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
-                {
-                    Contract.Model.ByYearReportItem byYearReportItem = new()
-                    {
-                        ChildItems = [],
-                        Year = $"{byYear.Key}"
-                    };
-
-                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
-                    {
-                        var byMonthReportItem = new Contract.Model.ByMonthReportItem()
-                        {
-                            Month = GetMonthName(byMonth.Key),
-                            ChildItems = []
-                        };
-
-                        byMonthReportItem.ChildItems.Add(new Contract.Model.ByTypeReportItem()
-                        {
-                            Type = Contract.Model.ReportType.Accepted,
-                            Count = byMonth.Count()
-                        });
-
-                        byMonthReportItem.ChildItems.Add(new Contract.Model.ByTypeReportItem()
-                        {
-                            Type = Contract.Model.ReportType.Accepted,
-                            Count = byMonth.Count()
-                        });
-
-                        result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
-                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
-
-                        byYearReportItem.ChildItems.Add(byMonthReportItem);
-                    }
-                }
-
-                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
-                    $"принято: {byUser.Count(s => s.State == "approved")}, " +
-                    $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
-                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "accepted")} обращений.\r\n\r\n";
-            }
-
-            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
-                $"принято: {allNews.Count(s => s.State == "approved")}, " +
-                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
-                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
-
-            return result;
+                Items = await GenerateUsersReport(allNews, token),
+                Total = GenerateByTypeReport(allNews)
+            };
         }
+
+        
 
         public async Task<Contract.Model.AdminModeratorReport> GetAdminModeratorReport(CancellationToken token)
         {
@@ -514,26 +459,44 @@ namespace ROTGBot.Service
                 Selector = s => s.IsDeleted == false && s.Type == "news" && s.UserId == id
             }, token)).OrderBy(s => s.CreatedDate);
 
-            Contract.Model.UserReport result = new()
+            return new Contract.Model.UserReport()
             {
-                Items = [],
+                Items = [.. allNews.GroupBy(s => s.CreatedDate.Year).Select(byYear => GenerateByYearReport(byYear.Key, byYear))],
                 Total = GenerateByTypeReport(allNews)
             };
-                        
-            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+        }
+
+        private async Task<List<Contract.Model.ByUserReportItem>> GenerateUsersReport(IOrderedEnumerable<News> allNews, CancellationToken token)
+        {
+            var result = new List<Contract.Model.ByUserReportItem>();
+            foreach (var byUser in allNews.GroupBy(s => s.UserId))
             {
-                var byYearReport = new Contract.Model.ByYearReportItem()
-                {
-                    Total = GenerateByTypeReport(byYear),
-                    ChildItems = byYear.GroupBy(s => s.CreatedDate.Month)
-                        .Select(byMonth => GenerateByMonthReport(byMonth.Key, byMonth)).ToList(),
-                    Year = byYear.Key.ToString()
-                };
-
-                result.Items.Add(byYearReport);
+                result.Add(await GenerateByUserReport(byUser, token));
             }
-
             return result;
+        }
+
+        private async Task<Contract.Model.ByUserReportItem> GenerateByUserReport(IGrouping<Guid, News> byUser, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(byUser.Key, token);
+            Contract.Model.ByUserReportItem reportItem = new()
+            {
+                ChildItems = [.. byUser.GroupBy(s => s.CreatedDate.Year).Select(byYear => GenerateByYearReport(byYear.Key, byYear))],
+                Total = GenerateByTypeReport(byUser),
+                User = $"{user.Name} ({user.TGLogin})"
+            };
+            return reportItem;
+        }
+
+        private static Contract.Model.ByYearReportItem GenerateByYearReport(int key, IEnumerable<News> byYear)
+        {
+            return new Contract.Model.ByYearReportItem()
+            {
+                Total = GenerateByTypeReport(byYear),
+                ChildItems = byYear.GroupBy(s => s.CreatedDate.Month)
+                                    .Select(byMonth => GenerateByMonthReport(byMonth.Key, byMonth)).ToList(),
+                Year = key.ToString()
+            };
         }
 
         private static Contract.Model.ByMonthReportItem GenerateByMonthReport(int key, IEnumerable<News> byMonth)=>
