@@ -6,10 +6,11 @@
         showuser,
         block,
         unblock,
-        answer,
+        answeruser,
         start,
         unknown,
-        shownews
+        shownews,
+        answernews
     }
     
 }

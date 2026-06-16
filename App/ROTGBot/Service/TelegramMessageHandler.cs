@@ -23,7 +23,8 @@ namespace ROTGBot.Service
         private readonly int TimeoutSpan = 10;
         private static readonly string[] ShowUserKeyWords = ["показать пользователей", "покажи пользователей", "вывод пользователей", "выведи пользователей", "показать юзеров", "покажи юзеров", "вывод юзеров", "выведи юзеров"];
         private static readonly string[] ShowNewsKeyWords = ["показать обращения", "покажи обращения", "вывод обращений", "выведи обращения", "показать заявки", "покажи заявки", "вывод заявок", "выведи заявки", "показать пользователей"];
-        private static readonly string[] AnswerKeyWords = ["ответь", "ответ", "отправь", "отправить"];
+        private static readonly string[] AnswerUserKeyWords = ["ответь пользователю", "ответ пользователю", "отправь пользователю", "отправить пользователю", "ответь юзеру", "ответ юзеру", "отправь юзеру", "отправить юзеру", "ответь пассажиру", "ответ пассажиру", "отправь пассажиру", "отправить пассажиру"];
+        private static readonly string[] AnswerNewsKeyWords = ["ответь на обращение", "ответить на обращение", "ответ на обращение", "отправь на обращение", "отправить на обращение", "ответь на заявку", "ответить на заявку", "ответ на заявку", "отправь на заявку", "отправить на заявку"];
 
         public TelegramMessageHandler(
             ILogger<TelegramMessageHandler> logger,
@@ -207,7 +208,8 @@ namespace ROTGBot.Service
             Dictionary<CommandEnum, string[]> findCommandKeyWords = new()
             {
                 { CommandEnum.unknown, Array.Empty<string>() },
-                { CommandEnum.answer, AnswerKeyWords },
+                { CommandEnum.answeruser, AnswerUserKeyWords },
+                { CommandEnum.answernews, AnswerNewsKeyWords },
                 { CommandEnum.showuser, ShowUserKeyWords },
                 { CommandEnum.shownews, ShowNewsKeyWords },
                 { CommandEnum.block, BlockKeyWords },
@@ -243,19 +245,22 @@ namespace ROTGBot.Service
                     await SendMenuButtons(chatId, user, type, cancellationToken);
                     break;
                 case CommandEnum.find:
-                    await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
+                    await FindNewsOrUsers(chatId, commandText, user, cancellationToken);
                     break;
                 case CommandEnum.showuser:
-                    await ShowUsers(chatId, commandText, user, type, cancellationToken);
+                    await ShowUsers(chatId, commandText, user, cancellationToken);
+                    break;
+                case CommandEnum.answeruser:
+                    await AnswerUser(chatId, commandText, user, cancellationToken);
                     break;
                 case CommandEnum.shownews:
-                    await ShowNews(chatId, commandText, user, type, cancellationToken);
+                    await ShowNews(chatId, commandText, user, cancellationToken);
                     break;
                 case CommandEnum.block:
-                    await BlockUser(chatId, commandText, user, type, cancellationToken);
+                    await BlockUser(chatId, commandText, user, cancellationToken);
                     break;
                 case CommandEnum.unblock:
-                    await UnBlockUser(chatId, commandText, user, type, cancellationToken);
+                    await UnBlockUser(chatId, commandText, user, cancellationToken);
                     break;
             }
         }
@@ -270,14 +275,14 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task ShowUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        private async Task ShowUsers(long chatId, string commandText, Contract.Model.User user, CancellationToken cancellationToken)
         {
             var words = commandText.Split(" ").Select(s => s.Trim().ToLower()).ToList();
             int? count = null;
             int? daysCount = null;
 
             var keyWordIndex = words.IndexOf("по");
-            if(keyWordIndex > 0 && words.Count() > (keyWordIndex + 1) && int.TryParse(words[keyWordIndex + 1], out int countT))
+            if(keyWordIndex > 0 && words.Count > (keyWordIndex + 1) && int.TryParse(words[keyWordIndex + 1], out int countT))
             {
                 count = countT;
             }
@@ -286,10 +291,47 @@ namespace ROTGBot.Service
             foreach(var kw in daysKeyWords)
             {
                 var kwIndex = words.IndexOf(kw);
-                if (kwIndex > 0 && words.Count() > (kwIndex + 1) && int.TryParse(words[kwIndex + 1], out int countD))
+                if (kwIndex > 0 && kwIndex > 0 && int.TryParse(words[kwIndex - 1], out int countD))
                 {
                     daysCount = countD;
                 }
+            }
+
+            List<Contract.Model.User> users = await _userDataService.GetUsers(count ?? 10, daysCount ?? 7, cancellationToken);
+
+            if(users.Count > (count ?? 10))
+            {
+                var news = await _newsDataService.CreateNews(chatId, user.Id, null, null, "showusers", "showusers", false, cancellationToken);
+            }
+            else
+            {
+
+            }
+        }
+
+        private async Task AnswerUser(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            var words = commandText.Split(" ").Select(s => s.Trim().ToLower()).ToList();
+            var loginOrNumber = words[0].TrimEnd(':');
+
+            Contract.Model.User findUser;
+
+            if (int.TryParse(loginOrNumber, out int number))
+            {
+                findUser = await _userDataService.GetUserByNumber(number, cancellationToken);
+            }
+            else
+            {
+                findUser = await _userDataService.GetUserByLogin(loginOrNumber, cancellationToken);
+            }
+
+            if(findUser == null)
+            {
+
+            }
+            else
+            {
+                await client.SendMessageAsync(findUser.ChatId, commandText[words[0].Length..], cancellationToken);
             }
         }
 
