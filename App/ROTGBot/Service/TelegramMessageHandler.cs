@@ -1303,8 +1303,20 @@ namespace ROTGBot.Service
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
 
-            var search = messages.FirstOrDefault().TextValue.Split(':').Select(s => s.Trim());
+            var message = messages.FirstOrDefault();
 
+            if(message?.TextValue == null)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлена строка поиска", token);
+                return;
+            }
+
+            var search = message.TextValue.Split(':').Select(s => s.Trim()).ToList();
+            var users = await _userDataService.GetAllUsers(token);
+
+            var nameSearches = search[0].
+
+            var found = users.Where(s => s.)
 
 
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
@@ -1565,7 +1577,7 @@ namespace ROTGBot.Service
                 "Отправьте запрос в формате <фильтр(текстовое поле для фильтрации по имени или логину)>:" +
                 "<количество записей в одном ответе (по умолчанию 10)>:" +
                 "<номер страницы поиска (по умолчанию 1)>, " +
-                "Например: Юра Зайцев:5:2\r\n(выведет всех пользователей, у которых в имени есть слова Юра или Зайцев, выведет 5 пользователей, пропустив 5 первых)",                 
+                "Например: Юра Зайцев:5:3\r\n(выведет всех пользователей, у которых в имени есть слова Юра или Зайцев, выведет 5 пользователей, пропустив 10 первых)",                 
                  token);            
         }
 

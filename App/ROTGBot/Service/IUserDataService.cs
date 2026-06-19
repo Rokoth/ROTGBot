@@ -11,6 +11,7 @@ namespace ROTGBot.Service
         Task SetUserSendDate(Guid userId, CancellationToken token);
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);       
         Task<bool> UserUnBlock(string login, CancellationToken token);
-        Task<bool> UserBlock(string login, CancellationToken token);        
+        Task<bool> UserBlock(string login, CancellationToken token);
+        Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token);
     }
 }
