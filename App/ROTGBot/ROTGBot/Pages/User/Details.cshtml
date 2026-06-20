@@ -20,8 +20,16 @@
             @Html.DisplayFor(x => x.UserModel.TGLogin)
         </div>
         <div class="p-3 border bg-light row g-0" id="logincontainer">
-            <b>@Html.DisplayNameFor(x => x.UserModel.Roles)</b>
-            @Html.DisplayFor(x => x.UserModel.Roles)
+            <b>@Html.DisplayNameFor(x => x.UserModel.RolesString)</b>
+            @Html.DisplayFor(x => x.UserModel.RolesString)
+        </div>
+        <div class="p-3 border bg-light row g-0" id="logincontainer">
+            <b>@Html.DisplayNameFor(x => x.UserModel.IsBlocked)</b>
+            @Html.DisplayFor(x => x.UserModel.IsBlocked)
+        </div>
+        <div class="p-3 border bg-light row g-0" id="logincontainer">
+            <b>@Html.DisplayNameFor(x => x.UserModel.LastSendDate)</b>
+            @Html.DisplayFor(x => x.UserModel.LastSendDate)
         </div>
         <div class="p-3 border bg-light row g-0">            
             <div class="col-3 d-flex justify-content-center">

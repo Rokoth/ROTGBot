@@ -51,8 +51,15 @@ namespace ROTGBot.Pages.User
 
             //todo: проверка на роль администратора
 
-            await _userDataService.UnblockUser(UserModel.Id, new CancellationToken());
-            return Redirect("Details");
+            bool result = await _userDataService.UnblockUser(UserModel.Id, new CancellationToken());
+
+            if (result)
+            {
+                return RedirectToPage("Details");
+            }
+            IsError = true;
+            Error = "Ќе удалось заблокировать пользовател€";
+            return Page();
         }
     }
 }
