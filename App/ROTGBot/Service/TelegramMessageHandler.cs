@@ -913,10 +913,24 @@ namespace ROTGBot.Service
                 return;
             }
 
-            await ParseAndSetRole(messages, RoleEnum.administrator, token);
+            var login = messages.FirstOrDefault()?.TextValue;
 
-            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
-            await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
+            if (string.IsNullOrEmpty(login))
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return;
+            }
+
+            var users = await _userDataService.GetUserByNameOrLogin(login, token);
+
+            if(!users.Any())
+            {
+                await client.SendMessageAsync(chatId, "Пользователи не найдены", token);
+                return;
+            }
+
+            await client.SendMessageAsync(chatId, $"Найденные пользователи:\r\n{users.Select(s => $"{s.Number}: {s.Name} ({s.TGLogin})\r\n")}", token);
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);            
         }
 
         
