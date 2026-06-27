@@ -13,30 +13,25 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="News.Id" class="form-control" />
             <div class="form-group p-3 border bg-light">
-                <label asp-for="News.Name" class="control-label"></label>
-                <input id="nameField" asp-for="News.Name" class="form-control" />
-                <span asp-validation-for="News.Name" class="text-danger"></span>
+                <label asp-for="News.Title" class="control-label"></label>
+                <input id="nameField" asp-for="News.Title" class="form-control" />
+                <span asp-validation-for="News.Title" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.Description" class="control-label"></label>
                 <input id="descriptionField" asp-for="News.Description" class="form-control" />
                 <span asp-validation-for="News.Description" class="text-danger"></span>
-            </div>
-            <div class="form-group p-3 border bg-light">
-                <label asp-for="News.Price" class="control-label"></label>
-                <input id="priceField" asp-for="Product.Price" class="form-control" />
-                <span asp-validation-for="Product.Price" class="text-danger"></span>
-            </div>
-            @Html.LabelFor(model => model.State, htmlAttributes: new { @class = "control-label col-md-2" })
+            </div>            
+            @Html.LabelFor(model => model.News.State, htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownListFor(model => model.State, new List<SelectListItem>
+                @Html.DropDownListFor(model => model.News.State, new List<SelectListItem>
                 {
                 new SelectListItem {Text = "Alba", Value = "1", Selected = true },
                 new SelectListItem {Text = "Arad", Value = "2" },
                 new SelectListItem {Text = "Arges", Value = "3" },
                 new SelectListItem {Text = "Bacau", Value = "4" },
                 }, new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.State, "", new { @class = "text-danger" })
+                @Html.ValidationMessageFor(model => model.News.State, "", new { @class = "text-danger" })
             </div>
             <div class="form-group p-3 border bg-light row g-0">
                 <div class="col-6 d-flex justify-content-center">

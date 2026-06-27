@@ -14,38 +14,43 @@
             <input type="hidden" asp-for="News.Id" class="form-control" />
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.Number" class="control-label"></label>
-                <input id="priceField" asp-for="News.Number" class="form-control" />
+                <input id="priceField" asp-for="News.Number" readonly class="form-control" />
                 <span asp-validation-for="News.Number" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.Title" class="control-label"></label>
-                <input id="nameField" asp-for="News.Title" class="form-control" />
+                <input id="nameField" asp-for="News.Title" readonly class="form-control" />
                 <span asp-validation-for="News.Title" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.Description" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.Description" class="form-control" />
+                <input id="descriptionField" asp-for="News.Description" readonly class="form-control" />
                 <span asp-validation-for="News.Description" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.State" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.State" class="form-control" />
+                <input id="descriptionField" asp-for="News.State" readonly class="form-control" />
                 <span asp-validation-for="News.State" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.CreatedDate" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.CreatedDate" class="form-control" />
+                <input id="descriptionField" asp-for="News.CreatedDate" readonly class="form-control" />
                 <span asp-validation-for="News.CreatedDate" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.GroupName" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.GroupName" class="form-control" />
+                <input id="descriptionField" asp-for="News.GroupName" readonly class="form-control" />
                 <span asp-validation-for="News.GroupName" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="News.ThreadName" class="control-label"></label>
-                <input id="descriptionField" asp-for="News.ThreadName" class="form-control" />
+                <input id="descriptionField" asp-for="News.ThreadName" readonly class="form-control" />
                 <span asp-validation-for="News.ThreadName" class="text-danger"></span>
+            </div>
+            <div class="form-group p-3 border bg-light">
+                <label asp-for="News.Messages" class="control-label"></label>
+                <input id="descriptionField" asp-for="News.Messages" readonly class="form-control" />
+                <span asp-validation-for="News.Messages" class="text-danger"></span>
             </div>
             <div class="form-group p-3 border bg-light row g-0">
                 <div class="col-6 d-flex justify-content-center">

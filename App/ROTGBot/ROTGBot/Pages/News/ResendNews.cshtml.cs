@@ -10,11 +10,13 @@ namespace ROTGBot.Pages.News
     {
         private readonly ILogger<ResendNewsModel> _logger;
         private readonly INewsDataService _newsDataService;
+        private readonly ITelegramMessageHandler _telegramMessageHandler;
 
-        public ResendNewsModel(ILogger<ResendNewsModel> logger, INewsDataService newsDataService)
+        public ResendNewsModel(ILogger<ResendNewsModel> logger, INewsDataService newsDataService, ITelegramMessageHandler telegramMessageHandler)
         {
             _newsDataService = newsDataService;
             _logger = logger;
+            _telegramMessageHandler = telegramMessageHandler;
         }
 
         public ROTGBot.Contract.Model.News News { get; set; } = default!;
@@ -50,10 +52,11 @@ namespace ROTGBot.Pages.News
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
+            //todo: проверить права на просмотр и отправку
 
-            //todo: отправка
+            await _telegramMessageHandler.ReSendNews(News.Id, new CancellationToken());
 
-            return Page();
+            return RedirectToPage("/News/Index");
         }
     }
 }

@@ -7,6 +7,7 @@ namespace ROTGBot.Service
     public interface ITelegramMessageHandler
     {
         Task HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken);
+        Task<bool> ReSendNews(Guid id, CancellationToken cancellationToken);
         Task<bool> SendNewsAnswer(News news, string answer, CancellationToken cancellationToken);
     }
 }
