@@ -1,28 +1,41 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ROTGBot.Db.Context;
+using Context = Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ROTGBot.Db.Context.DbPgContext>;
+using Act = System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder>;
+using Sett = ROTGBot.Db.Model.Settings;
 
 namespace ROTGBot
 {
-    public class ConfigDbProvider(Action<DbContextOptionsBuilder> options) : ConfigurationProvider
+    /// <summary>
+    /// Провайдер конфигурации из БД
+    /// </summary>
+    /// <param name="options"></param>
+    public class ConfigDbProvider(Act options) : ConfigurationProvider
     {
-        private readonly Action<DbContextOptionsBuilder> _options = options;
+        private readonly Act _options = options;
 
-        public override void Load()
-        {
-            GetSettings(GetBuilder())
-                .Select(item => KeyValuePair.Create(item.ParamName, item.ParamValue))
-                .ToList()
-                .ForEach(item => Data.Add(item.Key, item.Value));
-        }
+        public override void Load() => 
+            ApplySettings(GetSettings(ApplyBuilder(new Context())));
 
-        private DbContextOptionsBuilder<DbPgContext> GetBuilder()
+        private void ApplySettings(List<Sett> settings) =>
+            GetSettingsKVPs(settings).ForEach(AddConfig);
+
+        private void AddConfig(KeyValuePair<string, string> item) => 
+            Data.Add(item.Key, item.Value);
+
+        private static List<KeyValuePair<string, string>> GetSettingsKVPs(List<Sett> settings) =>
+            [.. settings.Select(SettingsToKVP)];
+
+        private static KeyValuePair<string, string> SettingsToKVP(Sett item)
+            => KeyValuePair.Create(item.ParamName, item.ParamValue);
+
+        private Context ApplyBuilder(Context builder)
         {
-            var builder = new DbContextOptionsBuilder<DbPgContext>();
             _options(builder);
             return builder;
         }
 
-        private static List<Db.Model.Settings> GetSettings(DbContextOptionsBuilder<DbPgContext> builder)
+        private static List<Sett> GetSettings(Context builder)
         {
             using var context = new DbPgContext(builder.Options);
             return [.. context.Settings.AsNoTracking()];
