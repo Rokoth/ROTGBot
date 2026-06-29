@@ -16,5 +16,6 @@ namespace ROTGBot.Service
         Task<bool> UnblockUser(Guid id, CancellationToken cancellationToken);
         Task<bool> BlockUser(Guid id, CancellationToken cancellationToken);
         Task<List<Contract.Model.Role>> GetRoles(CancellationToken cancellationToken);
+        Task<bool> SetRole(Guid userId, Guid roleId, CancellationToken cancellationToken);
     }
 }

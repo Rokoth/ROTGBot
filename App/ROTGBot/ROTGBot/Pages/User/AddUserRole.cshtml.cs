@@ -14,7 +14,18 @@ namespace ROTGBot.Pages.User
 
         public UserRole UserRole { get; set; }
 
-        public List<SelectListItem> Roles { get; set; }
+        public bool IsError { get; set; } = false;
+        public string Error { get; set; } = string.Empty;
+
+        public List<SelectListItem> Roles { get; set; } = [ 
+            new()
+            {
+                Value = Guid.Empty.ToString(),
+                Disabled = true,
+                Selected = true,
+                Text = "Выберите роль"
+            }
+        ];
 
         public async Task<IActionResult> OnGetAsync(Guid id)
         {
@@ -29,13 +40,13 @@ namespace ROTGBot.Pages.User
 
             var roles = await _userDataService.GetRoles(new CancellationToken());
 
-            Roles = [.. roles.Select(s => new SelectListItem()
+            Roles.AddRange([.. roles.Select(s => new SelectListItem()
             {
                 Text = s.Description,
                 Value = s.Id.ToString(),
-                Selected = s.Name == "user",
+                Selected = false,
                 Disabled = false
-            })];
+            })]);
 
             var user = await _userDataService.GetUser(id, new CancellationToken());
             if (user == null)
@@ -46,7 +57,7 @@ namespace ROTGBot.Pages.User
             {
                 UserId = user.Id,
                 UserName = $"{user.Name} ({user.TGLogin})",
-                RoleId = roles.First(s => s.Name == "user").Id
+                RoleId = Guid.Empty
             };
             return Page();
         }
@@ -54,7 +65,24 @@ namespace ROTGBot.Pages.User
 
         public async Task<IActionResult> OnPostAsync()
         {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth?.Principal?.Identity?.Name))
+                return RedirectToPage("/Auth");
+
+            var currUserId = Guid.Parse(auth.Principal.Identity.Name);
+
+            //todo: проверка на роль администратора
+
+            if(UserRole.RoleId == Guid.Empty)
+            {
+                IsError = true;
+                Error = "Выберите роль";
+            }
+
+            var result = await _userDataService.SetRole(UserRole.UserId, UserRole.RoleId, new CancellationToken());
+
+            return RedirectToPage("Index");
         }
 
     }
