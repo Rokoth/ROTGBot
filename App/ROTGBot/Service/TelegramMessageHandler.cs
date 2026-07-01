@@ -327,6 +327,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendMessageByNumberHandle(userId, chId, userNews, tk), token),
                 "DeclineSendMessageByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => DeclineSendMessageByNumberHandle(userId, chId, userNews, tk), token),
+                "SendNewsReplyChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendNewsReplyChoiseHandle(chId, user.Id, userNews, tk), token),
                 "SendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
                                         (chId, userNews, tk) => SendNewsReplyHandle(userId, chId, userNews, tk), token),
                 "DeclineSendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
@@ -713,6 +715,18 @@ namespace ROTGBot.Service
             else
             {
                 await SendMessageByNumberChoise(chatId, userId, token);
+            }
+        }
+
+        private async Task SendNewsReplyChoiseHandle(long chatId, Guid userId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsReplyChoise(chatId, userId, token);
             }
         }
 
@@ -1437,6 +1451,29 @@ namespace ROTGBot.Service
 
             await client.SendMessageAsync(chatId,
                 "Отправьте номер пользователя, которому хотите отправить сообщение, затем само сообщение. Для отмены нажмите кнопку \"Отменить\"",
+                 replyMarkup,
+                 token);
+        }
+
+        private async Task SendNewsReplyChoise(long chatId, Guid userId, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, userId, null, null, "sendnewsreplychoice", "Ответ на обращение", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineSendNewsReply"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте номер обращения, на которое хотите отправить ответ, затем само сообщение. Для отмены нажмите кнопку \"Отменить\"",
                  replyMarkup,
                  token);
         }
