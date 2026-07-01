@@ -2110,5 +2110,28 @@ namespace ROTGBot.Service
 
             return true;
         }
+
+        public async Task<bool> ReSendNews(Guid id, CancellationToken token)
+        {
+            var userNews = await _newsDataService.GetNewsById(id, token);
+            if(userNews == null)
+            {
+                return false;
+            }
+            if (userNews.GroupId.HasValue)
+            {
+                var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+                if (messages.Count != 0)
+                {
+                    await SendForwardMessageTitle(userNews, token);
+                    await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }
