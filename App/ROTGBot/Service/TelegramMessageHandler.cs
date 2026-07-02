@@ -247,7 +247,7 @@ namespace ROTGBot.Service
                     await SendMenuButtons(chatId, user, type, cancellationToken);
                     break;
                 case CommandEnum.find:
-                    await FindNewsOrUsers(chatId, commandText, user, cancellationToken);
+                    await FindNewsOrUsers(chatId, commandText, user, type, cancellationToken);
                     break;
                 case CommandEnum.showuser:
                     await ShowUsers(chatId, commandText, user, cancellationToken);
@@ -347,11 +347,41 @@ namespace ROTGBot.Service
             var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ")
                 .Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).GroupBy(s => s).ToDictionary(s => s.Key, s=> s.Count());
 
-            var found = words.ToDictionary(s => s.Key, s => 0);
+            var allUsers = await _userDataService.GetUsers(null, null, cancellationToken);
+            var allNews = await _newsDataService.GetAllNews(cancellationToken);
+            var foundUsers = allUsers.ToDictionary(s => s.Id, s => 0);
+            var foundNews = allNews.ToDictionary(s => s.Id, s => 0);
 
             foreach (var word in words)
-            {
+            {                
+                foreach(var userf in allUsers)
+                {                    
+                    if(userf.Name?.Contains(word.Key, StringComparison.InvariantCultureIgnoreCase) == true)
+                    {
+                        foundUsers[userf.Id] += 1;
+                    }
 
+                    if (userf.TGLogin?.Contains(word.Key, StringComparison.InvariantCultureIgnoreCase) == true)
+                    {
+                        foundUsers[userf.Id] += 1;
+                    }
+
+                    if (userf.Description?.Contains(word.Key, StringComparison.InvariantCultureIgnoreCase) == true)
+                    {
+                        foundUsers[userf.Id] += 1;
+                    }
+                }
+
+                foreach(var news in allNews)
+                {
+                    foreach(var messsage in news.Messages)
+                    {
+                        if(messsage.TextValue?.Contains(word.Key, StringComparison.InvariantCultureIgnoreCase) == true)
+                        {
+                            
+                        }
+                    }
+                }
             }
         }
 

@@ -1,4 +1,5 @@
-﻿namespace ROTGBot.Contract.Model
+﻿
+namespace ROTGBot.Contract.Model
 {
     public class News : Entity
     {        
@@ -14,5 +15,6 @@
         public bool IsMulti { get; set; }
         public bool IsModerate { get; set; }
         public int? Number { get; set; }
+        public List<NewsMessage> Messages { get; set; } = new List<NewsMessage>();
     }
 }

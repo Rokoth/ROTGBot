@@ -20,5 +20,6 @@ namespace ROTGBot.Service
         Task SetNewsDeclined(Guid id, Guid moderatorId, CancellationToken token);
         Task SetNewsDeleted(Guid id, CancellationToken token);
         Task SetNewsMulti(Guid id, CancellationToken token);
+        Task<List<News>> GetAllNews(CancellationToken cancellationToken);
     }
 }
