@@ -94,7 +94,7 @@ namespace XUnitTests
                 }));
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<News>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult());
+                .Returns(Task.FromResult(new News()));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
