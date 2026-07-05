@@ -9,5 +9,6 @@
         /// Токен
         /// </summary>
         public string Token { get; set; } = string.Empty;
+        public string ServerAddress { get; set; } = string.Empty;
     }
 }
