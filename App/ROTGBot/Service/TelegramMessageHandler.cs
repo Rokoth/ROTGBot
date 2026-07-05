@@ -304,12 +304,33 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => StartCommandHandle(chId, user, userNews, "user", tk), token),
                 "UserReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserReglament(chId, userNews, tk), token),
+                "UserReglamentEditChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendUserReglamentEditChoiceHandle(chId, user, userNews, tk), token),
+                "UserReglamentEdit" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendUserReglamentEditHandle(chId, user, userNews, tk), token),
+                "UserReglamentEditDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendUserReglamentEditDeclineHandle(chId, user, userNews, tk), token),
                 "ModeratorReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendModeratorReglament(chId, userNews, tk), token),
 
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
+        }
+
+        private async Task SendUserReglamentEditDeclineHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendUserReglamentEditHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendUserReglamentEditChoiceHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task<bool> SendWithCheckRights(
