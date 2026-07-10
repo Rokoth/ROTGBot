@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using ROTGBot.Contract.Model;
+using System.Linq.Dynamic.Core.Tokenizer;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
@@ -318,7 +319,7 @@ namespace ROTGBot.Service
                 "UserInfoByNewsNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserInfoByNewsNumberChoiseHandle(chId, user, userNews, tk), token),
                 "UserInfoByNewsNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),
+                                        (chId, userNews, tk) => SendUserInfoByNewsNumberHandle(userId, chId, userNews, tk), token),                
                 "DeclineUserSearchByNumber" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => DeclineUserSearchByNumberHandle(userId, chId, userNews, tk), token),
                 "SendMessageByNumberChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -348,7 +349,7 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
         }
-
+                
         private async Task DeclineSendNewsReplyHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
         {
             throw new NotImplementedException();
@@ -360,11 +361,6 @@ namespace ROTGBot.Service
         }
 
         private async Task DeclineSendMessageByNumberHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task DeclineUserSearchByNumberHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
         {
             throw new NotImplementedException();
         }
@@ -627,6 +623,18 @@ namespace ROTGBot.Service
             else
             {
                 await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task DeclineUserSearchByNumberHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await UserSearchByNumberDeclined(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await UserSearchByNumberMessageNotFound(chatId, token);
             }
         }
 
@@ -1047,6 +1055,59 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Кнопка сохранена",  token);
         }
 
+        private async Task SendMessageByNumberAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages == null || messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
+
+            if (messages[0].TextValue == null || !int.TryParse(messages[0].TextValue, out int userNumber))
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
+
+            Contract.Model.User searchUser = await _userDataService.GetUserByNumber(userNumber, token);
+
+            if (searchUser == null)
+            {
+                await client.SendMessageAsync(chatId, "Пользователь по номеру не найден", token);
+                return;
+            }
+
+            if (messages?.Count == 1)
+            {
+                await client.SendMessageAsync(chatId, $"Отправьте текст сообщения для пользователя {userNumber}: {searchUser.Name} ({searchUser.TGLogin})", token);
+                return;
+            }
+
+            bool ready = false;
+
+            for(int i = 1; i<= messages.Count; i++)
+            {
+                var messageText = messages[i].TextValue;
+                if (!string.IsNullOrEmpty(messageText))
+                {
+                    await client.SendMessageAsync(searchUser.ChatId, messageText, token);
+                    ready = true;
+                }
+            }
+
+            if (!ready)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного сообщения пользователю, отправьте текст сообщения", token);
+                return;
+            }
+
+            await client.SendMessageAsync(chatId, $"Сообщение отправлено пользователю {searchUser.Name} ({searchUser.TGLogin}), номер: {searchUser.Number}", token);
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+        }
+
         private async Task SendUserInfoByNewsNumberAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
@@ -1254,6 +1315,14 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
 
+        private async Task UserSearchByNumberDeclined(Guid moderatorId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
+        
+
         private async Task AddModeratorAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
@@ -1289,7 +1358,17 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Нет задач на поиск пользователя", token);
         }
+
+        private async Task UserSearchByNumberMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на поиск пользователя", token);
+        }
         
+        private async Task SendMessageByNumberMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на отправку сообщения пользователю", token);
+        }
+
         private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);

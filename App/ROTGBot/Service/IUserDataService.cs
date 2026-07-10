@@ -1,4 +1,6 @@
-﻿namespace ROTGBot.Service
+﻿using ROTGBot.Contract.Model;
+
+namespace ROTGBot.Service
 {
     public interface IUserDataService
     {
@@ -7,7 +9,8 @@
         Task SetRole(string login, Contract.Model.RoleEnum role, CancellationToken token);
         Task<bool> SwitchUserNotify(Guid userId, CancellationToken token);
         Task SetUserSendDate(Guid userId, CancellationToken token);
-        Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
+        Task<Contract.Model.User?> GetUser(Guid userId, CancellationToken token);
         Task<IEnumerable<Contract.Model.User>> GetUserByNameOrLogin(string login, CancellationToken token);
+        Task<User?> GetUserByNumber(int userNumber, CancellationToken token);
     }
 }

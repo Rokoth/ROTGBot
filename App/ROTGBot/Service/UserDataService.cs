@@ -65,8 +65,10 @@ namespace ROTGBot.Service
             return await Map(user, cancellationToken);
         }
 
-        private async Task<Contract.Model.User> Map(Db.Model.User user, CancellationToken cancellationToken)
+        private async Task<Contract.Model.User?> Map(Db.Model.User? user, CancellationToken cancellationToken)
         {
+            if (user == null) return null;
+
             var roles = (await GetUserRoles(user.Id, cancellationToken)).Select(s => Enum.Parse<RoleEnum>(s))?.ToList() ?? [RoleEnum.user];
             return new Contract.Model.User()
             {
@@ -148,12 +150,39 @@ namespace ROTGBot.Service
             await _userRepo.UpdateAsync(user, true, token);            
         }
 
-        public async Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token)
+        public async Task<Contract.Model.User?> GetUser(Guid userId, CancellationToken token)
         {
             var user = await _userRepo.GetAsync(userId, token);
             return await Map(user, token);
         }
 
-        
+        public async Task<IEnumerable<Contract.Model.User>> GetUserByNameOrLogin(string login, CancellationToken token)
+        {
+            var users = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => (s.TGLogin != null && s.TGLogin == login) || (s.Name != null && s.Name.Equals(login, StringComparison.InvariantCultureIgnoreCase))
+            }, token)).ToList();
+
+            var result = new List<Contract.Model.User>();
+
+            foreach (var res in users)
+            {
+                var user = await Map(res, token);
+                if(user != null)
+                    result.Add(user);
+            }
+
+            return result;
+        }
+
+        public async Task<Contract.Model.User?> GetUserByNumber(int userNumber, CancellationToken token)
+        {
+            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => s.Number == userNumber
+            }, token)).FirstOrDefault();
+
+            return await Map(user, token);
+        }
     }
 }
