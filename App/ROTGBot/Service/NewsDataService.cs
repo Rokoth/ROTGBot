@@ -359,57 +359,16 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.AdminModeratorReport> GetAdminModeratorReport(CancellationToken token)
         {
-            Contract.Model.AdminModeratorReport result = new();
-
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
                 Selector = s => s.IsDeleted == false && s.Type == "news"
             }, token)).OrderBy(s => s.CreatedDate);
 
-            foreach (var byUser in allNews.Where(s => s.ModeratorId != null).GroupBy(s => s.ModeratorId))
+            return new Contract.Model.AdminModeratorReport()
             {
-                var user = await _userRepo.GetAsync(byUser.Key.Value, token);
-                var byUserReport = new Contract.Model.ByUserReportItem()
-                {
-                    User = $"Модератор {user.Name} ({user.TGLogin})"
-                };                
-
-                foreach (var byYear in byUser.GroupBy(s => s.CreatedDate.Year))
-                {
-                    var byYearReport = new Contract.Model.ByYearReportItem()
-                    {
-                        ChildItems = new List<Contract.Model.ByMonthReportItem>(),
-                        Year = byYear.Key.ToString()
-                    };
-
-                    
-
-                    result += $"{byYear.Key} год:\r\n";
-
-                    foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
-                    {
-                        result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
-                            $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                            $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
-                    }
-
-                    byUserReport.ChildItems.Add(byYearReport);
-                }
-
-                result += $"\r\n\r\nВсего пользователем {user.Name} ({user.TGLogin}): отправлено {byUser.Count()}, " +
-                    $"принято: {byUser.Count(s => s.State == "approved")}, " +
-                    $"отклонено: {byUser.Count(s => s.State == "declined")}, " +
-                    $"в очереди на подтверждение: {byUser.Count(s => s.State == "accepted")} обращений.\r\n\r\n";
-
-                result.Items.Add(byUserReport);
-            }
-
-            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
-                $"принято: {allNews.Count(s => s.State == "approved")}, " +
-                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
-                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
-
-            return result;
+                Items = await GenerateModeratorsReport(allNews, token),
+                Total = GenerateByTypeReport(allNews)
+            };
         }
 
 
@@ -476,6 +435,16 @@ namespace ROTGBot.Service
             return result;
         }
 
+        private async Task<List<Contract.Model.ByUserReportItem>> GenerateModeratorsReport(IOrderedEnumerable<News> allNews, CancellationToken token)
+        {
+            var result = new List<Contract.Model.ByUserReportItem>();
+            foreach (var byUser in allNews.GroupBy(s => s.ModeratorId))
+            {
+                result.Add(await GenerateByModeratorReport(byUser, token));
+            }
+            return result;
+        }
+
         private async Task<Contract.Model.ByUserReportItem> GenerateByUserReport(IGrouping<Guid, News> byUser, CancellationToken token)
         {
             var user = await _userRepo.GetAsync(byUser.Key, token);
@@ -486,6 +455,27 @@ namespace ROTGBot.Service
                 User = $"{user.Name} ({user.TGLogin})"
             };
             return reportItem;
+        }
+
+        private async Task<Contract.Model.ByUserReportItem> GenerateByModeratorReport(IGrouping<Guid?, News> byUser, CancellationToken token)
+        {
+            if(byUser.Key != null)
+            {
+                var user = await _userRepo.GetAsync(byUser.Key.Value, token);
+                return new()
+                {
+                    ChildItems = [.. byUser.GroupBy(s => s.CreatedDate.Year).Select(byYear => GenerateByYearReport(byYear.Key, byYear))],
+                    Total = GenerateByTypeReport(byUser),
+                    User = $"Модератор {user.Name} ({user.TGLogin})"
+                };
+            }
+
+            return new()
+            {
+                ChildItems = [.. byUser.GroupBy(s => s.CreatedDate.Year).Select(byYear => GenerateByYearReport(byYear.Key, byYear))],
+                Total = GenerateByTypeReport(byUser),
+                User = $"Модератор не назначен"
+            };
         }
 
         private static Contract.Model.ByYearReportItem GenerateByYearReport(int key, IEnumerable<News> byYear)
