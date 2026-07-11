@@ -22,5 +22,6 @@ namespace ROTGBot.Service
         Task SetNewsDeleted(Guid id, CancellationToken token);
         Task SetNewsMulti(Guid id, CancellationToken token);
         Task<List<Contract.Model.News>> GetNewsByFilter(NewsFilter filter, CancellationToken cancellationToken);
+        Task ChangeStatus(Guid id, string? state, CancellationToken cancellationToken);
     }
 }

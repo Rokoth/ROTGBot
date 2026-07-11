@@ -19,8 +19,7 @@ namespace ROTGBot.Pages.News
 
         [BindProperty]
         public Contract.Model.News News { get; set; } = default!;
-              
-
+               
         public async Task<IActionResult> OnGet(Guid id)
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -37,6 +36,19 @@ namespace ROTGBot.Pages.News
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnPost()
+        {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+                return RedirectToPage("/Auth");
+            var userId = Guid.Parse(auth.Principal.Identity.Name);
+
+            await _newsDataService.ChangeStatus(News.Id, News.State, new CancellationToken());
+
+            return RedirectToPage("Index");
         }
     }
 }
