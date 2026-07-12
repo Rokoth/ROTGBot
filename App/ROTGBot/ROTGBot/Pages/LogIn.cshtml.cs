@@ -48,37 +48,34 @@ namespace ROTGBot.Pages
                     PasswordSended = false;
                     Error = $"Неверный логин или пароль";
                 }
-            }
-            else if(IsAuth)
-            {
-                return RedirectToAction("Index");
-            }
-            else
-            {
-                IsError = true;
-                LoginSended = false;
-                PasswordSended = false;
-                Error = "Неверный логин или пароль";
-            }
+                else
+                {
+                    return RedirectToAction("Index");
+                }
+            }            
+           
             return Page();
         }
 
-        private Task<ClaimsIdentity> GetIdentity() 
+        private async Task<ClaimsIdentity?> GetIdentity()
         {
-            if (client != null)
+            var user = await _userDataService.GetUser(Login, Password, new CancellationToken());
+
+            if (user == null)
             {
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimsIdentity.DefaultNameClaimType, client.Id.ToString()),
-                    new Claim(ClaimsIdentity.DefaultRoleClaimType, roleType)
-                };
-                ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, authType,
-                    ClaimsIdentity.DefaultNameClaimType,
-                    ClaimsIdentity.DefaultRoleClaimType);
-                return claimsIdentity;
+                // если пользователя/клиента не найдено
+                return null;
             }
-            // если пользователя/клиента не найдено
-            return null;
+
+            var claims = new List<Claim>
+                {
+                    new Claim(ClaimsIdentity.DefaultNameClaimType, user.Id.ToString()),
+                    new Claim(ClaimsIdentity.DefaultRoleClaimType, "User")
+                };
+            ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, "Cookies",
+                ClaimsIdentity.DefaultNameClaimType,
+                ClaimsIdentity.DefaultRoleClaimType);
+            return claimsIdentity;
         }
     }
      
