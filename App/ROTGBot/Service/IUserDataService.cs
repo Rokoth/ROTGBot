@@ -13,5 +13,6 @@ namespace ROTGBot.Service
         Task<bool> UserUnBlock(string login, CancellationToken token);
         Task<bool> UserBlock(string login, CancellationToken token);
         Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token);
+        Task<User> GetUserByNumberOrLogin(string? textValue, CancellationToken token);
     }
 }

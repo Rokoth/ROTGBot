@@ -473,11 +473,11 @@ namespace ROTGBot.Service
         {
             if (userNews != null)
             {
-                await UnblockUserAccepted(userId, chatId, userNews, token);
+                await SendMessageToUserAccepted(userId, chatId, userNews, token);
             }
             else
             {
-                await UnblockUserMessageNotFound(chatId, token);
+                await SendMessageToUserMessageNotFound(chatId, token);
             }
         }
 
@@ -936,6 +936,71 @@ namespace ROTGBot.Service
 
             await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
+        }
+
+        
+
+        private async Task SendMessageToUserAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "CancelSendMessageToUser"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина или номера пользователя, повторите отправку или нажмите кнопку Отмена для отмены отправки", replyMarkup, token);
+                return;
+            }
+
+            Contract.Model.User user = null;
+            bool userFound = false;
+            int num = 0;
+            while(num < (messages.Count - 1))
+            {
+                user = await _userDataService.GetUserByNumberOrLogin(messages[num].TextValue, token);
+                if(user != null)
+                {
+                    userFound = true;
+                    break;
+                }
+                num++;
+            }
+
+            if(!userFound)
+            {
+                await client.SendMessageAsync(chatId, "Пользователь не найден, попробуйте другой логин или нажмите кнопку Отмена для отмены отправки", replyMarkup, token);
+                return;
+            }
+
+            if(num == messages.Count - 1)
+            {
+                await client.SendMessageAsync(chatId, "Пользователь найден, отправьте сообщение или нажмите кнопку Отмена для отмены отправки", replyMarkup, token);
+                return;
+            }
+
+            while (num < (messages.Count - 1))
+            {
+                if (!string.IsNullOrEmpty(messages[num].TextValue))                
+                {
+                    await client.SendMessageAsync(user!.ChatId, messages[num].TextValue!, token);
+                }
+                num++;
+            }
+
+            await client.SendMessageAsync(chatId, "Сообщение отправлено пользователю", token);
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+            
         }
 
         private async Task UnblockUserAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
@@ -1525,7 +1590,7 @@ namespace ROTGBot.Service
 
         private async Task SendMessageToUserChoise(long chatId, Guid userId, CancellationToken token)
         {
-            await _newsDataService.CreateNews(chatId, userId, null, null, "sendmessagetouser", "Разблокировка пользователя", false, token);
+            await _newsDataService.CreateNews(chatId, userId, null, null, "sendmessagetouser", "Отправка сообщени я пользователю", false, token);
 
             var button1 = new InlineKeyboardButton("Отменить")
             {
