@@ -161,13 +161,11 @@ namespace XUnitTests
             var _loggerMock = new Mock<ILogger<NewsDataService>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<News>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<News>()));
+                .Returns(() => throw new RepositoryException("Ошибка обращения к БД"));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
-            var result = await newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken());
-
-            Assert.Null(result);
+            await Assert.ThrowsAsync<RepositoryException>(()=> newsService.GetCurrentNews(Guid.NewGuid(), new CancellationToken()));
         }
     }
 }
