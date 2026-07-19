@@ -46,7 +46,7 @@ namespace ROTGBot.Pages.News
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            await _newsDataService.ChangeStatus(News.Id, News.State, new CancellationToken());
+            await _newsDataService.ChangeStatus(News.Id, News.State, userId, new CancellationToken());
 
             return RedirectToPage("Index");
         }

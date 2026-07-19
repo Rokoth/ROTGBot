@@ -4,6 +4,7 @@ using ROTGBot.Db.Model;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Dynamic.Core.Tokenizer;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -360,6 +361,11 @@ namespace ROTGBot.Service
             var result = await Map(allNews, cancellationToken);
 
             return result;
+        }
+
+        public async Task ChangeStatus(Guid id, string? state, Guid userId, CancellationToken cancellationToken)
+        {
+            await SetNewsStatus(id, userId, "declined", false, cancellationToken);
         }
     }
 }

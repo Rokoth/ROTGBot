@@ -26,10 +26,10 @@
             <div class="col-md-10">
                 @Html.DropDownListFor(model => model.News.State, new List<SelectListItem>
                 {
-                new SelectListItem {Text = "Alba", Value = "1", Selected = true },
-                new SelectListItem {Text = "Arad", Value = "2" },
-                new SelectListItem {Text = "Arges", Value = "3" },
-                new SelectListItem {Text = "Bacau", Value = "4" },
+                new SelectListItem {Text = "Новое", Value = "new", Selected = true },
+                new SelectListItem {Text = "Принято", Value = "accepted" },
+                new SelectListItem {Text = "Согласовано", Value = "approved" },
+                new SelectListItem {Text = "Отменено", Value = "declined" },
                 }, new { @class = "form-control" })
                 @Html.ValidationMessageFor(model => model.News.State, "", new { @class = "text-danger" })
             </div>
