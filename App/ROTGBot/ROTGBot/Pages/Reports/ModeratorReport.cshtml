@@ -8,6 +8,41 @@
 
 <p>
     <div>@Html.DisplayNameFor(modelItem => Model.Filter.From) : @Html.DisplayFor(modelItem => Model.Filter.From)</div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>               
+                <div class="form-group p-3 border bg-light">
+                    @Html.LabelFor(model => model.Filter.From, htmlAttributes: new { @class = "control-label col-md-2" })
+                    <div class="col-md-10">
+                        @Html.DisplayFor(model => model.Filter.From, new { @class = "form-control" });
+                        @Html.ValidationMessageFor(model => model.Filter.From, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    @Html.LabelFor(model => model.Filter.To, htmlAttributes: new { @class = "control-label col-md-2" })
+                    <div class="col-md-10">
+                        @Html.DisplayFor(model => model.Filter.To, new { @class = "form-control" });
+                        @Html.ValidationMessageFor(model => model.Filter.To, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="form-group p-3 border bg-light">
+                    @Html.LabelFor(model => model.Filter.States, htmlAttributes: new { @class = "control-label col-md-2" })
+                    <div class="col-md-10">
+                        @Html.DropDownListFor(model => model.Filter.States, Model.AllStates, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(model => model.Filter.States, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="form-group p-3 border bg-light row g-0">
+                    <div class="col-6 d-flex justify-content-center">
+                        <input type="submit" value="Применить" class="btn btn-primary" />
+                    </div>                    
+                </div>
+            </form>
+        </div>
+    </div>
+
 </p>
 
 
@@ -52,3 +87,7 @@
 
 
 <div>@Html.DisplayNameFor(modelItem => Model.Report.Total) : @Html.DisplayFor(modelItem => Model.Report.Total)</div>
+
+<div class="col-6 d-flex justify-content-center">
+    <a class="btn btn-warning" asp-page="Index">Вернуться</a>
+</div>
