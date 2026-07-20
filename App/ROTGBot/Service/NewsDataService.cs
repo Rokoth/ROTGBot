@@ -374,41 +374,16 @@ namespace ROTGBot.Service
 
         public async Task<Contract.Model.ModeratorReport> GetModeratorReport(Guid id, CancellationToken token)
         {
-            Contract.Model.ModeratorReport result = new()
-            {
-                Type = "UserReport"
-            };
-
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false && s.Type == "news"
+                Selector = s => s.IsDeleted == false && s.Type == "news" && s.ModeratorId == id
             }, token)).OrderBy(s => s.CreatedDate);
 
-            result.Items = [];
-
-            foreach (var byYear in allNews.GroupBy(s => s.CreatedDate.Year))
+            return new Contract.Model.ModeratorReport()
             {
-                result.Items.Add(new Contract.Model.ReportItem()
-                {
-                    Year = byYear.Key,
-                    Month = 0,
-                    Count
-                });
-
-                foreach (var byMonth in byYear.GroupBy(s => s.CreatedDate.Month))
-                {
-                    result += $"{GetMonthName(byMonth.Key)}: отправлено {byMonth.Count()}," +
-                        $" подтверждено: {byMonth.Count(s => s.State == "approved")}, " +
-                        $"отклонено: {byMonth.Count(s => s.State == "declined")} обращений;\r\n";
-                }
-            }
-
-            result += $"\r\n\r\nВсего: отправлено {allNews.Count()}, " +
-                $"принято: {allNews.Count(s => s.State == "approved")}, " +
-                $"отклонено: {allNews.Count(s => s.State == "declined")}, " +
-                $"в очереди на подтверждение: {allNews.Count(s => s.State == "accepted")} обращений.";
-
-            return result;
+                Items = [.. allNews.GroupBy(s => s.CreatedDate.Year).Select(byYear => GenerateByYearReport(byYear.Key, byYear))],
+                Total = GenerateByTypeReport(allNews)
+            };
         }
                 
         public async Task<Contract.Model.UserReport> GetUserReport(Guid id, CancellationToken token)
