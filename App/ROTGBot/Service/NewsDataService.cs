@@ -372,7 +372,7 @@ namespace ROTGBot.Service
         }
 
 
-        public async Task<Contract.Model.ModeratorReport> GetModeratorReport(Guid id, CancellationToken token)
+        public async Task<Contract.Model.ModeratorReport> GetModeratorReport(Guid id, Contract.Model.ModeratorReportFilter filter, CancellationToken token)
         {
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {

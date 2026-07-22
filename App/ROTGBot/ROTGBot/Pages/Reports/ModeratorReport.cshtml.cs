@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ROTGBot.Contract.Model;
 using ROTGBot.Service;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ROTGBot.Pages.Reports
 {
@@ -18,6 +19,37 @@ namespace ROTGBot.Pages.Reports
 
         public ModeratorReportFilter Filter { get; set; } = default!;
 
+        public List<SelectListItem> AllStates { get; set; } = [
+            new()
+            {
+                Value = "new",
+                Disabled = false,
+                Selected = true,
+                Text = "Новый"
+            },
+            new()
+            {
+                Value = "accepted",
+                Disabled = false,
+                Selected = true,
+                Text = "Принят"
+            },
+            new()
+            {
+                Value = "approved",
+                Disabled = false,
+                Selected = true,
+                Text = "Подтвержден"
+            },
+            new()
+            {
+                Value = "declined",
+                Disabled = false,
+                Selected = true,
+                Text = "Отказан"
+            }
+        ];
+
         public async Task<IActionResult> OnGetAsync()
         {
             var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -26,7 +58,7 @@ namespace ROTGBot.Pages.Reports
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
+            Report = await _newsDataService.GetModeratorReport(userId, Filter, new CancellationToken());
 
             return Page();
         }
@@ -39,7 +71,7 @@ namespace ROTGBot.Pages.Reports
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetModeratorReport(userId, new CancellationToken());
+            Report = await _newsDataService.GetModeratorReport(userId, Filter, new CancellationToken());
 
             return Page();
         }
