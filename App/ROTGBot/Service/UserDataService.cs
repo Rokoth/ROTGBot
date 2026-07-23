@@ -69,7 +69,8 @@ namespace ROTGBot.Service
                 Roles = roles,
                 TGId = user.TGId,
                 TGLogin = user.TGLogin,
-                LastSendDate = user.LastSendDate
+                LastSendDate = user.LastSendDate,
+                TempPassword = user.TempPassword
             };
         }
 
@@ -144,6 +145,14 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        
+        public Task<Contract.Model.User?> GetUser(string login, string password, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ClearPassword(Guid userId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

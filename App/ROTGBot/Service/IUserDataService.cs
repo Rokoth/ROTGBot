@@ -9,5 +9,6 @@
         Task SetUserSendDate(Guid userId, CancellationToken token);
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
         Task<Contract.Model.User?> GetUser(string login, string password, CancellationToken cancellationToken);
+        Task ClearPassword(Guid userId, CancellationToken cancellationToken);
     }
 }
