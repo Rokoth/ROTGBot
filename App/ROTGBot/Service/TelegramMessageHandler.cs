@@ -292,6 +292,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => UserListChoiseHandle(userId, chId, userNews, tk), token),
                 "UserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => UserListHandle(userId, chId, userNews, tk), token),
+                "DeclineUserList" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => DeclineUserListHandle(userId, chId, userNews, tk), token),
                 "BlockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => BlockUserChoiseHandle(chId, userId, userNews, tk), token),
                 "UnblockUserChoise" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -344,6 +346,11 @@ namespace ROTGBot.Service
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
+        }
+
+        private async Task DeclineUserListHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task<bool> SendWithCheckRights(
@@ -1638,11 +1645,25 @@ namespace ROTGBot.Service
         {
             await _newsDataService.CreateNews(chatId, userId, null, null, "listuser", "Список пользователей", false, token);
 
+            var button1 = new InlineKeyboardButton("Отмена")
+            {
+                CallbackData = "DeclineUserList"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
             await client.SendMessageAsync(chatId,
                 "Отправьте запрос в формате <фильтр(текстовое поле для фильтрации по имени или логину)>:" +
                 "<количество записей в одном ответе (по умолчанию 10)>:" +
                 "<номер страницы поиска (по умолчанию 1)>, " +
-                "Например: Юра Зайцев:5:3\r\n(выведет всех пользователей, у которых в имени есть слова Юра или Зайцев, выведет 5 пользователей, пропустив 10 первых)",                 
+                "Например: Юра Зайцев:5:3\r\n(выведет всех пользователей, у которых в имени есть слова Юра или Зайцев, выведет 5 пользователей, пропустив 10 первых), или " +
+                "нажмите Отмена для отмены действия", replyMarkup,
                  token);            
         }
 
