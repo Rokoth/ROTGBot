@@ -45,22 +45,22 @@ namespace ROTGBot.Service
         }
 
 
-        public async Task Handle(Message? message, CancellationToken cancellationToken)
+        public async Task<bool> Handle(Message? message, CancellationToken cancellationToken)
         {
             if (message == null)
-                return;
+                return false;
 
             _logger.LogInformation("Message update: {name}. {message}", message.Chat.Username, message.Text);
 
             if (message.From == null)
             {
                 await SendTestConnectionMessage(message, "Не удалось получить информацию по отправителю", cancellationToken);
-                return;
+                return false;
             }
 
             if (message.Chat?.Id == null || message.Chat?.Type != "private")
             {
-                return;
+                return false;
             }
 
             var tgUser = message.From;
@@ -68,7 +68,9 @@ namespace ROTGBot.Service
             var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username ?? "NoName", $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
 
             if (user == null)
-                return;
+            {
+                return false;
+            }
 
             var userNews = await _newsDataService.GetCurrentNews(user.Id, cancellationToken);
 
@@ -141,6 +143,8 @@ namespace ROTGBot.Service
             {
                 await SendTestConnectionMessage(message, string.Format(HelloMessage, user.Name), cancellationToken);
             }
+
+            return true;
         }
 
         private async Task SendTestConnectionMessage(Message message, string addInfo, CancellationToken token)
@@ -158,6 +162,6 @@ namespace ROTGBot.Service
             {
                 await _sendMessageWrapper.SendMenuButtons(chatId, user, type, cancellationToken);
             }
-        }
+        }                
     }
 }

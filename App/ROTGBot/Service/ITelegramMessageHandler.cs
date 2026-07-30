@@ -5,6 +5,6 @@ namespace ROTGBot.Service
 {
     public interface ITelegramMessageHandler
     {
-        Task HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken);
+        Task<bool> HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken);
     }
 }

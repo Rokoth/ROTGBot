@@ -3,6 +3,7 @@ using ROTGBot.Service;
 using Moq;
 using Telegram.BotAPI.GettingUpdates;
 using Microsoft.Extensions.Logging;
+using Telegram.BotAPI.AvailableTypes;
 
 namespace XUnitTests
 {
@@ -32,6 +33,8 @@ namespace XUnitTests
             var buttonDataService = new Mock<IButtonsDataService>();
             var configuration = new Mock<IConfiguration>();
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
+            var messageHandler = new Mock<IHandler<Message>>();
+            var sendmessageWrapper = new Mock<ISendMessageWrapper>();
 
             wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => [
@@ -41,11 +44,28 @@ namespace XUnitTests
                     }
                 ]);
 
-            var tgMainService = new TelegramMessageHandler(logger.Object, groupsDataService.Object, userDataService.Object, newsDataService.Object, buttonDataService.Object, configuration.Object, wrapperService.Object);
+            var tgMainService = new TelegramMessageHandler(
+                logger.Object,
+                groupsDataService.Object,
+                userDataService.Object,
+                newsDataService.Object,
+                buttonDataService.Object,
+                messageHandler.Object,
+                sendmessageWrapper.Object,
+                configuration.Object,
+                wrapperService.Object);
 
-            var result = await tgMainService.HandleUpdates();
+            //todo: test concept
+            var result = await tgMainService.HandleUpdates(
+            [
+                new Update()
+                {
+                    Message = new Message() { },
+                    UpdateId = 1
+                }
+            ], CancellationToken.None);
 
-            Assert.Equal(5, result);
+            Assert.True(result);
         }
 
         /// <summary>
@@ -61,21 +81,36 @@ namespace XUnitTests
             var newsDataService = new Mock<INewsDataService>();
             var buttonDataService = new Mock<IButtonsDataService>();
             var configuration = new Mock<IConfiguration>();
+            var messageHandler = new Mock<IHandler<Message>>();
+            var sendmessageWrapper = new Mock<ISendMessageWrapper>();
+
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
 
-            wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => [
-                    new Update()
-                    {
-                        UpdateId = 4
-                    }
-                ]);
+            messageHandler.Setup(s => s.Handle(It.IsAny<Message?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Message? message) => message != null);
 
-            var tgMainService = new TelegramMessageHandler(logger.Object, groupsDataService.Object, userDataService.Object, newsDataService.Object, buttonDataService.Object, configuration.Object, wrapperService.Object);
+            var tgMainService = new TelegramMessageHandler(
+                logger.Object, 
+                groupsDataService.Object, 
+                userDataService.Object, 
+                newsDataService.Object, 
+                buttonDataService.Object,
+                messageHandler.Object,
+                sendmessageWrapper.Object,
+                configuration.Object, 
+                wrapperService.Object);
 
-            var result = await tgMainService.HandleUpdates(new List<Update>(), CancellationToken.None);
+            //todo: test concept
+            var result = await tgMainService.HandleUpdates(
+            [
+                new Update()
+                {
+                    Message = new Message() { },
+                    UpdateId = 1
+                }
+            ], CancellationToken.None);
 
-            Assert.Equal(5, result);
+            Assert.True(result);
         }
     }
 }

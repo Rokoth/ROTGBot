@@ -2,6 +2,6 @@
 {
     public interface IHandler<T>
     {
-        Task Handle(T? message, CancellationToken cancellationToken);
+        Task<bool> Handle(T? message, CancellationToken cancellationToken);
     }
 }

@@ -184,13 +184,16 @@ namespace ROTGBot.Service
 
             foreach(var userRole in userRoles)
             {
-
+                var role = roles.FirstOrDefault(s => s.Id == userRole.RoleId);
+                
                 result.Add(new Contract.Model.UserRole()
                 {
                     RoleId = userRole.RoleId,
-                    RoleName = 
+                    RoleName = role?.Name ?? "Не определено"
                 });
             }
+
+            return result;
         }
 
         public async Task DeleteUserRole(Contract.Model.UserRole userRole, CancellationToken token)
@@ -225,6 +228,11 @@ namespace ROTGBot.Service
         }
 
         public Task<List<Contract.Model.Role>> GetRoles(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> SetRole(Guid userId, Guid roleId, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
