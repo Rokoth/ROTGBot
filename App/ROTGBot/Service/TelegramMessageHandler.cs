@@ -2100,9 +2100,21 @@ namespace ROTGBot.Service
             }
         }
 
-        public Task<(bool success, string result)> CreateAndSendPassword(string login, CancellationToken cancellationToken)
+        public async Task<(bool success, string result)> CreateAndSendPassword(string login, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var user = await _userDataService.GetUserByLogin(login, cancellationToken);
+            if(user == null)
+            {
+                return (false, "Пользователь не найден");
+            }
+
+            var password = Guid.NewGuid();
+
+            await _userDataService.SaveTempPassword(user.Id, password, cancellationToken);
+
+            await client.SendMessageAsync(user.ChatId, $"Одноразовый пароль для входа в web-интерфейс: {password}. Если вы не запрашивали пароль, проигнорируйте это сообщени", cancellationToken);
+
+            return (true, "Пароль отправлен");
         }
     }
 }

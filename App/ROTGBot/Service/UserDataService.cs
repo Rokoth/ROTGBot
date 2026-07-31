@@ -1,6 +1,7 @@
 ﻿using ROTGBot.Contract.Model;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
+using System.Linq.Dynamic.Core.Tokenizer;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -150,7 +151,19 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        public Task ClearPassword(Guid userId, CancellationToken cancellationToken)
+        public async Task ClearPassword(Guid userId, CancellationToken cancellationToken)
+        {
+            var user = await _userRepo.GetAsync(userId, cancellationToken);
+            user.TempPassword = null;
+            await _userRepo.UpdateAsync(user, true, cancellationToken);
+        }
+
+        public Task<Contract.Model.User?> GetUserByLogin(string login, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SaveTempPassword(Guid id, Guid password, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

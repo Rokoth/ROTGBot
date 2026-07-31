@@ -10,5 +10,7 @@
         Task<Contract.Model.User> GetUser(Guid userId, CancellationToken token);
         Task<Contract.Model.User?> GetUser(string login, string password, CancellationToken cancellationToken);
         Task ClearPassword(Guid userId, CancellationToken cancellationToken);
+        Task<Contract.Model.User?> GetUserByLogin(string login, CancellationToken cancellationToken);
+        Task SaveTempPassword(Guid id, Guid password, CancellationToken cancellationToken);
     }
 }
