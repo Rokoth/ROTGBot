@@ -167,6 +167,11 @@ namespace ROTGBot.Service
                 {
                     await HandleData(user.ChatId, user, "BlockUser", cancellationToken);
                 }
+
+                if (userNews.Type == "unblockuser")
+                {
+                    await HandleData(user.ChatId, user, "UnBlockUser", cancellationToken);
+                }
             }
             else if (message.IsTopicMessage != true)
             {
@@ -486,11 +491,6 @@ namespace ROTGBot.Service
             {
                 await SendMessageToUserMessageNotFound(chatId, token);
             }
-        }
-
-        private async Task UnblockUserMessageNotFound(long chatId, CancellationToken token)
-        {
-            throw new NotImplementedException();
         }
 
         private async Task EditButtonHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
@@ -1413,6 +1413,11 @@ namespace ROTGBot.Service
         private async Task EditButtonMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на добавление кнопок", token);
+        }
+
+        private async Task UnblockUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на разблокировку пользователя", token);
         }
 
         private async Task CancelUnblockUserMessageNotFound(long chatId, CancellationToken token)
