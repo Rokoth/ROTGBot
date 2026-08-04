@@ -158,6 +158,10 @@ namespace ROTGBot.Service
 
         public async Task<IEnumerable<Contract.Model.User>> GetUserByNameOrLogin(string login, CancellationToken token)
         {
+            if(login.StartsWith("@"))
+            {
+                login = login.Replace("@", "");
+            }
             var users = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
             {
                 Selector = s => (s.TGLogin != null && s.TGLogin == login) || (s.Name != null && s.Name.Equals(login, StringComparison.InvariantCultureIgnoreCase))
