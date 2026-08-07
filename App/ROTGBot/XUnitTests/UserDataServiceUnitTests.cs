@@ -156,10 +156,10 @@ namespace XUnitTests
                 .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new List<UserRole>()));
 
             _repouserRoleMock.Setup(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new UserRole()));
+                .Returns(() => Task.FromResult(new UserRole()));
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new User()));
+                .Returns(() => Task.FromResult(new User()));
 
             _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
                 .Returns<Filter<Role>, CancellationToken>((f, t) => Task.FromResult(GetRoles(f,

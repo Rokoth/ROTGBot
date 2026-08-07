@@ -14,6 +14,7 @@ namespace ROTGBot.Pages.Reports
 
         [BindProperty]
         public UserReport Report { get; set; } = default!;
+        public UserReportFilter Filter { get; set; } = default!;
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -23,7 +24,20 @@ namespace ROTGBot.Pages.Reports
                 return RedirectToPage("/Auth");
             var userId = Guid.Parse(auth.Principal.Identity.Name);
 
-            Report = await _newsDataService.GetUserReport(userId, new CancellationToken());
+            Report = await _newsDataService.GetUserReport(userId, Filter, new CancellationToken());
+
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+            var auth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (!auth.Succeeded || string.IsNullOrEmpty(auth.Principal.Identity.Name))
+                return RedirectToPage("/Auth");
+            var userId = Guid.Parse(auth.Principal.Identity.Name);
+
+            Report = await _newsDataService.GetUserReport(userId, Filter, new CancellationToken());
 
             return Page();
         }

@@ -32,6 +32,14 @@
         public string[] States { get; set; }
     }
 
+    public class UserReportFilter
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+
+        public string[] States { get; set; }
+    }
+
     public class ByUserReportItem 
     {
         public string User { get; set; } = default!;

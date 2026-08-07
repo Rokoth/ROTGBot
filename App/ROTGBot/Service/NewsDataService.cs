@@ -357,11 +357,18 @@ namespace ROTGBot.Service
 
         
 
-        public async Task<Contract.Model.AdminModeratorReport> GetAdminModeratorReport(CancellationToken token)
+        public async Task<Contract.Model.AdminModeratorReport> GetAdminModeratorReport(Contract.Model.ModeratorReportFilter filter, CancellationToken token)
         {
+            DateTime? from = filter?.From;
+            DateTime? to = filter?.To;
+            string[]? states = filter?.States;
+
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false && s.Type == "news"
+                Selector = s => s.IsDeleted == false && s.Type == "news" 
+                && (from == null || s.CreatedDate > from) 
+                && (to == null || s.CreatedDate <= to)
+                && (states == null || states.Contains(s.State))
             }, token)).OrderBy(s => s.CreatedDate);
 
             return new Contract.Model.AdminModeratorReport()
@@ -386,11 +393,16 @@ namespace ROTGBot.Service
             };
         }
                 
-        public async Task<Contract.Model.UserReport> GetUserReport(Guid id, CancellationToken token)
+        public async Task<Contract.Model.UserReport> GetUserReport(Guid id, Contract.Model.UserReportFilter filter, CancellationToken token)
         {
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false && s.Type == "news" && s.UserId == id
+                Selector = s => s.IsDeleted == false 
+                && s.Type == "news" 
+                && s.UserId == id
+                && (filter.From == null || filter.From <= s.CreatedDate)
+                && (filter.To == null || filter.To >= s.CreatedDate)
+                && (filter.States == null || filter.States.Contains(s.State))
             }, token)).OrderBy(s => s.CreatedDate);
 
             return new Contract.Model.UserReport()
@@ -501,6 +513,5 @@ namespace ROTGBot.Service
                 },
             ];
         }
-
     }
 }

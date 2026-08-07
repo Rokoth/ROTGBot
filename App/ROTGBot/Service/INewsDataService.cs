@@ -24,6 +24,6 @@ namespace ROTGBot.Service
         Task<AdminUserReport> GetAdminUserReport(CancellationToken token);
         Task<AdminModeratorReport> GetAdminModeratorReport(ModeratorReportFilter filter, CancellationToken token);
         Task<ModeratorReport> GetModeratorReport(Guid id, ModeratorReportFilter filter, CancellationToken token);
-        Task<UserReport> GetUserReport(Guid id, CancellationToken token);
+        Task<UserReport> GetUserReport(Guid id, UserReportFilter filter, CancellationToken token);
     }
 }
