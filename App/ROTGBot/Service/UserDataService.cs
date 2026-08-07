@@ -186,6 +186,14 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        
+        public Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Contract.Model.User> GetUserByNumberOrLogin(string? textValue, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

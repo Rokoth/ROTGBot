@@ -493,6 +493,11 @@ namespace ROTGBot.Service
             }
         }
 
+        private async Task SendMessageToUserMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
         private async Task EditButtonHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
@@ -1386,9 +1391,13 @@ namespace ROTGBot.Service
             var search = message.TextValue.Split(':').Select(s => s.Trim()).ToList();
             var users = await _userDataService.GetAllUsers(token);
 
-            var nameSearches = search[0].
-
-            var found = users.Where(s => s.)
+            var nameSearches = search[0].ToLower().Split(" ");
+            //todo
+            foreach(var nameSearch in nameSearches)
+            {
+                var found = users.Where(s => s.Name != null && s.Name.Contains(nameSearch));
+            }
+            
 
 
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);

@@ -246,7 +246,7 @@ namespace XUnitTests
             var userGuid = Guid.NewGuid();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(GetErrorResult()));
+                .Returns(()=> throw new RepositoryException("Не удалось получить Entity по Id"));
 
             _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new User()
@@ -260,11 +260,6 @@ namespace XUnitTests
             var userService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
             await Assert.ThrowsAsync<RepositoryException>(() => userService.SwitchUserNotify(user1Id, new CancellationToken()));
-        }
-
-        private static User GetErrorResult()
-        {
-            throw new RepositoryException("Не удалось получить Entity по Id");
         }
 
         private static List<Role> GetRoles(Filter<Role> f, Guid moderGuid, Guid userGuid)
