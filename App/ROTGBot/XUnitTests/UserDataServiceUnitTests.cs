@@ -148,7 +148,7 @@ namespace XUnitTests
             var moderGuid = Guid.NewGuid();
             var userGuid = Guid.NewGuid();
 
-            User? user = new User()
+            User? user = new()
             {
                 Id = user1Id,
                 IsDeleted = false,
@@ -157,7 +157,10 @@ namespace XUnitTests
             };
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(user));
+                .Returns(()=> Task.FromResult<User?>(user));
+
+            _repoMock.Setup(s => s.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult(user));
 
             var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
