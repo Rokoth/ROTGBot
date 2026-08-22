@@ -355,10 +355,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task SendNewsReplyHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task DeclineSendMessageByNumberHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
         {
@@ -550,6 +547,27 @@ namespace ROTGBot.Service
             }
         }
 
+        private async Task SendNewsReplyHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendNewsReplyAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendNewsReplyMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendNewsReplyMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendNewsReplyAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
 
         private async Task AddModeratorHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {

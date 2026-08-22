@@ -119,7 +119,7 @@ namespace XUnitTests
             IsMulti = false,
             ModeratorId = null,
             Number = 2,
-            State = "accepted",
+            State = "create",
             ThreadId = 4,
             Title = "test",
             Type = "news",
