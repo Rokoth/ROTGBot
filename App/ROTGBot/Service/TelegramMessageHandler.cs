@@ -378,11 +378,45 @@ namespace ROTGBot.Service
                     {
                         if(messsage.TextValue?.Contains(word.Key, StringComparison.InvariantCultureIgnoreCase) == true)
                         {
-                            
+                            foundNews[news.Id] += 1;
                         }
                     }
                 }
             }
+
+            string answer = string.Empty;
+            var readyUsers = foundUsers.Where(s => s.Value > 0).OrderByDescending(s => s.Value);
+            var readyNews = foundNews.Where(s => s.Value > 0).OrderByDescending(s => s.Value);
+
+            if(!readyUsers.Any())
+            {
+                answer += "Пользователи не найдены\r\n";
+            }
+            else
+            {
+                answer += $"Найдены пользователи:\r\n";
+                foreach(var readyUser in readyUsers)
+                {
+                    var userF = allUsers.First(s => s.Id == readyUser.Key);
+                    answer += $"{userF.Name} ({userF.TGLogin})";
+                }
+            }
+
+            if (!readyNews.Any())
+            {
+                answer += "Обращения не найдены\r\n";
+            }
+            else
+            {
+                answer += $"Найдены обращения:\r\n";
+                foreach (var readyNew in readyNews)
+                {
+                    var newsF = allNews.First(s => s.Id == readyNew.Key);                    
+                    answer += $"{newsF.Number}. {newsF.Title}. {newsF.Description}";
+                }
+            }
+
+            await client.SendMessageAsync(chatId, answer, cancellationToken);            
         }
 
         private async Task<bool> HandleCallback(CallbackQuery? callbackQuery, CancellationToken token)
