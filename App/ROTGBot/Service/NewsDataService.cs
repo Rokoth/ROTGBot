@@ -383,7 +383,12 @@ namespace ROTGBot.Service
         {
             var allNews = (await _newsRepo.GetAsync(new Filter<News>()
             {
-                Selector = s => s.IsDeleted == false && s.Type == "news" && s.ModeratorId == id
+                Selector = s => s.IsDeleted == false 
+                && s.Type == "news" 
+                && s.ModeratorId == id
+                && (filter.From == null || s.CreatedDate >= filter.From)
+                 && (filter.To == null || s.CreatedDate <= filter.To)
+                 && (filter.States == null || filter.States.Length == 0 || filter.States.Contains(s.State))
             }, token)).OrderBy(s => s.CreatedDate);
 
             return new Contract.Model.ModeratorReport()
