@@ -2,6 +2,7 @@
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Linq.Dynamic.Core.Tokenizer;
+using Telegram.BotAPI.AvailableTypes;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -163,9 +164,11 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        public Task SaveTempPassword(Guid id, Guid password, CancellationToken cancellationToken)
+        public async Task SaveTempPassword(Guid userId, Guid password, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var user = await _userRepo.GetAsync(userId, cancellationToken);
+            user.TempPassword = password.ToString();
+            await _userRepo.UpdateAsync(user, true, cancellationToken);
         }
     }
 }
