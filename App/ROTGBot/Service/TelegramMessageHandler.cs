@@ -1392,16 +1392,22 @@ namespace ROTGBot.Service
             var users = await _userDataService.GetAllUsers(token);
 
             var nameSearches = search[0].ToLower().Split(" ");
-            //todo
-            foreach(var nameSearch in nameSearches)
+            List<Guid> result = [];
+
+            foreach (var nameSearch in nameSearches)
             {
-                var found = users.Where(s => s.Name != null && s.Name.Contains(nameSearch));
+                IEnumerable<Contract.Model.User> found = users.Where(s => (s.Name != null && s.Name.Contains(nameSearch))
+                    || (s.Description != null && s.Description.Contains(nameSearch))
+                    || (s.TGLogin != null && s.TGLogin.Contains(nameSearch)));
+                result.AddRange(found.Select(s => s.Id));
             }
-            
+           
+            var usersRes = users.Where(s => result.Distinct().Contains(s.Id));
 
-
+           
+            await client.SendMessageAsync(chatId, $"Найдены пользователи:\r\n " +
+                $"{string.Join("\r\n", users.Select(s => $"{s.Number}: {s.Name} ({s.TGLogin})"))}", token);
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
-            await client.SendMessageAsync(chatId, "", token);
         }
 
         private async Task SendNewsMessageNotFound(long chatId, CancellationToken token)
