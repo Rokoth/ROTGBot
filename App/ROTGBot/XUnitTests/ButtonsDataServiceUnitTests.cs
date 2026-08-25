@@ -190,7 +190,7 @@ namespace XUnitTests
             var _repoMock = new Mock<IRepository<NewsButton>>();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsButton>>(), It.IsAny<CancellationToken>()))
-                .Returns(GenerateRepoError);
+                .Returns(() => GenerateRepoError());
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<NewsButton>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new NewsButton()));
