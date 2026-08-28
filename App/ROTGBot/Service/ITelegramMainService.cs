@@ -4,6 +4,6 @@
     {
         Task<int> Execute(int offset);
 
-        Task SetCommands();
+        Task<bool> SetCommands();
     }
 }

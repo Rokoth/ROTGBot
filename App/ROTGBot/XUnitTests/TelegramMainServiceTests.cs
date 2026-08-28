@@ -35,5 +35,23 @@ namespace XUnitTests
 
             Assert.Equal(1, result);
         }
+
+        [Fact]
+        public async Task SetCommands_Success_Async()
+        {
+            var handlerService = new Mock<ITelegramMessageHandler>();
+            var wrapperService = new Mock<ITelegramBotWrapper>();
+            handlerService.Setup(s => s.HandleUpdates(It.IsAny<IEnumerable<Update>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+            var tgMainService = new TelegramMainService(handlerService.Object, wrapperService.Object);
+
+            var result = await tgMainService.SetCommands();
+
+            Assert.Equal(1, result);
+        }
     }
 }
