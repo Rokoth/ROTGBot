@@ -218,7 +218,7 @@ namespace XUnitTests
             var userGuid = Guid.NewGuid();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<User>()
+                .Returns<Filter<User>, CancellationToken>((f,t) => Task.FromResult(new List<User>()
                 {
                     new()
                     {
