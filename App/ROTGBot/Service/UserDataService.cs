@@ -147,9 +147,17 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task<Contract.Model.User?> GetUser(string login, string password, CancellationToken cancellationToken)
+        public async Task<Contract.Model.User?> GetUser(string login, string password, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => s.TGLogin == login && s.TempPassword == password
+            }, cancellationToken)).FirstOrDefault();
+
+            if (user == null)
+                return null;
+
+            return await Map(user, cancellationToken);
         }
 
         public async Task ClearPassword(Guid userId, CancellationToken cancellationToken)
@@ -159,9 +167,17 @@ namespace ROTGBot.Service
             await _userRepo.UpdateAsync(user, true, cancellationToken);
         }
 
-        public Task<Contract.Model.User?> GetUserByLogin(string login, CancellationToken cancellationToken)
+        public async Task<Contract.Model.User?> GetUserByLogin(string login, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => s.TGLogin == login
+            }, cancellationToken)).FirstOrDefault();
+
+            if (user == null)
+                return null;
+
+            return await Map(user, cancellationToken);
         }
 
         public async Task SaveTempPassword(Guid userId, Guid password, CancellationToken cancellationToken)
