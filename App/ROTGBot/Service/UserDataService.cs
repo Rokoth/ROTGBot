@@ -186,14 +186,25 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token)
+        public async Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token)
         {
-            throw new NotImplementedException();
+            
         }
 
-        public Task<Contract.Model.User> GetUserByNumberOrLogin(string? textValue, CancellationToken token)
+        public async Task<Contract.Model.User> GetUserByNumberOrLogin(string? textValue, CancellationToken token)
         {
-            throw new NotImplementedException();
+            int? number = null;
+            if(int.TryParse(textValue, out int num))
+            {
+                number = num;
+            }
+
+            var user = (await _userRepo.GetAsync(new Filter<DB.Model.User>()
+            {
+                Selector = s => (s.TGLogin != null && s.TGLogin == textValue) || (number != null && s.Number == number)
+            }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {textValue} не найден");
+
+            return await Map(user, token);
         }
     }
 }
