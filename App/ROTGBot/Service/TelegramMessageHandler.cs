@@ -564,10 +564,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task SendNewsReplyAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task AddModeratorHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
@@ -1135,6 +1132,68 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
         }
 
+        private async Task SendNewsReplyAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages == null || messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
+
+            if (messages[0].TextValue == null || !int.TryParse(messages[0].TextValue, out int newsNumber))
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                return;
+            }
+
+            var searchNews = await _newsDataService.GetNewsByNumber(newsNumber, token);
+
+            if (searchNews == null)
+            {
+                await client.SendMessageAsync(chatId, "Обращение по номеру не найдено", token);
+                return;
+            }
+
+            var sendUser = await _userDataService.GetUser(searchNews.UserId, token);
+
+            if (sendUser == null)
+            {
+                await client.SendMessageAsync(chatId, "По данному обращению не найден пользователь", token);
+                return;
+            }
+
+            if (messages?.Count == 1)
+            {
+                await client.SendMessageAsync(chatId, $"Отправьте текст ответа на обращение {newsNumber}: {searchNews.Title} от {searchNews.CreatedDate:yyyy-MM-dd}, " +
+                    $"отправленное пользователем {sendUser.Name} ({sendUser.TGLogin}), номер: {sendUser.Number}", token);
+                return;
+            }
+
+            bool ready = false;
+
+            for (int i = 1; i <= messages.Count; i++)
+            {
+                var messageText = messages[i].TextValue;
+                if (!string.IsNullOrEmpty(messageText))
+                {
+                    await client.SendMessageAsync(sendUser.ChatId, messageText, token);
+                    ready = true;
+                }
+            }
+
+            if (!ready)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного сообщения, отправьте текст сообщения", token);
+                return;
+            }
+
+            await client.SendMessageAsync(chatId, $"Сообщение отправлено пользователю {sendUser.Name} ({sendUser.TGLogin}), номер: {sendUser.Number} в ответ на обращение {newsNumber}: {searchNews.Title} от {searchNews.CreatedDate:yyyy-MM-dd}", token);
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+        }
+
         private async Task SendUserInfoByNewsNumberAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
         {
             var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
@@ -1589,6 +1648,8 @@ namespace ROTGBot.Service
                  replyMarkup,
                  token);
         }
+
+        
 
         private async Task SendUserInfoByNewsNumberChoise(long chatId,Guid userId, CancellationToken token)
         {
