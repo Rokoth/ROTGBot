@@ -20,7 +20,7 @@
             </div>
             <div class="form-group p-3 border bg-light">
                 <label asp-for="UserRole.RoleName" class="control-label"></label>
-                <input id="roleNameField" asp-for="UserRole.RoleName" class="form-control" />
+                <input id="roleNameField" readonly="true" asp-for="UserRole.RoleName" class="form-control" />
                 <span asp-validation-for="UserRole.RoleName" class="text-danger"></span>
             </div>           
             <div class="form-group p-3 border bg-light row g-0">

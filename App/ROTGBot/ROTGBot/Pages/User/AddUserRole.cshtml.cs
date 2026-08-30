@@ -78,6 +78,7 @@ namespace ROTGBot.Pages.User
             {
                 IsError = true;
                 Error = "Выберите роль";
+                return Page();
             }
 
             var result = await _userDataService.SetRole(UserRole.UserId, UserRole.RoleId, new CancellationToken());

@@ -227,14 +227,40 @@ namespace ROTGBot.Service
             return true;
         }
 
-        public Task<List<Contract.Model.Role>> GetRoles(CancellationToken cancellationToken)
+        public async Task<List<Contract.Model.Role>> GetRoles(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var roles = await _roleRepo.GetAsync(new Filter<Db.Model.Role>() { 
+                Selector = s=> s.IsDeleted == false
+            }, cancellationToken);
+
+            return [.. roles.Select(s => new Contract.Model.Role()
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            })];
         }
 
-        public Task<bool> SetRole(Guid userId, Guid roleId, CancellationToken cancellationToken)
+        public async Task<bool> SetRole(Guid userId, Guid roleId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var user = await _userRepo.GetAsync(userId, token);
+
+            if (user != null)
+            {
+                var newRole = await _roleRepo.GetAsync(roleId, token);
+
+                await _userRoleRepo.AddAsync(new Db.Model.UserRole()
+                {
+                    Id = Guid.NewGuid(),
+                    IsDeleted = false,
+                    RoleId = newRole.Id,
+                    UserId = user.Id
+                }, true, token);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }
