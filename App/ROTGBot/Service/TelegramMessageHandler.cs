@@ -350,10 +350,7 @@ namespace ROTGBot.Service
             };
         }
                 
-        private async Task DeclineSendNewsReplyHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
@@ -661,6 +658,22 @@ namespace ROTGBot.Service
                 await UserSearchByNumberMessageNotFound(chatId, token);
             }
         }
+
+        private async Task DeclineSendNewsReplyHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await DeclineSendNewsReplyDeclined(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await DeclineSendNewsReplyMessageNotFound(chatId, token);
+            }
+        }
+
+        
+
+        
 
         private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
         {
@@ -1413,7 +1426,12 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
 
-        
+        private async Task DeclineSendNewsReplyDeclined(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
 
         private async Task AddModeratorAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
@@ -1455,7 +1473,11 @@ namespace ROTGBot.Service
         {
             await client.SendMessageAsync(chatId, "Нет задач на поиск пользователя", token);
         }
-        
+
+        private async Task DeclineSendNewsReplyMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на ответ на обращение", token);
+        }
         private async Task SendMessageByNumberMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на отправку сообщения пользователю", token);
