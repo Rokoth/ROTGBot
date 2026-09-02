@@ -93,8 +93,13 @@ namespace XUnitTests
                     assert
                 }));
 
+            _repoMessageMock.Setup(s => s.GetAsync(It.IsAny<Filter<NewsMessage>>(), It.IsAny<CancellationToken>()))
+                .Returns(()=> Task.FromResult(new List<NewsMessage>()
+                {
+                }));
+
             _repoMock.Setup(s => s.AddAsync(It.IsAny<News>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new News()));
+                .Returns<News, bool, CancellationToken>((n,f,c)=>Task.FromResult(n));
 
             var newsService = new NewsDataService(_repoMock.Object, _repoMessageMock.Object, _repoUserMock.Object, _loggerMock.Object);
 
