@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ROTGBot.Contract.Model;
 using ROTGBot.Service;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ROTGBot.Pages.Reports
 {
@@ -15,6 +16,37 @@ namespace ROTGBot.Pages.Reports
         [BindProperty]
         public UserReport Report { get; set; } = default!;
         public UserReportFilter Filter { get; set; } = default!;
+
+        public List<SelectListItem> AllStates { get; set; } = [
+            new()
+            {
+                Value = "new",
+                Disabled = false,
+                Selected = true,
+                Text = "Новый"
+            },
+            new()
+            {
+                Value = "accepted",
+                Disabled = false,
+                Selected = true,
+                Text = "Принят"
+            },
+            new()
+            {
+                Value = "approved",
+                Disabled = false,
+                Selected = true,
+                Text = "Подтвержден"
+            },
+            new()
+            {
+                Value = "declined",
+                Disabled = false,
+                Selected = true,
+                Text = "Отказан"
+            }
+        ];
 
         public async Task<IActionResult> OnGetAsync()
         {
