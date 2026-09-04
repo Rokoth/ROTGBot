@@ -27,6 +27,7 @@ namespace ROTGBot.Service
         private static readonly string[] AnswerNewsKeyWords = ["ответь на обращение", "ответить на обращение", "ответ на обращение", "отправь на обращение", "отправить на обращение", "ответь на заявку", "ответить на заявку", "ответ на заявку", "отправь на заявку", "отправить на заявку"];
         private static readonly string[] FindKeyWords = ["найти", "найди", "поищи", "отыщи", "искать", "поиск", "отыскать", "поискать"];
         private static readonly string[] BlockKeyWords = ["заблокировать", "блокировать", "заблокируй", "блокируй", "забанить", "забань"];
+        private static readonly string[] UnBlockKeyWords = ["разблокировать", "разблокируй", "разбанить", "разбань"];
 
         public TelegramMessageHandler(
             ILogger<TelegramMessageHandler> logger,
