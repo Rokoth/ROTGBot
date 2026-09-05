@@ -312,10 +312,31 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendUserReglamentEditDeclineHandle(chId, user, userNews, tk), token),
                 "ModeratorReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendModeratorReglament(chId, userNews, tk), token),
+                "ModeratorReglamentEditChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendModeratorReglamentEditChoiceHandle(chId, user, userNews, tk), token),
+                "ModeratorReglamentEdit" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendModeratorReglamentEditHandle(chId, user, userNews, tk), token),
+                "ModeratorReglamentEditDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
+                                        (chId, userNews, tk) => SendModeratorReglamentEditDeclineHandle(chId, user, userNews, tk), token),
 
                 _ => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
+        }
+
+        private async Task SendModeratorReglamentEditDeclineHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendModeratorReglamentEditHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendModeratorReglamentEditChoiceHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task SendUserReglamentEditDeclineHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
