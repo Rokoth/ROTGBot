@@ -115,10 +115,21 @@ namespace ROTGBot.Service
 
             if (initMessageTypes.Contains(messageType) && userNews != null)
             {
-                await SendUserRemember(chatId, userNews, messageType, token);
+                return await SendUserRemember(chatId, userNews, messageType, token);
+            }
+
+            if (!initMessageTypes.Contains(messageType) && userNews == null)
+            {
+                return await SendMessageNotFound(chatId, token);
             }
 
             return await SendAnswerSafe(chatId, user, userId, messageType, newData, userNews, token);
+        }
+
+        private async Task<bool> SendMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Не найдена текущая задача, попробуйте еще раз", token);
+            return true;
         }
 
         private async Task<bool> SendAnswerSafe(long chatId, Contract.Model.User user, Guid userId, MessageType messageType, 
@@ -175,42 +186,481 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task StartCommandHandle(long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
+        private async Task<bool> StartCommandHandle(long chatId, Contract.Model.User user, News? userNews, string type, CancellationToken cancellationToken)
         {
             await SendMenuButtons(chatId, user, type, cancellationToken);
+            return true;
         }
 
-        private async Task SendGetButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private async Task SendMenuButtons(long chatId, Contract.Model.User user, string type, CancellationToken token)
         {
-            await SendGetButtonForUser(chatId, user, token);
+            if (type == "all")
+            {
+                if (user.IsModerator || user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Выберите раздел",
+                        replyMarkup: new InlineKeyboardMarkup(GetMenuButtons(user)), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "Панель пользователя",
+                        replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
+                }
+            }
+
+            if (type == "user")
+            {
+                await client.SendMessageAsync(chatId, "Панель пользователя",
+                         replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)), token);
+            }
+
+            if (type == "moderator")
+            {
+                if (user.IsModerator)
+                {
+                    await client.SendMessageAsync(chatId, "Панель модератора",
+                        replyMarkup: new InlineKeyboardMarkup(GetModeratorButtons(user)), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
+                }
+            }
+
+            if (type == "admin")
+            {
+                if (user.IsAdmin)
+                {
+                    await client.SendMessageAsync(chatId, "Панель администратора",
+                        replyMarkup: new InlineKeyboardMarkup(GetAdminButtons()), token);
+                }
+                else
+                {
+                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу", token);
+                }
+            }
         }
 
-        private async Task SendAddButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private static List<List<InlineKeyboardButton>> GetMenuButtons(Contract.Model.User user)
         {
-            await SendAddButtonForUser(chatId, user, token);
+            List<List<InlineKeyboardButton>> result = [];
+            if (user.IsAdmin)
+            {
+                result.Add([ new InlineKeyboardButton("Панель администратора")
+                {
+                    CallbackData = "MenuAdmin"
+                }]);
+            }
+            if (user.IsAdmin)
+            {
+                result.Add([ new InlineKeyboardButton("Панель модератора")
+                {
+                    CallbackData = "MenuModerator"
+                }]);
+            }
+            result.Add([ new InlineKeyboardButton("Панель пользователя")
+                {
+                    CallbackData = "MenuUser"
+                }]);
+
+            return result;
         }
 
-        private async Task SendEditButtonsChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private async Task<List<List<InlineKeyboardButton>>> GetUserButtons(CancellationToken token)
         {
-            await SendEditButtonsForUser(chatId, user, token);
+            var buttons = (await _buttonsDataService.GetActiveButtons(token)).Where(s => s.ParentId == null);
+
+            var sendButtons = new List<List<InlineKeyboardButton>>();
+
+            foreach (var button in buttons)
+            {
+                var buttonName = button.ButtonName ?? $"{button.ChatName}:{button.ThreadName}";
+                var buttonSend = new InlineKeyboardButton(buttonName)
+                {
+                    CallbackData = $"SendNewsChoice_{button.ButtonNumber}"
+                };
+                sendButtons.Add([buttonSend]);
+            }
+
+            sendButtons.Add(EmptyButton());
+
+            sendButtons.Add([new InlineKeyboardButton("Отчёт по отправленным обращениям")
+                {
+                    CallbackData = "UserReport"
+                }]);
+
+            sendButtons.Add(EmptyButton());
+
+            sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
+            {
+                CallbackData = "GetPDNOferta"
+            }]);
+
+            sendButtons.Add(EmptyButton());
+
+            sendButtons.Add([new InlineKeyboardButton("Отправить пожертвование")
+            {
+                CallbackData = "GetDonateQR"
+            }]);
+
+            return sendButtons;
         }
 
-        private async Task SendAddModeratorChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private static List<InlineKeyboardButton> EmptyButton(string? text = null)
         {
-            await SendAddModeratorForUser(chatId, user, token);
+            return [new InlineKeyboardButton(text ?? "* * *")
+            {
+                CallbackData = "-"
+            }];
         }
 
-        private async Task SendAddAdminChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private static List<List<InlineKeyboardButton>> GetAdminButtons()
         {
-            await SendAddAdminForUser(chatId, user, token);
+            return
+            [
+                [
+                    new InlineKeyboardButton("Добавить администратора")
+                    {
+                        CallbackData = "AddAdminChoice"
+                    },new InlineKeyboardButton("Добавить модератора")
+                    {
+                        CallbackData = "AddModeratorChoice"
+                    }
+                ],
+                EmptyButton(),
+                [
+                    new InlineKeyboardButton("Управление кнопками пользователя (множественное)")
+                    {
+                        CallbackData = "EditButtonsChoice"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Просмотр кнопок пользователя")
+                    {
+                        CallbackData = "GetButtonChoice"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Добавить кнопку пользователя")
+                    {
+                        CallbackData = "AddButtonChoice"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Удалить кнопку пользователя")
+                    {
+                        CallbackData = "DeleteButtonChoice"
+                    }
+                ],
+                EmptyButton(),
+                [
+                    new InlineKeyboardButton("Отчёт по обработанным обращениям пользователей")
+                    {
+                        CallbackData = "AdminUserReport"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Отчёт по обработанным обращениям модераторов")
+                    {
+                        CallbackData = "AdminModeratorReport"
+                    }
+                ]
+            ];
         }
 
-        private async Task SendDeleteButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        private static List<List<InlineKeyboardButton>> GetModeratorButtons(Contract.Model.User user)
         {
-            await SendDeleteButtonForUser(chatId, user, token);
+            var switchNotify = "Включить уведомления";
+            if (user.IsNotify)
+            {
+                switchNotify = "Отключить уведомления";
+            }
+
+            return [
+                [ new InlineKeyboardButton("Получить обращение для подтверждения")
+                {
+                    CallbackData = "ApproveNewsChoice_0"
+                }],
+                [ new InlineKeyboardButton(switchNotify)
+                {
+                    CallbackData = "SwitchNotify"
+                }],
+                [new InlineKeyboardButton("Отчёт по обработанным обращениям")
+                {
+                    CallbackData = "ModeratorReport"
+                }]
+            ];
         }
 
-        private Task SendUserRemember(long chatId, News? news, MessageType messageType, CancellationToken token)
+        private async Task<bool> SendGetButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId,
+                    GetButtonsRules(buttonsView),
+                     token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                     token);
+            }
+            return true;
+        }
+
+        private static string? GetButtonsView(List<NewsButton> availableButtons, int? parentId = null, int level = 0)
+        {
+            var result = availableButtons.Where(s => s.ParentId == parentId);
+            if (!result.Any())
+                return null;
+
+            return string.Join("\n", result.OrderBy(s => s.ButtonNumber)
+                .Select(s => GetGroupView(availableButtons, level, s)));
+        }
+
+        private static string GetGroupView(List<NewsButton> availableButtons, int level, NewsButton currentButton)
+        {
+            string chButtonsView = string.Empty;
+            var childButtons = GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1);
+            if (childButtons != null)
+            {
+                chButtonsView = $"\r\n{GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1)}";
+            }
+            return $"{GetTabs(level)}{GetButtonName(currentButton, true)}{chButtonsView}";
+        }
+
+        public static string GetTabs(int count)
+        {
+            var result = "";
+            for (int i = 0; i < count; i++)
+            {
+                result += "\t\t\t\t";
+            }
+            return result;
+        }
+
+        private static string GetButtonsRules(string buttonsView)
+        {
+            return $"Подключенные и доступные кнопки:  \n{buttonsView}. ";
+        }
+
+        private static string GetAddButtonsRules(string buttonsView)
+        {
+            return $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\n" +
+                $"Отправьте по шаблону ({{номер}} или {{номер:Наименование кнопки}}) одну из доступных и не подключенных кнопок для добавления." +
+                $"\nЕсли кнопка уже была подключена - изменится ее наименование. \n\n" +
+                $"Для добавления группы кнопок (родительской кнопки) отправьте запрос по шаблону {{_:Наименование кнопки}}.\n\n " +
+                $"Для добавления доступной кнопки в группу кнопок отправьте запрос по шаблону {{номер:Наименование кнопки:Номер родительской кнопки}}. " +
+                $"В качестве родительской могут быть использованы только групповые кнопки. Групповую кнопку также можно добавлять дочерней к другой групповой (родительской) кнопке. \n\n" +
+                $"Если необходимо подключить модерацию на одну из кнопок (только для кнопок отправки обращения) - в конце запроса подключения добавьте {{:m}}" +
+                $", например: {{номер:Наименование кнопки:Номер родительской кнопки:m}}" +
+                $"\n\nЕсли нужных групп или тем нет в списке - " +
+                "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). " +
+                "\nПользователь, отправляющий сообщения, должен быть администратором бота.";
+        }
+
+        private static string GetButtonName(NewsButton button, bool withSettings)
+        {
+            var buttonName = button.ButtonName ?? "";
+            if (!string.IsNullOrEmpty(button.ButtonName))
+            {
+                if (!string.IsNullOrEmpty(button.ChatName))
+                {
+                    if (!string.IsNullOrEmpty(button.ThreadName))
+                    {
+                        buttonName = $"{buttonName}({button.ChatName}:{button.ThreadName})";
+                    }
+                    else
+                    {
+                        buttonName = $"{buttonName}({button.ChatName})";
+                    }
+                }
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(button.ChatName))
+                {
+                    if (!string.IsNullOrEmpty(button.ThreadName))
+                    {
+                        buttonName = $"{button.ChatName}:{button.ThreadName}";
+                    }
+                    else
+                    {
+                        buttonName = $"{button.ChatName}";
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(buttonName))
+            {
+                buttonName = "Безымянная кнопка";
+            }
+
+            if (withSettings)
+            {
+                return $"{button.ButtonNumber}. {buttonName}. Подключена: {(button.ToSend ? "Да" : "Нет")}. Родительская: {(button.IsParent ? "Да" : "Нет")}";
+            }
+            else
+            {
+                return $"{button.ButtonNumber}. {buttonName}";
+            }
+        }
+
+
+        private async Task<bool> SendAddButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "addbutton", "Добавление кнопки", false, token);
+
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "AddButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId,
+                    GetAddButtonsRules(buttonsView),
+                    replyMarkup: replyMarkup,
+                     token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                     token);
+            }
+            return true;
+        }
+
+        private async Task<bool> SendEditButtonsChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "editbutton", "Изменение кнопок", false, token);
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId,
+                    GetAddButtonsRules(buttonsView),
+                     token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                     token);
+            }
+            return true;
+        }
+
+
+        private async Task<bool> SendAddModeratorChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addmoderator", "Добавление модератора", false, token);
+
+            var button1 = new InlineKeyboardButton("Добавить")
+            {
+                CallbackData = "AddModerator"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте по одному логины пользователей, которых надо добавить в модераторы и нажмите кнопку Добавить",
+                replyMarkup,
+                 token);
+            return true;
+        }
+
+        private async Task<bool> SendAddAdminChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addadmin", "Добавление администратора", false, token);
+
+            var button1 = new InlineKeyboardButton("Добавить")
+            {
+                CallbackData = "AddAdmin"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте по одному логины пользователей, которых надо добавить в администраторы и нажмите кнопку Добавить",
+                 replyMarkup,
+                 token);
+            return true;
+        }
+
+        private async Task<bool> SendDeleteButtonChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                await _newsDataService.CreateNews(chatId, user.Id, null, null, "deletebutton", "Удаление кнопки", false, token);
+
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "DeleteButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте номер одной из кнопок" +
+                    ". \nЕсли кнопка уже была отключена - ничего не произойдёт.",
+                     replyMarkup,
+                     token);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                     token);
+            }
+            return true;
+        }
+
+
+        private Task<bool> SendUserRemember(long chatId, News? news, MessageType messageType, CancellationToken token)
         {
             MessageType[] toSendRememberTypes = new MessageType[]
             {
@@ -225,8 +675,221 @@ namespace ROTGBot.Service
                 "editbutton" => SendEditButtonForAdminRemember(chatId, token),
                 "addbutton" => SendAddButtonForAdminRemember(chatId, token),
                 "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
-                _ => Task.CompletedTask,
+                _ => Task.FromResult(true),
             };
+        }
+
+        private async Task<bool> SendEditButtonForAdminRemember(long chatId, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                var button1 = new InlineKeyboardButton("Сохранить")
+                {
+                    CallbackData = "EditButton"
+                };
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button1, button2
+                    }
+                    });
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя." +
+                    " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну или несколько настроек (настройки разделяются либо знаком \";\"" +
+                    "либо переносом строки либо отправляются в отдельном сообщении)" +
+                    " и нажмите кнопку Сохранить, либо Отменить для отмены изменения кнопок", replyMarkup: replyMarkup, token);
+            }
+            else
+            {
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя, но нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
+                     replyMarkup: replyMarkup, token);
+            }
+        }
+
+        private async Task<bool> SendAddButtonForAdminRemember(long chatId, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "AddButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на добавление кнопки пользователя." +
+                    " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну из кнопок" +
+                    " либо нажмите Отменить для отмены изменения кнопок", replyMarkup: replyMarkup, token);
+            }
+            else
+            {
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "AddButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на добавление кнопки пользователя, но нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
+                     replyMarkup: replyMarkup, token);
+            }
+        }
+
+        private async Task<bool> SendDeleteButtonForAdminRemember(long chatId, CancellationToken token)
+        {
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
+            {
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "DeleteButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                var buttonsView = GetButtonsView(availableButtons);
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на удаление кнопки пользователя." +
+                    "Отправьте номер кнопки, которую хотите удалить, либо Отменить для отмены изменения кнопок", replyMarkup: replyMarkup, token);
+            }
+            else
+            {
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на удаление кнопки пользователя, но нет подключенных кнопок пользователя. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
+                     replyMarkup: replyMarkup, token);
+            }
+        }
+
+        private async Task<bool> SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Отправить")
+            {
+                CallbackData = "SendNews"
+            };
+            var button2 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeleteNews"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1, button2
+                    }
+                });
+            await client.SendMessageAsync(chatId, $"У вас есть неподтвержденное обращение №{news.Number} в раздел \"{news.Title}\"" +
+                " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки",
+                replyMarkup, token);
+        }
+
+        private async Task<bool> SendAddAdminForAdminRemember(long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Добавить")
+            {
+                CallbackData = "AddAdmin"
+            };
+            var button2 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "AddAdminDecline"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1, button2
+                    }
+                });
+            await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в администраторы." +
+                " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
+                replyMarkup, token);
+        }
+
+
+
+        private async Task<bool> SendAddModeratorForAdminRememeber(long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Добавить")
+            {
+                CallbackData = "AddModerator"
+            };
+            var button2 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "AddModeratorDecline"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1, button2
+                    }
+                });
+            await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в модераторы." +
+                " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
+                replyMarkup, token);
         }
 
         private static bool GetMessageType(string data, out MessageType mt, out string newData)
@@ -355,19 +1018,48 @@ namespace ROTGBot.Service
         }
 
 
-        private async Task SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> SendNewsHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
             {
-                await SendNewsMessageAccepted(userId, chatId, userNews, token);
+                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} \"{userNews.Title}\" создано некорректно, отправьте не менее одного сообщения", token: token);
+                return;
+            }
+
+            if (userNews.IsModerate)
+            {
+                await _newsDataService.SetNewsAccepted(userNews.Id, token);
+                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token: token);
+                await NotifyModerators(userNews, token);
             }
             else
             {
-                await SendNewsMessageNotFound(chatId, token);
+                await _newsDataService.SetNewsAccepted(userNews.Id, token);
+                await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+
+                if (userNews.GroupId.HasValue)
+                {
+                    if (messages.Count != 0)
+                    {
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token);
+                        await SendForwardMessageTitle(userNews, token);
+                        await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
+                    }
+                    else
+                    {
+                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно, не отправлено ни одного сообщения. Требуется пересоздание", token);
+                    }
+                }
+                else
+                {
+                    await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно,  не задано направление. Требуется пересоздание", token);
+                }
             }
         }
 
-        private async Task SendUserNotImplemented(long chatId, CancellationToken token)
+        private async Task<bool> SendUserNotImplemented(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Действие не реализовано", token);
         }
@@ -383,57 +1075,52 @@ namespace ROTGBot.Service
             return true;
         }
 
-        private async Task SendNewsMultiHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> SendNewsMultiHandle(long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await SetNewsMulti(chatId, userNews, token);
-            }
-            else
-            {
-                await SendNewsMessageNotFound(chatId, token);
-            }
+            await _newsDataService.SetNewsMulti(userNews.Id, token);
+            await client.SendMessageAsync(chatId, $"Вашему обращению присвоен номер №{userNews.Number}. " +
+                $"Отправьте одно или несколько сообщений, затем нажмите кнопку подтверждения отправки", token);
+            return true;
         }
 
-        private async Task GetUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task<bool> GetUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetUserReport(user.Id, token);
             await client.SendMessageAsync(chatId, $"Отчёт по отправленным Вами обращениям:\r\n {report}", token);
+            return true;
         }
 
-        private async Task GetModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task<bool> GetModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetModeratorReport(user.Id, token);
             await client.SendMessageAsync(chatId, $"Отчёт по обработанным Вами обращениям:\r\n {report}", token);
+            return true;
         }
 
-        private async Task GetAdminUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task<bool> GetAdminUserReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetAdminUserReport(token);
             await client.SendMessageAsync(chatId, $"Отчёт по отправленным пользователями обращениям:\r\n {report}", token);
+            return true;
         }
 
-        private async Task GetAdminModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
+        private async Task<bool> GetAdminModeratorReportHandle(long chatId, Contract.Model.User user, CancellationToken token)
         {
             var report = await _newsDataService.GetAdminModeratorReport(token);
             await client.SendMessageAsync(chatId, $"Отчёт по обработанным модераторами обращениям:\r\n {report}", token);
+            return true;
         }
 
-        private async Task SendUserHasNoRights(long chatId, CancellationToken token)
+        private async Task<bool> SendUserHasNoRights(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "У вас нет прав на это действие", token);
         }
 
-        private async Task DeleteNewsHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> DeleteNewsHandle(long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeleteNewsMessageAccepted(chatId, userNews, token);
-            }
-            else
-            {
-                await DeleteNewsMessageNotFound(chatId, token);
-            }
+            await _newsDataService.SetNewsDeleted(userNews.Id, token);
+            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} \"{userNews.Title}\" удалено", token);
+            return true;
         }
 
 
@@ -442,7 +1129,7 @@ namespace ROTGBot.Service
 
 
 
-        private async Task AddAdminHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddAdminHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -454,7 +1141,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> EditButtonHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -466,7 +1153,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonApproveHandle(long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> EditButtonApproveHandle(long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -478,7 +1165,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -490,7 +1177,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -502,7 +1189,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddModeratorHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddModeratorHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -514,7 +1201,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddAdminDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddAdminDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -526,7 +1213,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task EditButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> EditButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -538,7 +1225,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddModeratorDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddModeratorDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -550,7 +1237,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task AddButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> AddButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -562,7 +1249,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task DeleteButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> DeleteButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
             {
@@ -574,21 +1261,21 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendPDNOferta(long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> SendPDNOferta(long chatId, News? userNews, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", token: token);
             using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
             await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "PDNOferta.txt")), token);
         }
 
-        private async Task SendDonateQR(long chatId, News? userNews, CancellationToken token)
+        private async Task<bool> SendDonateQR(long chatId, News? userNews, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Отправить пожертвование можно, используя ссылку", token: token);
             await client.SendMessageAsync(chatId, "https://t.me/c/1627860016/6606/746066", token: token);
             //await client.SendPhotoAsync(new SendPhotoArgs(chatId, ),  token);
         }
 
-        private async Task SendNewsApproveHandle(Guid moderatorId, long chatId, string data, CancellationToken token)
+        private async Task<bool> SendNewsApproveHandle(Guid moderatorId, long chatId, string data, CancellationToken token)
         {
             var userNews = await _newsDataService.GetNewsById(newsId, token);
             if (userNews != null)
@@ -601,7 +1288,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsDeclineHandle(Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
+        private async Task<bool> SendNewsDeclineHandle(Guid moderatorId, long chatId, Guid newsId, CancellationToken token)
         {
             var userNews = await _newsDataService.GetNewsById(newsId, token);
             if (userNews != null)
@@ -614,7 +1301,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsChoiceApproveHandle(long chatId, string data, CancellationToken token)
+        private async Task<bool> SendNewsChoiceApproveHandle(long chatId, string data, CancellationToken token)
         {
             var userNewses = await _newsDataService.GetNewsForApprove(token);
             var allCount = userNewses.Count;
@@ -889,46 +1576,7 @@ namespace ROTGBot.Service
 
         
 
-        private async Task SendNewsMessageAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} \"{userNews.Title}\" создано некорректно, отправьте не менее одного сообщения", token: token);
-                return;
-            }
-
-            if (userNews.IsModerate)
-            {
-                await _newsDataService.SetNewsAccepted(userNews.Id, token);
-                await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token: token);
-                await NotifyModerators(userNews, token);
-            }
-            else
-            {
-                await _newsDataService.SetNewsAccepted(userNews.Id, token);
-                await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-
-                if (userNews.GroupId.HasValue)
-                {
-                    if (messages.Count != 0)
-                    {
-                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token);
-                        await SendForwardMessageTitle(userNews, token);
-                        await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
-                    }
-                    else
-                    {
-                        await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно, не отправлено ни одного сообщения. Требуется пересоздание",  token);
-                    }
-                }
-                else
-                {
-                    await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно,  не задано направление. Требуется пересоздание",  token);
-                }
-            }
-        }
+        
 
         private async Task SendForwardMessageTitle( News userNews, CancellationToken token)
         {
@@ -938,12 +1586,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(userNews.GroupId.Value, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" от пользователя {userName} (логин: {tgLogin})", (int?)userNews.ThreadId,  token);
         }
 
-        private async Task SetNewsMulti( long chatId, News userNews, CancellationToken token)
-        {
-            await _newsDataService.SetNewsMulti(userNews.Id, token);
-            await client.SendMessageAsync(chatId, $"Вашему обращению присвоен номер №{userNews.Number}. " +
-                $"Отправьте одно или несколько сообщений, затем нажмите кнопку подтверждения отправки",  token);
-        }
+        
 
         private async Task NotifyModerators( News userNews, CancellationToken token)
         {
@@ -1253,10 +1896,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Модераторы добавлены", token);
         }
 
-        private async Task SendNewsMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет неподтвержденных обращений", token);
-        }
+        
 
         private async Task AddAdminMessageNotFound(long chatId, CancellationToken token)
         {
@@ -1273,15 +1913,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
         }
 
-        
-
-        
-
-        private async Task DeleteNewsMessageAccepted(long chatId, News userNews, CancellationToken token)
-        {
-            await _newsDataService.SetNewsDeleted(userNews.Id, token);
-            await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} \"{userNews.Title}\" удалено", token);
-        }
+                
 
         private async Task DeleteNewsMessageNotFound(long chatId, CancellationToken token)
         {
@@ -1295,74 +1927,11 @@ namespace ROTGBot.Service
 
         
 
-        private async Task SendAddAdminForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addadmin", "Добавление администратора", false, token);
+        
 
-            var button1 = new InlineKeyboardButton("Добавить")
-            {
-                CallbackData = "AddAdmin"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                    new()
-                    {
-                        button1
-                    }
-                });
+        
 
-            await client.SendMessageAsync(chatId,
-                "Отправьте по одному логины пользователей, которых надо добавить в администраторы и нажмите кнопку Добавить",
-                 replyMarkup,
-                 token);
-        }
-
-        private async Task SendAddModeratorForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            await _newsDataService.CreateNews(chatId, user.Id, null, null, "addmoderator", "Добавление модератора", false, token);
-
-            var button1 = new InlineKeyboardButton("Добавить")
-            {
-                CallbackData = "AddModerator"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                    new()
-                    {
-                        button1
-                    }
-                });
-
-            await client.SendMessageAsync(chatId, 
-                "Отправьте по одному логины пользователей, которых надо добавить в модераторы и нажмите кнопку Добавить",
-                replyMarkup,
-                 token);
-        }
-
-        private async Task SendEditButtonsForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "editbutton", "Изменение кнопок", false, token);
-
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId,
-                    GetAddButtonsRules(buttonsView),
-                     token);
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
-                     token);
-            }
-
-        }
+        
 
         private async Task SendEditButtonsForUserApprove( long chatId, News news, CancellationToken token)
         {
@@ -1463,341 +2032,15 @@ namespace ROTGBot.Service
             return (true, $"Будут добавлены следующие кнопки: {string.Join(", ", onButtons)}; отключены: {string.Join(", ", offButtons)}.");
         }
 
-        private async Task SendAddButtonForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "addbutton", "Добавление кнопки", false, token);
+        
 
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "AddButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
+        
 
-                var buttonsView = GetButtonsView(availableButtons);
+        
 
-                await client.SendMessageAsync(chatId,
-                    GetAddButtonsRules(buttonsView),
-                    replyMarkup: replyMarkup,
-                     token);
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
-                     token);
-            }
+        
 
-        }
-
-        private async Task SendGetButtonForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId,
-                    GetButtonsRules(buttonsView),
-                     token);
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
-                     token);
-            }
-
-        }
-
-        private static string? GetButtonsView(List<NewsButton> availableButtons, int? parentId = null, int level = 0)
-        {
-            var result = availableButtons.Where(s => s.ParentId == parentId);
-            if (!result.Any())
-                return null;
-
-            return string.Join("\n", result.OrderBy(s => s.ButtonNumber)
-                .Select(s => GetGroupView(availableButtons, level, s)));
-        }
-
-        private static string GetGroupView(List<NewsButton> availableButtons, int level, NewsButton currentButton)
-        {
-            string chButtonsView = string.Empty;
-            var childButtons = GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1);
-            if (childButtons != null)
-            {
-                chButtonsView = $"\r\n{GetButtonsView(availableButtons, currentButton.ButtonNumber, level + 1)}";
-            }
-            return $"{GetTabs(level)}{GetButtonName(currentButton, true)}{chButtonsView}";
-        }
-
-        public static string GetTabs(int count)
-        {
-            var result = "";
-            for (int i = 0; i < count; i++)
-            {
-                result += "\t\t\t\t";
-            }
-            return result;
-        }
-
-        private static string GetButtonsRules(string buttonsView)
-        {
-            return $"Подключенные и доступные кнопки:  \n{buttonsView}. ";
-        }
-
-        private static string GetAddButtonsRules(string buttonsView)
-        {
-            return $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\n" +
-                $"Отправьте по шаблону ({{номер}} или {{номер:Наименование кнопки}}) одну из доступных и не подключенных кнопок для добавления." +
-                $"\nЕсли кнопка уже была подключена - изменится ее наименование. \n\n" +
-                $"Для добавления группы кнопок (родительской кнопки) отправьте запрос по шаблону {{_:Наименование кнопки}}.\n\n " +
-                $"Для добавления доступной кнопки в группу кнопок отправьте запрос по шаблону {{номер:Наименование кнопки:Номер родительской кнопки}}. " +
-                $"В качестве родительской могут быть использованы только групповые кнопки. Групповую кнопку также можно добавлять дочерней к другой групповой (родительской) кнопке. \n\n" +
-                $"Если необходимо подключить модерацию на одну из кнопок (только для кнопок отправки обращения) - в конце запроса подключения добавьте {{:m}}" +
-                $", например: {{номер:Наименование кнопки:Номер родительской кнопки:m}}" +
-                $"\n\nЕсли нужных групп или тем нет в списке - " +
-                "добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем). " +
-                "\nПользователь, отправляющий сообщения, должен быть администратором бота.";
-        }
-
-        private static string GetButtonName(NewsButton button, bool withSettings)
-        {
-            var buttonName = button.ButtonName ?? "";
-            if (!string.IsNullOrEmpty(button.ButtonName))
-            {
-                if (!string.IsNullOrEmpty(button.ChatName))
-                {
-                    if (!string.IsNullOrEmpty(button.ThreadName))
-                    {
-                        buttonName = $"{buttonName}({button.ChatName}:{button.ThreadName})";
-                    }
-                    else
-                    {
-                        buttonName = $"{buttonName}({button.ChatName})";
-                    }
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(button.ChatName))
-                {
-                    if (!string.IsNullOrEmpty(button.ThreadName))
-                    {
-                        buttonName = $"{button.ChatName}:{button.ThreadName}";
-                    }
-                    else
-                    {
-                        buttonName = $"{button.ChatName}";
-                    }
-                }
-            }
-
-            if (string.IsNullOrEmpty(buttonName))
-            {
-                buttonName = "Безымянная кнопка";
-            }
-
-            if (withSettings)
-            {
-                return $"{button.ButtonNumber}. {buttonName}. Подключена: {(button.ToSend ? "Да" : "Нет")}. Родительская: {(button.IsParent ? "Да" : "Нет")}";
-            }
-            else
-            {
-                return $"{button.ButtonNumber}. {buttonName}";
-            }
-        }
-
-        private async Task SendDeleteButtonForUser( long chatId, Contract.Model.User user, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                await _newsDataService.CreateNews(chatId, user.Id, null, null, "deletebutton", "Удаление кнопки", false, token);
-
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "DeleteButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId, $"Подключенные и доступные кнопки:  \n{buttonsView}. \n\nОтправьте номер одной из кнопок" +
-                    ". \nЕсли кнопка уже была отключена - ничего не произойдёт.",
-                     replyMarkup,
-                     token);
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
-                     token);
-            }
-
-        }
-
-        private async Task SendEditButtonForAdminRemember( long chatId, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                var button1 = new InlineKeyboardButton("Сохранить")
-                {
-                    CallbackData = "EditButton"
-                };
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "EditButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button1, button2
-                    }
-                    });
-
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя." +
-                    " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну или несколько настроек (настройки разделяются либо знаком \";\"" +
-                    "либо переносом строки либо отправляются в отдельном сообщении)" +
-                    " и нажмите кнопку Сохранить, либо Отменить для отмены изменения кнопок", replyMarkup: replyMarkup, token);
-            }
-            else
-            {
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "EditButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на изменение кнопок пользователя, но нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
-                     replyMarkup: replyMarkup,  token);
-            }
-        }
-
-        private async Task SendAddButtonForAdminRemember( long chatId, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "AddButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на добавление кнопки пользователя." +
-                    " Отправьте по шаблону ({номер} или {номер:Наименование кнопки}) одну из кнопок" +
-                    " либо нажмите Отменить для отмены изменения кнопок", replyMarkup: replyMarkup,  token);
-            }
-            else
-            {
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "AddButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на добавление кнопки пользователя, но нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
-                     replyMarkup: replyMarkup,  token);
-            }
-        }
-
-        private async Task SendDeleteButtonForAdminRemember( long chatId, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "DeleteButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                var buttonsView = GetButtonsView(availableButtons);
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на удаление кнопки пользователя." +
-                    "Отправьте номер кнопки, которую хотите удалить, либо Отменить для отмены изменения кнопок", replyMarkup: replyMarkup,  token);
-            }
-            else
-            {
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "EditButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                await client.SendMessageAsync(chatId, "У вас есть неподтвержденный запрос на удаление кнопки пользователя, но нет подключенных кнопок пользователя. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
-                     replyMarkup: replyMarkup,  token);
-            }
-        }
+        
 
 
         private async Task SendNewsMessageForApprove( long chatId, News userNews,
@@ -1908,281 +2151,18 @@ namespace ROTGBot.Service
 
         
 
-        private async Task SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
-        {
-            var button1 = new InlineKeyboardButton("Отправить")
-            {
-                CallbackData = "SendNews"
-            };
-            var button2 = new InlineKeyboardButton("Отменить")
-            {
-                CallbackData = "DeleteNews"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                    new()
-                    {
-                        button1, button2
-                    }
-                });
-            await client.SendMessageAsync(chatId, $"У вас есть неподтвержденное обращение №{news.Number} в раздел \"{news.Title}\"" +
-                " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки",
-                replyMarkup, token);
-        }
-
-        private async Task SendAddAdminForAdminRemember(long chatId, CancellationToken token)
-        {
-            var button1 = new InlineKeyboardButton("Добавить")
-            {
-                CallbackData = "AddAdmin"
-            };
-            var button2 = new InlineKeyboardButton("Отменить")
-            {
-                CallbackData = "AddAdminDecline"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                    new()
-                    {
-                        button1, button2
-                    }
-                });
-            await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в администраторы." +
-                " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
-                replyMarkup, token);
-        }
-
-
-
-        private async Task SendAddModeratorForAdminRememeber(long chatId, CancellationToken token)
-        {
-            var button1 = new InlineKeyboardButton("Добавить")
-            {
-                CallbackData = "AddModerator"
-            };
-            var button2 = new InlineKeyboardButton("Отменить")
-            {
-                CallbackData = "AddModeratorDecline"
-            };
-            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                new List<List<InlineKeyboardButton>>()
-                {
-                    new()
-                    {
-                        button1, button2
-                    }
-                });
-            await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в модераторы." +
-                " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
-                replyMarkup, token);
-        }
+        
 
         private async Task SendTestConnectionMessage(Message message, string addInfo, CancellationToken token)
         {
             await client.SendMessageAsync(message.Chat.Id, addInfo, token);
         }
 
-        private async Task SendMenuButtons( long chatId, Contract.Model.User user, string type, CancellationToken token)
-        {
-            if (type == "all")
-            {
-                if (user.IsModerator || user.IsAdmin)
-                {
-                    await client.SendMessageAsync(chatId, "Выберите раздел",
-                        replyMarkup: new InlineKeyboardMarkup(GetMenuButtons(user)),  token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "Панель пользователя",
-                        replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)),  token);
-                }
-            }
+        
 
-            if (type == "user")
-            {
-                await client.SendMessageAsync(chatId, "Панель пользователя",
-                         replyMarkup: new InlineKeyboardMarkup(await GetUserButtons(token)),  token);
-            }
+        
 
-            if (type == "moderator")
-            {
-                if (user.IsModerator)
-                {
-                    await client.SendMessageAsync(chatId, "Панель модератора",
-                        replyMarkup: new InlineKeyboardMarkup(GetModeratorButtons(user)),  token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу",  token);
-                }
-            }
-
-            if (type == "admin")
-            {
-                if (user.IsAdmin)
-                {
-                    await client.SendMessageAsync(chatId, "Панель администратора",
-                        replyMarkup: new InlineKeyboardMarkup(GetAdminButtons()),  token);
-                }
-                else
-                {
-                    await client.SendMessageAsync(chatId, "У вас нет доступа к этому разделу",  token);
-                }
-            }
-        }
-
-        private async Task<List<List<InlineKeyboardButton>>> GetUserButtons(CancellationToken token)
-        {
-            var buttons = (await _buttonsDataService.GetActiveButtons(token)).Where(s => s.ParentId == null);
-
-            var sendButtons = new List<List<InlineKeyboardButton>>();
-
-            foreach (var button in buttons)
-            {
-                var buttonName = button.ButtonName ?? $"{button.ChatName}:{button.ThreadName}";
-                var buttonSend = new InlineKeyboardButton(buttonName)
-                {
-                    CallbackData = $"SendNewsChoice_{button.ButtonNumber}"
-                };
-                sendButtons.Add([buttonSend]);
-            }
-
-            sendButtons.Add(EmptyButton());
-
-            sendButtons.Add([new InlineKeyboardButton("Отчёт по отправленным обращениям")
-                {
-                    CallbackData = "UserReport"
-                }]);
-
-            sendButtons.Add(EmptyButton());
-
-            sendButtons.Add([new InlineKeyboardButton("Согласие-оферта на обработку персональных данных")
-            {
-                CallbackData = "GetPDNOferta"
-            }]);
-
-            sendButtons.Add(EmptyButton());
-
-            sendButtons.Add([new InlineKeyboardButton("Отправить пожертвование")
-            {
-                CallbackData = "GetDonateQR"
-            }]);
-
-            return sendButtons;
-        }
-
-        private static List<InlineKeyboardButton> EmptyButton(string? text = null)
-        {
-            return [new InlineKeyboardButton(text ?? "* * *")
-            {
-                CallbackData = "-"
-            }];
-        }
-
-        private static List<List<InlineKeyboardButton>> GetAdminButtons()
-        {
-            return
-            [
-                [
-                    new InlineKeyboardButton("Добавить администратора")
-                    {
-                        CallbackData = "AddAdminChoice"
-                    },new InlineKeyboardButton("Добавить модератора")
-                    {
-                        CallbackData = "AddModeratorChoice"
-                    }
-                ],
-                EmptyButton(),
-                [
-                    new InlineKeyboardButton("Управление кнопками пользователя (множественное)")
-                    {
-                        CallbackData = "EditButtonsChoice"
-                    }
-                ],
-                [
-                    new InlineKeyboardButton("Просмотр кнопок пользователя")
-                    {
-                        CallbackData = "GetButtonChoice"
-                    }
-                ],
-                [
-                    new InlineKeyboardButton("Добавить кнопку пользователя")
-                    {
-                        CallbackData = "AddButtonChoice"
-                    }
-                ],
-                [
-                    new InlineKeyboardButton("Удалить кнопку пользователя")
-                    {
-                        CallbackData = "DeleteButtonChoice"
-                    }
-                ],
-                EmptyButton(),                
-                [
-                    new InlineKeyboardButton("Отчёт по обработанным обращениям пользователей")
-                    {
-                        CallbackData = "AdminUserReport"
-                    }
-                ],
-                [
-                    new InlineKeyboardButton("Отчёт по обработанным обращениям модераторов")
-                    {
-                        CallbackData = "AdminModeratorReport"
-                    }
-                ]
-            ];
-        }
-
-        private static List<List<InlineKeyboardButton>> GetModeratorButtons(Contract.Model.User user)
-        {
-            var switchNotify = "Включить уведомления";
-            if (user.IsNotify)
-            {
-                switchNotify = "Отключить уведомления";
-            }
-
-            return [
-                [ new InlineKeyboardButton("Получить обращение для подтверждения")
-                {
-                    CallbackData = "ApproveNewsChoice_0"
-                }],
-                [ new InlineKeyboardButton(switchNotify)
-                {
-                    CallbackData = "SwitchNotify"
-                }],
-                [new InlineKeyboardButton("Отчёт по обработанным обращениям")
-                {
-                    CallbackData = "ModeratorReport"
-                }]
-            ];
-        }
-
-        private static List<List<InlineKeyboardButton>> GetMenuButtons(Contract.Model.User user)
-        {
-            List<List<InlineKeyboardButton>> result = [];
-            if (user.IsAdmin)
-            {
-                result.Add([ new InlineKeyboardButton("Панель администратора")
-                {
-                    CallbackData = "MenuAdmin"
-                }]);
-            }
-            if (user.IsAdmin)
-            {
-                result.Add([ new InlineKeyboardButton("Панель модератора")
-                {
-                    CallbackData = "MenuModerator"
-                }]);
-            }
-            result.Add([ new InlineKeyboardButton("Панель пользователя")
-                {
-                    CallbackData = "MenuUser"
-                }]);
-
-            return result;
-        }
+        
 
         private async Task HandleMyChatMember(ChatMemberUpdated? myChatMember, CancellationToken cancellationToken)
         {

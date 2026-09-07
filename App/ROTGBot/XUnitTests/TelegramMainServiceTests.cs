@@ -24,7 +24,7 @@ namespace XUnitTests
             var handlerService = new Mock<ITelegramMessageHandler>();
             var wrapperService = new Mock<ITelegramBotWrapper>();
             handlerService.Setup(s => s.HandleUpdates(It.IsAny<IEnumerable<Update>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
+                .Returns(()=> Task.FromResult(true));
 
             wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
@@ -46,7 +46,7 @@ namespace XUnitTests
             var handlerService = new Mock<ITelegramMessageHandler>();
             var wrapperService = new Mock<ITelegramBotWrapper>();
             handlerService.Setup(s => s.HandleUpdates(It.IsAny<IEnumerable<Update>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
+                .Returns(() => Task.FromResult(true));
 
             wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => [
