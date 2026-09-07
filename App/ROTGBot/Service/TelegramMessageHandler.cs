@@ -334,10 +334,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task SendModeratorReglamentEditChoiceHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task SendUserReglamentEditDeclineHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
         {
@@ -695,6 +692,20 @@ namespace ROTGBot.Service
                 await SendUserReglamentEditChoice(chatId, user, token);
             }
         }
+
+        private async Task SendModeratorReglamentEditChoiceHandle(long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserRemember(chatId, userNews, token);
+            }
+            else
+            {
+                await SendModeratorReglamentEditChoice(chatId, user, token);
+            }
+        }
+
+        
 
         private async Task SendEditButtonsChoiceHandle( long chatId, Contract.Model.User user, News? userNews, CancellationToken token)
         {
@@ -1284,6 +1295,29 @@ namespace ROTGBot.Service
 
             await client.SendMessageAsync(chatId, 
                 "Отправьте по одному логины пользователей, которых надо добавить в модераторы и нажмите кнопку Добавить",
+                replyMarkup,
+                 token);
+        }
+
+        private async Task SendModeratorReglamentEditChoice(long chatId, Contract.Model.User user, CancellationToken token)
+        {
+            await _newsDataService.CreateNews(chatId, user.Id, null, null, "editmoderatorreglament", "Редактирование регламента модератора", false, token);
+
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "ModeratorReglamentEditDecline"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "Отправьте текст регламента для изменения, либо нажмите Отмена для отмены задания. Внимание! После отправки текста отменить действие будет нельзя",
                 replyMarkup,
                  token);
         }
