@@ -11,13 +11,15 @@ namespace ROTGBot.Service
     public class TelegramBotWrapper : ITelegramBotWrapper
     {
         private readonly string botToken = "token";
-        private TelegramBotClient telegramBot;
-        private ILogger<TelegramBotWrapper> _logger;
+        private readonly string? serverAddress = string.Empty;
+        private TelegramBotClient? telegramBot;
+        private readonly ILogger<TelegramBotWrapper> _logger;
 
         public TelegramBotWrapper(IConfiguration configuration, ILogger<TelegramBotWrapper> logger)
         {
             var botSettings = configuration.GetSection("BotSettings").Get<BotSettings>();
             botToken = botSettings?.Token ?? botToken;
+            serverAddress = botSettings?.ServerAddress;
             _logger = logger;
         }
 
@@ -50,7 +52,7 @@ namespace ROTGBot.Service
 
         private async Task<T> Execute<T>(Func<TelegramBotClient, Task<T>> execFunc)
         {
-            telegramBot ??= new TelegramBotClient(botToken);
+            telegramBot ??= CreateTelegramBot();
 
             try
             {
@@ -60,11 +62,23 @@ namespace ROTGBot.Service
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при вызове клиента");
-                telegramBot = new TelegramBotClient(botToken);
+                telegramBot = CreateTelegramBot();
                 var result = await execFunc(telegramBot);
                 return result;
             }
         }
 
+        private TelegramBotClient CreateTelegramBot()
+        {
+            if(string.IsNullOrEmpty(serverAddress))
+            {
+                return new TelegramBotClient(new TelegramBotClientOptions(botToken));
+            }
+            
+            return new TelegramBotClient(new TelegramBotClientOptions(botToken)
+            {
+                ServerAddress = serverAddress
+            });
+        }
     }
 }
