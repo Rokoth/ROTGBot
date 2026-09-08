@@ -1147,12 +1147,34 @@ namespace ROTGBot.Service
 
         private async Task SendNewsReplyAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
         {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+            var messages = (await _newsDataService.GetNewsMessages(userNews.Id, token)).Select(s => s.TextValue?.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
 
-            if (messages == null || messages.Count == 0)
+
+            if (messages == null || messages.Count() == 0)
             {
                 await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
                 return;
+            }
+
+            int? newsNumber = null;
+            News? searchNews = null;
+
+            for (int i = 0; i < messages.Count(); i++)
+            {
+                if(newsNumber == null)
+                {
+                    if(int.TryParse(messages[i], out int newsNumberF))
+                    {
+                        newsNumber = newsNumberF;
+                        searchNews = await _newsDataService.GetNewsByNumber(newsNumber.Value, token);
+                        continue;
+                    }
+                }
+                else
+                {
+                    var messageText = messages[i];
+                    await client.SendMessageAsync(sendUser.ChatId, messageText, token);
+                }                    
             }
 
             if (messages[0].TextValue == null || !int.TryParse(messages[0].TextValue, out int newsNumber))
@@ -1161,11 +1183,12 @@ namespace ROTGBot.Service
                 return;
             }
 
-            var searchNews = await _newsDataService.GetNewsByNumber(newsNumber, token);
+            
 
             if (searchNews == null)
             {
-                await client.SendMessageAsync(chatId, "Обращение по номеру не найдено", token);
+                await client.SendMessageAsync(chatId, "Обращение по номеру не найдено, попробуйте снова", token);
+                await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
                 return;
             }
 
@@ -1173,7 +1196,8 @@ namespace ROTGBot.Service
 
             if (sendUser == null)
             {
-                await client.SendMessageAsync(chatId, "По данному обращению не найден пользователь", token);
+                await client.SendMessageAsync(chatId, "По данному обращению не найден пользователь, отправить ответ невозможно", token);
+                await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
                 return;
             }
 
@@ -1184,17 +1208,7 @@ namespace ROTGBot.Service
                 return;
             }
 
-            bool ready = false;
-
-            for (int i = 1; i <= messages.Count; i++)
-            {
-                var messageText = messages[i].TextValue;
-                if (!string.IsNullOrEmpty(messageText))
-                {
-                    await client.SendMessageAsync(sendUser.ChatId, messageText, token);
-                    ready = true;
-                }
-            }
+            
 
             if (!ready)
             {
