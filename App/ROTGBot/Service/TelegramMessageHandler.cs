@@ -400,7 +400,7 @@ namespace ROTGBot.Service
                 foreach(var readyUser in readyUsers)
                 {
                     var userF = allUsers.First(s => s.Id == readyUser.Key);
-                    answer += $"{userF.Name} ({userF.TGLogin})";
+                    answer += $"{userF.Name} ({userF.TGLogin})\r\n";
                 }
             }
 
@@ -414,7 +414,7 @@ namespace ROTGBot.Service
                 foreach (var readyNew in readyNews)
                 {
                     var newsF = allNews.First(s => s.Id == readyNew.Key);                    
-                    answer += $"{newsF.Number}. {newsF.Title}. {newsF.Description}";
+                    answer += $"{newsF.Number}. {newsF.Title}. {newsF.Description}\r\n";
                 }
             }
 
