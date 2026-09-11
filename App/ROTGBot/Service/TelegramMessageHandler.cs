@@ -1,6 +1,7 @@
 ﻿using Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using ROTGBot.Contract.Filters;
 using ROTGBot.Contract.Model;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -728,6 +729,7 @@ namespace ROTGBot.Service
                     "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
                      replyMarkup: replyMarkup, token);
             }
+            return true;
         }
 
         private async Task<bool> SendAddButtonForAdminRemember(long chatId, CancellationToken token)
@@ -774,6 +776,7 @@ namespace ROTGBot.Service
                     "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
                      replyMarkup: replyMarkup, token);
             }
+            return true;
         }
 
         private async Task<bool> SendDeleteButtonForAdminRemember(long chatId, CancellationToken token)
@@ -819,6 +822,7 @@ namespace ROTGBot.Service
                     "Пользователь, отправляющий сообщения, должен быть администратором бота. Для повторения запроса - нажмите Меню - Старт, для отмены запроса - нажмите Отменить",
                      replyMarkup: replyMarkup, token);
             }
+            return true;
         }
 
         private async Task<bool> SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
@@ -842,6 +846,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, $"У вас есть неподтвержденное обращение №{news.Number} в раздел \"{news.Title}\"" +
                 " Отправьте одно или несколько сообщений и нажмите кнопку Отправить, либо Отменить для отмены отправки",
                 replyMarkup, token);
+            return true;
         }
 
         private async Task<bool> SendAddAdminForAdminRemember(long chatId, CancellationToken token)
@@ -865,6 +870,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в администраторы." +
                 " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
                 replyMarkup, token);
+            return true;
         }
 
 
@@ -890,6 +896,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "У вас есть неподтвержденные пользователи на добавление в модераторы." +
                 " Отправьте один или несколько логинов и нажмите кнопку Добавить, либо Отменить для отмены добавления",
                 replyMarkup, token);
+            return true;
         }
 
         private static bool GetMessageType(string data, out MessageType mt, out string newData)
@@ -936,7 +943,7 @@ namespace ROTGBot.Service
             if (button == null || !button.ToSend)
             {
                 await client.SendMessageAsync(chatId, "Недействительное направление обращения, выберите другое", token);
-                return;
+                return false;
             }
 
             if (button.IsParent)
@@ -946,7 +953,7 @@ namespace ROTGBot.Service
                 if (!buttons.Any())
                 {
                     await client.SendMessageAsync(chatId, "Ненастроенная родительская кнопка, выберите другой вариант", token);
-                    return;
+                    return false;
                 }
 
                 var sendButtons = new List<List<InlineKeyboardButton>>();
@@ -987,11 +994,11 @@ namespace ROTGBot.Service
                 if (span < TimeoutSpan)
                 {
                     await client.SendMessageAsync(chatId, $"Отправка сообщений ограничена по времени, повторите через {TimeoutSpan - span} минут", token);
-                    return;
+                    return false;
                 }
 
                 await _newsDataService.CreateNews(chatId, user.Id, button.ChatId, button.ThreadId, "news", $"{GetButtonName(button, false)}", button.IsModerate, token);
-                var userNews = await _newsDataService.GetCurrentNews(user.Id, token);
+                var currentUserNews = await _newsDataService.GetCurrentNews(user.Id, token);
                 var sendButtons = new List<List<InlineKeyboardButton>>()
                 {
                     new()
@@ -1009,12 +1016,13 @@ namespace ROTGBot.Service
 
                 ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
 
-                await client.SendMessageAsync(chatId, $"Обращение №{userNews?.Number} в раздел \"{GetButtonName(button, false)}\". Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
+                await client.SendMessageAsync(chatId, $"Обращение №{currentUserNews?.Number} в раздел \"{GetButtonName(button, false)}\". Отправьте сообщение, либо нажмите кнопку Отправить обращение в нескольких сообщениях, " +
                     "если требуется отправить несколько сообщений (в данном случае после отправки сообщений необходимо будет подтвердить отправку). " +
                     "Для отмены отправки нажмите Отменить", replyMarkup: replyMarkup, token);
 
                 await _userDataService.SetUserSendDate(user.Id, token);
             }
+            return true;
         }
 
 
@@ -1025,7 +1033,7 @@ namespace ROTGBot.Service
             if (messages.Count == 0)
             {
                 await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} \"{userNews.Title}\" создано некорректно, отправьте не менее одного сообщения", token: token);
-                return;
+                return false;
             }
 
             if (userNews.IsModerate)
@@ -1033,9 +1041,12 @@ namespace ROTGBot.Service
                 await _newsDataService.SetNewsAccepted(userNews.Id, token);
                 await client.SendMessageAsync(chatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" принято в обработку", token: token);
                 await NotifyModerators(userNews, token);
+                
             }
             else
             {
+                var moderator = await _userDataService.GetUsers(new UserFilter(null, null, "Name") { }, token);
+
                 await _newsDataService.SetNewsAccepted(userNews.Id, token);
                 await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
 
@@ -1056,6 +1067,16 @@ namespace ROTGBot.Service
                 {
                     await client.SendMessageAsync(userNews.ChatId, $"Ваше обращение №{userNews.Number} в раздел \"{userNews.Title}\" создано некорректно,  не задано направление. Требуется пересоздание", token);
                 }
+            }
+            return true;
+        }
+
+        private async Task NotifyModerators(News userNews, CancellationToken token)
+        {
+            var notifyModerators = await _userDataService.GetNotifyModerators(token);
+            foreach (var moder in notifyModerators.Where(s => s.IsModerator))
+            {
+                await SendNewsMessageForApprove(moder.ChatId, userNews, false, false, 0, token);
             }
         }
 
@@ -1587,15 +1608,6 @@ namespace ROTGBot.Service
         }
 
         
-
-        private async Task NotifyModerators( News userNews, CancellationToken token)
-        {
-            var notifyModerators = await _userDataService.GetNotifyModerators(token);
-            foreach (var moder in notifyModerators.Where(s => s.IsModerator))
-            {
-                await SendNewsMessageForApprove(moder.ChatId, userNews, false, false, 0, token);
-            }
-        }
 
         private async Task AddAdminAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
