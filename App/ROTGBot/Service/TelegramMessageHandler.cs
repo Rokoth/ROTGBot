@@ -341,10 +341,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task SendUserReglamentEditHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -474,6 +471,28 @@ namespace ROTGBot.Service
             {
                 await EditButtonMessageNotFound(chatId, token);
             }
+        }
+
+        private async Task SendUserReglamentEditHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserReglamentEditAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendUserReglamentEditMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendUserReglamentEditMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendUserReglamentEditAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
