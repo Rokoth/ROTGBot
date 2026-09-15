@@ -51,7 +51,7 @@ namespace XUnitTests
 
             var result = await tgMainService.SetCommands();
 
-            Assert.Equal(1, result);
+            Assert.True(result);
         }
     }
 }

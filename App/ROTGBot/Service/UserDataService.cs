@@ -143,6 +143,19 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        
+        public Task<Contract.Model.User> GetUserByNumber(int number, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Contract.Model.User> GetUserByLogin(string loginOrNumber, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Contract.Model.User>> GetUsers(int? count, int? daysCount, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -13,5 +13,6 @@ namespace ROTGBot.Service
         Task<User> GetUserByNumber(int number, CancellationToken cancellationToken);
         Task<User> GetUserByLogin(string loginOrNumber, CancellationToken cancellationToken);
         Task<List<User>> GetUsers(int? count, int? daysCount, CancellationToken cancellationToken);
+        void BlockUser(Guid id, CancellationToken cancellationToken);
     }
 }

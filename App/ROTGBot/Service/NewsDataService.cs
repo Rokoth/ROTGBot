@@ -342,5 +342,10 @@ namespace ROTGBot.Service
             userNews.IsMulti = true;           
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
+
+        public Task<List<Contract.Model.News>> GetAllNews(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
