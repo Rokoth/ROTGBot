@@ -307,7 +307,7 @@ namespace ROTGBot.Service
                 "UserReglamentEditChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserReglamentEditChoiceHandle(chId, user, userNews, tk), token),
                 "UserReglamentEdit" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendUserReglamentEditHandle(chId, user, userNews, tk), token),
+                                        (chId, userNews, tk) => SendUserReglamentEditHandle(userId, chId, userNews, tk), token),
                 "UserReglamentEditDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserReglamentEditDeclineHandle(chId, user, userNews, tk), token),
                 "ModeratorReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
@@ -486,11 +486,6 @@ namespace ROTGBot.Service
         }
 
         private async Task SendUserReglamentEditMessageNotFound(long chatId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task SendUserReglamentEditAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -951,6 +946,30 @@ namespace ROTGBot.Service
 
             await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Кнопка сохранена",  token);
+        }
+
+        private async Task SendUserReglamentEditAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Текст регламента не отправлен", token);
+                return;
+            }
+
+            var message = messages.OrderByDescending(s => s.TGMessageId).FirstOrDefault();
+
+            if(string.IsNullOrEmpty(message?.TextValue))
+            {
+                await client.SendMessageAsync(chatId, "Текст регламента не отправлен", token);
+                return;
+            }
+
+            using var writer = new StreamWriter("UserReglament.txt", false);
+            await  writer.WriteAsync(message.TextValue);
+
+            await client.SendMessageAsync(chatId, "Текст регламента сохранен", token);
         }
 
         private async Task DeleteButtonAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
