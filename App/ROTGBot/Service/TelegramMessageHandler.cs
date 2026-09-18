@@ -1102,41 +1102,47 @@ namespace ROTGBot.Service
                 return;
             }
 
-            if (messages[0].TextValue == null || !int.TryParse(messages[0].TextValue, out int userNumber))
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
-                return;
-            }
-
-            Contract.Model.User searchUser = await _userDataService.GetUserByNumber(userNumber, token);
-
-            if (searchUser == null)
-            {
-                await client.SendMessageAsync(chatId, "Пользователь по номеру не найден", token);
-                return;
-            }
-
-            if (messages?.Count == 1)
-            {
-                await client.SendMessageAsync(chatId, $"Отправьте текст сообщения для пользователя {userNumber}: {searchUser.Name} ({searchUser.TGLogin})", token);
-                return;
-            }
-
             bool ready = false;
+            int? userNumber = null;
+            Contract.Model.User? searchUser = null;
 
-            for(int i = 1; i<= messages.Count; i++)
+            for (int i = 0; i<= messages.Count; i++)
             {
                 var messageText = messages[i].TextValue;
-                if (!string.IsNullOrEmpty(messageText))
+                if (string.IsNullOrEmpty(messageText))
+                    continue;
+
+                if(userNumber==null)
                 {
-                    await client.SendMessageAsync(searchUser.ChatId, messageText, token);
-                    ready = true;
+                    if(int.TryParse(messages[0].TextValue, out int userNumberT))
+                    {
+                        userNumber = userNumberT;
+                        searchUser = await _userDataService.GetUserByNumber(userNumberT, token);
+                        if(searchUser==null)
+                        {
+                            userNumber = null;
+                        }
+                    }
                 }
+                else
+                {
+                    if (!string.IsNullOrEmpty(messageText))
+                    {
+                        await client.SendMessageAsync(searchUser.ChatId, messageText, token);
+                        ready = true;
+                    }
+                }                
             }
 
             if (!ready)
             {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного сообщения пользователю, отправьте текст сообщения", token);
+                if (userNumber == null)
+                {
+                    await client.SendMessageAsync(chatId, "Не удалось найти пользователя по отправленному номеру, попробуйте еще раз", token);
+                    return;
+                }                
+
+                await client.SendMessageAsync(chatId, $"Отправьте текст сообщения для пользователя {userNumber}: {searchUser.Name} ({searchUser.TGLogin})", token);
                 return;
             }
 
