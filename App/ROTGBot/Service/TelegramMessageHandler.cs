@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
+
 using System.Linq.Dynamic.Core.Tokenizer;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
@@ -315,7 +316,7 @@ namespace ROTGBot.Service
                 "ModeratorReglamentEditChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendModeratorReglamentEditChoiceHandle(chId, user, userNews, tk), token),
                 "ModeratorReglamentEdit" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendModeratorReglamentEditHandle(chId, user, userNews, tk), token),
+                                        (chId, userNews, tk) => SendModeratorReglamentEditHandle(userId, chId, userNews, tk), token),
                 "ModeratorReglamentEditDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendModeratorReglamentEditDeclineHandle(chId, user, userNews, tk), token),
 
@@ -329,10 +330,7 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
-        private async Task SendModeratorReglamentEditHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
@@ -484,6 +482,25 @@ namespace ROTGBot.Service
                 await SendUserReglamentEditMessageNotFound(chatId, token);
             }
         }
+
+        private async Task SendModeratorReglamentEditHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendModeratorReglamentEditAccepted(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendModeratorReglamentEditMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendModeratorReglamentEditMessageNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        
 
         private async Task SendUserReglamentEditMessageNotFound(long chatId, CancellationToken token)
         {
@@ -968,6 +985,30 @@ namespace ROTGBot.Service
 
             using var writer = new StreamWriter("UserReglament.txt", false);
             await  writer.WriteAsync(message.TextValue);
+
+            await client.SendMessageAsync(chatId, "Текст регламента сохранен", token);
+        }
+
+        private async Task SendModeratorReglamentEditAccepted(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                await client.SendMessageAsync(chatId, "Текст регламента не отправлен", token);
+                return;
+            }
+
+            var message = messages.OrderByDescending(s => s.TGMessageId).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(message?.TextValue))
+            {
+                await client.SendMessageAsync(chatId, "Текст регламента не отправлен", token);
+                return;
+            }
+
+            using var writer = new StreamWriter("ModeratorReglament.txt", false);
+            await writer.WriteAsync(message.TextValue);
 
             await client.SendMessageAsync(chatId, "Текст регламента сохранен", token);
         }
