@@ -188,7 +188,20 @@ namespace ROTGBot.Service
 
         public async Task<IEnumerable<Contract.Model.User>> GetAllUsers(CancellationToken token)
         {
-            
+            List<Contract.Model.User> result = [];
+
+            var data = await _userRepo.GetAsync(new Filter<DB.Model.User>()
+            {
+                Selector = s => !s.IsDeleted
+            }, token);
+
+            foreach(var item in data)
+            {
+                var res = await Map(item, token);
+                if (res != null)
+                    result.Add(res);
+            }
+            return result;
         }
 
         public async Task<Contract.Model.User> GetUserByNumberOrLogin(string? textValue, CancellationToken token)

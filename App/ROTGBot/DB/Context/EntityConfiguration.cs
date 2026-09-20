@@ -1,9 +1,7 @@
 ﻿using ROTGBot.DB.Attributes;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using ROTGBot.DB.Attributes;
 
 namespace ROTGBot.DB.Context
 {
