@@ -138,7 +138,7 @@ namespace XUnitTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task GetOrAddUser_UserNoExists_Update_Success_Async()
+        public async Task GetOrAddUser_UserNoExists_NoUpdate_Success_Async()
         {
             var _repoMock = new Mock<IRepository<User>>();
             var _repoRoleMock = new Mock<IRepository<Role>>();
@@ -149,30 +149,30 @@ namespace XUnitTests
             var userGuid = Guid.NewGuid();
 
             _repoMock.Setup(s => s.GetAsync(It.IsAny<Filter<User>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new List<User>(){}));
+                .Returns(() => Task.FromResult(new List<User>(){}));
 
             _repoMock.Setup(s => s.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new User() { }));
+                .Returns(()=>Task.FromResult(new User() { }));
 
             _repouserRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<UserRole>>(), It.IsAny<CancellationToken>()))
                 .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new List<UserRole>
                 {}));
 
             _repouserRoleMock.Setup(s => s.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns<Filter<UserRole>, CancellationToken>((f, t) => Task.FromResult(new UserRole()));
+                .Returns<UserRole, bool, CancellationToken>((f, t, c) => Task.FromResult(new UserRole()));
 
             _repoRoleMock.Setup(s => s.GetAsync(It.IsAny<Filter<Role>>(), It.IsAny<CancellationToken>()))
                 .Returns<Filter<Role>, CancellationToken>((f, t) => Task.FromResult(GetRoles(f,
                 moderGuid,
                 userGuid)));
 
-            var buttonsService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
+            var userDataService = new UserDataService(_repoMock.Object, _repoRoleMock.Object, _repouserRoleMock.Object);
 
-            var result = await buttonsService.GetOrAddUser(1, "test", "test", 1, new CancellationToken());
+            var result = await userDataService.GetOrAddUser(1, "test", "test", 1, new CancellationToken());
 
             Assert.NotNull(result);
             _repoMock.Verify(m => m.AddAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
-            _repoRoleMock.Verify(m => m.AddAsync(It.IsAny<Role>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repouserRoleMock.Verify(m => m.AddAsync(It.IsAny<UserRole>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
             _repoMock.Verify(m => m.UpdateAsync(It.IsAny<User>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
