@@ -47,8 +47,18 @@ namespace ROTGBot.Service
         public Task SendMessageAsync(long chatId, string message, int? threadId, CancellationToken token)
         => Execute(client => client.SendMessageAsync(chatId, message, messageThreadId: threadId, cancellationToken: token));
 
-        public Task SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token)
-            => Execute(client => client.SetMyCommandsAsync(args, cancellationToken: token));
+        public async Task SetMyCommandsAsync(SetMyCommandsArgs args, CancellationToken token)
+        {
+            try
+            {
+                await Execute(client => client.SetMyCommandsAsync(args, cancellationToken: token));
+            }
+            catch (Exception  ex)
+            {
+                _logger.LogError(ex, "Ошибка при вызове SetMyCommandsAsync");
+                throw;
+            }
+        }
 
         private async Task<T> Execute<T>(Func<TelegramBotClient, Task<T>> execFunc)
         {
@@ -59,10 +69,18 @@ namespace ROTGBot.Service
                 var result = await execFunc(telegramBot);
                 return result;
             }
+            catch(Telegram.BotAPI.BotRequestException ex)
+            {
+                _logger.LogError(ex, "Ошибка при вызове клиента BotRequestException");
+                telegramBot = CreateTelegramBot();
+                await telegramBot.DeleteWebhookAsync();
+                var result = await execFunc(telegramBot);
+                return result;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при вызове клиента");
-                telegramBot = CreateTelegramBot();
+                telegramBot = CreateTelegramBot();                
                 var result = await execFunc(telegramBot);
                 return result;
             }
