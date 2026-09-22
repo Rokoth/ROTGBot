@@ -1156,7 +1156,7 @@ namespace ROTGBot.Service
             var messages = (await _newsDataService.GetNewsMessages(userNews.Id, token)).Select(s => s.TextValue?.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
 
 
-            if (messages == null || messages.Count() == 0)
+            if (messages == null || messages.Count == 0)
             {
                 await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
                 return;
@@ -1164,8 +1164,10 @@ namespace ROTGBot.Service
 
             int? newsNumber = null;
             News? searchNews = null;
+            Contract.Model.User? sendUser = null;
+            bool ready = false;
 
-            for (int i = 0; i < messages.Count(); i++)
+            for (int i = 0; i < messages.Count; i++)
             {
                 if(newsNumber == null)
                 {
@@ -1173,55 +1175,48 @@ namespace ROTGBot.Service
                     {
                         newsNumber = newsNumberF;
                         searchNews = await _newsDataService.GetNewsByNumber(newsNumber.Value, token);
-                        continue;
+                        if(searchNews == null)
+                        {
+                            await client.SendMessageAsync(chatId, $"По номеру {messages[i]} не найдено обращение", token);
+                            newsNumber = null;
+                            continue;
+                        }
+                        sendUser = await _userDataService.GetUser(searchNews.UserId, token);
+                        if (sendUser == null)
+                        {
+                            await client.SendMessageAsync(chatId, $"По обращению {messages[i]} не найден пользователь", token);
+                            newsNumber = null;
+                            searchNews = null;
+                        }
+                    }
+                    else
+                    {
+                        await client.SendMessageAsync(chatId, $"Номер {messages[i]} некорректный, ожидалось число", token);
                     }
                 }
                 else
                 {
-                    var messageText = messages[i];
-                    await client.SendMessageAsync(sendUser.ChatId, messageText, token);
+                    if(!string.IsNullOrEmpty(messages[i]))
+                    {
+                        await client.SendMessageAsync(sendUser.ChatId, messages[i], token);
+                        ready = true;
+                    }                    
                 }                    
             }
 
-            if (messages[0].TextValue == null || !int.TryParse(messages[0].TextValue, out int newsNumber))
+            if(newsNumber == null)
             {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного номера", token);
+                await client.SendMessageAsync(chatId, $"Не удалось найти обращение,попробуйте еще раз либо нажмите Отмена для отмены действия", token);
                 return;
             }
 
-            
-
-            if (searchNews == null)
-            {
-                await client.SendMessageAsync(chatId, "Обращение по номеру не найдено, попробуйте снова", token);
-                await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
-                return;
-            }
-
-            var sendUser = await _userDataService.GetUser(searchNews.UserId, token);
-
-            if (sendUser == null)
-            {
-                await client.SendMessageAsync(chatId, "По данному обращению не найден пользователь, отправить ответ невозможно", token);
-                await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
-                return;
-            }
-
-            if (messages?.Count == 1)
+            if(!ready)
             {
                 await client.SendMessageAsync(chatId, $"Отправьте текст ответа на обращение {newsNumber}: {searchNews.Title} от {searchNews.CreatedDate:yyyy-MM-dd}, " +
                     $"отправленное пользователем {sendUser.Name} ({sendUser.TGLogin}), номер: {sendUser.Number}", token);
                 return;
             }
-
             
-
-            if (!ready)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного сообщения, отправьте текст сообщения", token);
-                return;
-            }
-
             await client.SendMessageAsync(chatId, $"Сообщение отправлено пользователю {sendUser.Name} ({sendUser.TGLogin}), номер: {sendUser.Number} в ответ на обращение {newsNumber}: {searchNews.Title} от {searchNews.CreatedDate:yyyy-MM-dd}", token);
 
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
