@@ -269,10 +269,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task UnBlockUser(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
@@ -362,7 +359,45 @@ namespace ROTGBot.Service
                     names.Add($"{item.Name} ({item.TGLogin})");
                 }
             }
-            await client.SendMessageAsync(chatId, $"Заблокированы пользователи:\r\n{string.Join("\r\n", names)}", cancellationToken);
+            if(names.Count != 0)
+            {
+                await client.SendMessageAsync(chatId, $"Заблокированы пользователи:\r\n{string.Join("\r\n", names)}", cancellationToken);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Не удалось найти ни одного пользователя по заданным параметрам", cancellationToken);
+            }            
+        }
+
+        private async Task UnBlockUser(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ")
+                .Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).Distinct();
+
+            var allUsers = await _userDataService.GetUsers(null, null, cancellationToken);
+
+            List<string> names = [];
+
+            foreach (var word in words)
+            {
+                var fUsers = allUsers.Where(s => s.Name?.Equals(word, StringComparison.InvariantCultureIgnoreCase) == true ||
+                    s.TGLogin?.Equals(word, StringComparison.InvariantCultureIgnoreCase) == true ||
+                    s.Description?.Equals(word, StringComparison.InvariantCultureIgnoreCase) == true);
+
+                foreach (var item in fUsers)
+                {
+                    _userDataService.UnBlockUser(item.Id, cancellationToken);
+                    names.Add($"{item.Name} ({item.TGLogin})");
+                }
+            }
+            if (names.Count != 0)
+            {
+                await client.SendMessageAsync(chatId, $"Разблокированы пользователи:\r\n{string.Join("\r\n", names)}", cancellationToken);
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Не удалось найти ни одного пользователя по заданным параметрам", cancellationToken);
+            }
         }
 
         private async Task FindNewsOrUsers(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
