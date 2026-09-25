@@ -1254,126 +1254,425 @@ namespace ROTGBot.Service
             await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Администраторы добавлены", token);
             return true;
-        }        
+        }
+
+        private async Task ParseAndSetRole(IEnumerable<NewsMessage> messages, RoleEnum role, CancellationToken token)
+        {
+            foreach (var message in messages)
+            {
+                var logins = message.TextValue?.Split(",").Select(s => s.Trim()).Select(s => s.TrimStart('@')).Where(s => s != string.Empty);
+                if (logins == null || !logins.Any()) continue;
+
+                foreach (var login in logins)
+                {
+                    await _userDataService.SetRole(login, role, token);
+                }
+            }
+        }
 
         private async Task<bool> EditButtonHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
             {
-                await EditButtonAccepted(moderatorId, chatId, userNews, token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
             }
-            else
+
+            var settings = ParseButtonsSettings(messages);
+
+            if (settings.Count == 0)
             {
-                await EditButtonMessageNotFound(chatId, token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
             }
+
+            var groupped = settings.GroupBy(s => s.Number);
+            if (groupped.Any(s => s.Count() > 1))
+            {
+                await client.SendMessageAsync(chatId, "Для некоторых кнопок отправлено больше одной настройки, перезапустите настройку", token);
+                return false;
+            }
+
+            var allButtons = await _buttonsDataService.GetAllButtons(token);
+
+            foreach (var button in allButtons)
+            {
+                var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
+                if (newItem != null)
+                {
+                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, null, newItem.IsModerate, token);
+                }
+                else
+                {
+                    await _buttonsDataService.RemoveButtonSend(button.Id, token);
+                }
+            }
+
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Кнопки сохранены", token);
+
+            return true;
+        }
+
+        private static ButtonSetting? ParseButtonsSettings(NewsMessage? message)
+        {
+
+            var value = message?.TextValue?.Trim();
+
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
+            var itemElements = value.Split(":").Select(s => s.Trim()).ToArray();
+            if (int.TryParse(itemElements[0], out int num))
+            {
+                string? name = null;
+                int? parent = null;
+                bool isModer = false;
+                if (itemElements.Length > 1)
+                {
+                    name = itemElements[1];
+                }
+                if (itemElements.Length > 2)
+                {
+                    if (int.TryParse(itemElements[2], out int parNum))
+                    {
+                        parent = parNum;
+                    }
+                    else if (itemElements[2] == "m")
+                    {
+                        isModer = true;
+                    }
+                }
+                if (itemElements.Length > 3 && itemElements[3] == "m")
+                {
+                    isModer = true;
+                }
+                return new ButtonSetting()
+                {
+                    Number = num,
+                    Name = name,
+                    Parent = parent,
+                    IsModerate = isModer
+                };
+            }
+            else if (itemElements[0] == "_")
+            {
+                string? name = null;
+                int? parent = null;
+                if (itemElements.Length > 1)
+                {
+                    name = itemElements[1];
+                }
+                else
+                {
+                    name = "_";
+                }
+                if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
+                {
+                    parent = parNum;
+                }
+                return new ButtonSetting()
+                {
+                    Name = name,
+                    Parent = parent,
+                    IsParent = true
+                };
+            }
+
+            return null;
+        }
+
+        private static List<ButtonSetting> ParseButtonsSettings(IEnumerable<NewsMessage> messages)
+        {
+            var buttons = new List<string>();
+
+            foreach (var message in messages.Where(s => s.TextValue != null))
+            {
+                var values = message.TextValue?.Split(["\r\n", ";"],
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Where(s => s != null && s != string.Empty);
+
+                if (values?.Any() == true)
+                {
+                    buttons.AddRange(values);
+                }
+            }
+
+            var numbers = new List<ButtonSetting>();
+            foreach (var item in buttons)
+            {
+                var itemElements = item.Split(":").Select(s => s.Trim()).ToArray();
+                if (int.TryParse(itemElements[0], out int num))
+                {
+                    string? name = null;
+                    int? parent = null;
+                    bool isModer = false;
+                    if (itemElements.Length > 1)
+                    {
+                        name = itemElements[1];
+                    }
+                    if (itemElements.Length > 2)
+                    {
+                        if (int.TryParse(itemElements[2], out int parNum))
+                        {
+                            parent = parNum;
+                        }
+                        else if (itemElements[2] == "m")
+                        {
+                            isModer = true;
+                        }
+                    }
+                    if (itemElements.Length > 3 && itemElements[3] == "m")
+                    {
+                        isModer = true;
+                    }
+
+                    numbers.Add(new ButtonSetting()
+                    {
+                        Number = num,
+                        Name = name,
+                        Parent = parent,
+                        IsModerate = isModer
+                    });
+                }
+            }
+
+            return numbers;
         }
 
         private async Task<bool> EditButtonApproveHandle(long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var availableButtons = await _buttonsDataService.GetAllButtons(token);
+            if (availableButtons.Count != 0)
             {
-                await SendEditButtonsForUserApprove(chatId, userNews, token);
+                var button1 = new InlineKeyboardButton("Подтвердить")
+                {
+                    CallbackData = "EditButton"
+                };
+                var button2 = new InlineKeyboardButton("Отменить")
+                {
+                    CallbackData = "EditButtonDecline"
+                };
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button1, button2
+                    }
+                    });
+
+                ReplyMarkup replyMarkupError = new InlineKeyboardMarkup(
+                    new List<List<InlineKeyboardButton>>()
+                    {
+                    new()
+                    {
+                        button2
+                    }
+                    });
+
+                var buttonsEditResult = await GetButtonsForAccepted(userNews!, token);
+
+                if (!buttonsEditResult.Item1)
+                {
+                    await client.SendMessageAsync(chatId, $"При обработке задания произошла ошибка: {buttonsEditResult.Item2}." +
+                        $" Повторите сообщение или нажмите кнопку Отмена для отмены задания",
+                    replyMarkup: replyMarkupError, token);
+
+                    return false;
+                }
+
+                await client.SendMessageAsync(chatId, $"Будут произведены следующие действия с кнопками:  \n{buttonsEditResult}." +
+                    "\nНажмите Подтвердить для сохранения или Отмена для отмены действия.",
+                    replyMarkup: replyMarkup,
+                     token);
+
+                return true;
             }
             else
             {
-                await EditButtonMessageNotFound(chatId, token);
+                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
+                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
+                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
+                     token);
+
+                return false;
             }
+        }
+
+        private async Task<(bool, string)> GetButtonsForAccepted(News userNews, CancellationToken token)
+        {
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
+            {
+                return (false, "Не отправлено ни одной кнопки");
+            }
+
+            var settings = ParseButtonsSettings(messages);
+
+            if (settings.Count == 0)
+            {
+                return (false, "Не отправлено ни одной кнопки");
+            }
+
+            var groupped = settings.GroupBy(s => s.Number);
+            if (groupped.Any(s => s.Count() > 1))
+            {
+                return (false, "Для некоторых кнопок отправлено больше одной настройки");
+            }
+
+            var allButtons = await _buttonsDataService.GetAllButtons(token);
+
+            List<string> onButtons = [];
+            List<string> offButtons = new();
+
+            foreach (var button in allButtons)
+            {
+                var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
+                if (newItem != null && !button.ToSend)
+                {
+                    onButtons.Add($"{newItem.Number} : {newItem.Name}");
+                }
+
+                if (newItem == null && button.ToSend)
+                {
+                    offButtons.Add($"{button.ButtonNumber} : {button.ButtonName}");
+                }
+            }
+
+            return (true, $"Будут добавлены следующие кнопки: {string.Join(", ", onButtons)}; отключены: {string.Join(", ", offButtons)}.");
         }
 
         private async Task<bool> AddButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
             {
-                await AddButtonAccepted(userId, chatId, userNews, token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
             }
-            else
+
+            if (messages.Count > 1)
             {
-                await EditButtonMessageNotFound(chatId, token);
+                await client.SendMessageAsync(chatId, "Ошибка обработки задания, отмените и попробуйте повторить", token);
+                return false;
             }
+
+            var settings = ParseButtonsSettings(messages.FirstOrDefault());
+
+            if (settings == null)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
+            }
+
+            var allButtons = await _buttonsDataService.GetAllButtons(token);
+
+            var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
+            if (button != null)
+            {
+                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, settings.Parent, settings.IsModerate, token);
+            }
+            else if (settings.IsParent)
+            {
+                await _buttonsDataService.AddParentButton(settings.Name!, settings.Parent, token);
+            }
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Кнопка сохранена", token);
+
+            return true;
         }
 
         private async Task<bool> DeleteButtonHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
             {
-                await DeleteButtonAccepted(userId, chatId, userNews, token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
             }
-            else
+
+            if (messages.Count > 1)
             {
-                await EditButtonMessageNotFound(chatId, token);
+                await client.SendMessageAsync(chatId, "Ошибка обработки задания, отмените и попробуйте повторить", token);
+                return false;
             }
+
+            var settings = ParseButtonsSettings(messages.FirstOrDefault());
+
+            if (settings == null)
+            {
+                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
+                return false;
+            }
+
+            var allButtons = await _buttonsDataService.GetAllButtons(token);
+
+            var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
+            if (button != null)
+            {
+                await _buttonsDataService.RemoveButtonSend(button.Id, token);
+            }
+
+            await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Кнопка удалена", token);
+
+            return true;
         }
 
         private async Task<bool> AddModeratorHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
+            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+
+            if (messages.Count == 0)
             {
-                await AddModeratorAccepted(moderatorId, chatId, userNews, token);
+                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
+                return false;
             }
-            else
-            {
-                await AddModeratorMessageNotFound(chatId, token);
-            }
+
+            await ParseAndSetRole(messages, RoleEnum.moderator, token);
+
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Модераторы добавлены", token);
+
+            return true;
         }
 
         private async Task<bool> AddAdminDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeclineNews(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddAdminMessageNotFound(chatId, token);
-            }
+            await DeclineNews(moderatorId, chatId, userNews, token);
+            return true;
         }
 
         private async Task<bool> EditButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeclineNews(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
+            await DeclineNews(moderatorId, chatId, userNews, token);
+            return true;
         }
 
         private async Task<bool> AddModeratorDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeclineNews(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await AddModeratorMessageNotFound(chatId, token);
-            }
+            await DeclineNews(moderatorId, chatId, userNews, token);
+            return true;
         }
 
         private async Task<bool> AddButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeclineNews(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
+            await DeclineNews(moderatorId, chatId, userNews, token);
+            return true;
         }
 
         private async Task<bool> DeleteButtonDeclineHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
-            if (userNews != null)
-            {
-                await DeclineNews(moderatorId, chatId, userNews, token);
-            }
-            else
-            {
-                await EditButtonMessageNotFound(chatId, token);
-            }
+            await DeclineNews(moderatorId, chatId, userNews, token);
+            return true;
         }
 
         private async Task<bool> SendPDNOferta(long chatId, News? userNews, CancellationToken token)
@@ -1381,6 +1680,7 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Публичная оферта - согласие на обработку персональных данных", token: token);
             using var stream = new FileStream("PDNOferta.txt", FileMode.Open);
             await client.SendDocumentAsync(new SendDocumentArgs(chatId, new InputFile(stream, "PDNOferta.txt")), token);
+            return true;
         }
 
         private async Task<bool> SendDonateQR(long chatId, News? userNews, CancellationToken token)
@@ -1388,18 +1688,44 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Отправить пожертвование можно, используя ссылку", token: token);
             await client.SendMessageAsync(chatId, "https://t.me/c/1627860016/6606/746066", token: token);
             //await client.SendPhotoAsync(new SendPhotoArgs(chatId, ),  token);
+            return true;
         }
 
         private async Task<bool> SendNewsApproveHandle(Guid moderatorId, long chatId, string data, CancellationToken token)
         {
-            var userNews = await _newsDataService.GetNewsById(newsId, token);
+            var userNews = await _newsDataService.GetNewsById(Guid.Parse(data), token);
             if (userNews != null)
             {
                 await SendNewsMessageApproved(moderatorId, chatId, userNews, token);
+                return true;
             }
             else
             {
-                await SendNewsMessageNotFound(chatId, token);
+                await SendMessageNotFound(chatId, token);
+                return false;
+            }
+        }
+
+        private async Task SendNewsMessageApproved(Guid moderatorId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
+
+            if (userNews.GroupId.HasValue)
+            {
+                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", token);
+                await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", token);
+
+                var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
+                if (messages.Count != 0)
+                {
+                    await SendForwardMessageTitle(userNews, token);
+                    await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
+                }
+            }
+            else
+            {
+                await client.SendMessageAsync(chatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", token);
+                await client.SendMessageAsync(userNews.ChatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", token);
             }
         }
 
@@ -1409,10 +1735,12 @@ namespace ROTGBot.Service
             if (userNews != null)
             {
                 await SendNewsMessageDeclined(moderatorId, chatId, userNews, token);
+                return true;
             }
             else
             {
-                await SendNewsMessageNotFound(chatId, token);
+                await SendMessageNotFound(chatId, token);
+                return false;
             }
         }
 
@@ -1450,9 +1778,14 @@ namespace ROTGBot.Service
             }
             else
             {
-                await ApproveNewsMessageNotFound(chatId, token);
+                await SendMessageNotFound(chatId, token);
+                return false;
             }
         }
+
+        private static bool GetExistsNext(int offset, int allCount) => offset < allCount - 1;
+
+        private static bool GetExistsPrev(int offset) => offset > 0;
     }
 
     public class TelegramMessageHandler : ITelegramMessageHandler
@@ -1661,507 +1994,7 @@ namespace ROTGBot.Service
             };
         }
 
-        private async Task<bool> SendWithCheckRights(
-            Contract.Model.User user,
-            long chatId,
-            RoleEnum role,
-            Func<long, News?, CancellationToken, Task> succesAction,
-            CancellationToken token)
-        {
-            var result = false;
-            var userNews = await _newsDataService.GetCurrentNews(user.Id, token);
-            if (!user.Roles.Contains(role))
-            {
-                await SendUserHasNoRights(chatId, token);
-            }
-            else
-            {
-                await succesAction(chatId, userNews, token);
-                result = true;
-            }
-
-            return result;
-        }
-
-        
-
-        private static bool GetExistsNext(int offset, int allCount) => offset < allCount - 1;
-
-        private static bool GetExistsPrev(int offset) => offset > 0;
-
-        
-
-        private async Task ParseAndSetRole(IEnumerable<NewsMessage> messages, RoleEnum role, CancellationToken token)
-        {
-            foreach (var message in messages)
-            {
-                var logins = message.TextValue?.Split(",").Select(s => s.Trim()).Select(s => s.TrimStart('@')).Where(s => s != string.Empty);
-                if (logins == null || !logins.Any()) continue;
-
-                foreach (var login in logins)
-                {
-                    await _userDataService.SetRole(login, role, token);
-                }
-            }
-        }
-
-        private async Task EditButtonAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
-                return;
-            }
-
-            var settings = ParseButtonsSettings(messages);
-
-            if (settings.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки", token);
-                return;
-            }
-
-            var groupped = settings.GroupBy(s => s.Number);
-            if (groupped.Any(s => s.Count() > 1))
-            {
-                await client.SendMessageAsync(chatId, "Для некоторых кнопок отправлено больше одной настройки, перезапустите настройку", token);
-                return;
-            }
-
-            var allButtons = await _buttonsDataService.GetAllButtons(token);
-
-            foreach (var button in allButtons)
-            {
-                var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
-                if (newItem != null)
-                {
-                    await _buttonsDataService.SetButtonSend(button.Id, newItem.Name, null, newItem.IsModerate, token);
-                }
-                else
-                {
-                    await _buttonsDataService.RemoveButtonSend(button.Id, token);
-                }
-            }
-
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-            await client.SendMessageAsync(chatId, "Кнопки сохранены", token);
-        }
-
-        private async Task AddButtonAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки",  token);
-                return;
-            }
-
-            if (messages.Count > 1)
-            {
-                await client.SendMessageAsync(chatId, "Ошибка обработки задания, отмените и попробуйте повторить",  token);
-                return;
-            }
-
-            var settings = ParseButtonsSettings(messages.FirstOrDefault());
-
-            if (settings == null)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки",  token);
-                return;
-            }
-
-            var allButtons = await _buttonsDataService.GetAllButtons(token);
-
-            var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
-            if (button != null)
-            {
-                await _buttonsDataService.SetButtonSend(button.Id, settings.Name, settings.Parent, settings.IsModerate, token);
-            }
-            else if (settings.IsParent)
-            {
-                await _buttonsDataService.AddParentButton(settings.Name!, settings.Parent, token);
-            }
-
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-            await client.SendMessageAsync(chatId, "Кнопка сохранена",  token);
-        }
-
-        private async Task DeleteButtonAccepted(Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки",  token);
-                return;
-            }
-
-            if (messages.Count > 1)
-            {
-                await client.SendMessageAsync(chatId, "Ошибка обработки задания, отмените и попробуйте повторить",  token);
-                return;
-            }
-
-            var settings = ParseButtonsSettings(messages.FirstOrDefault());
-
-            if (settings == null)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одной кнопки",  token);
-                return;
-            }
-
-            var allButtons = await _buttonsDataService.GetAllButtons(token);
-
-            var button = allButtons.FirstOrDefault(s => settings.Number == s.ButtonNumber);
-            if (button != null)
-            {
-                await _buttonsDataService.RemoveButtonSend(button.Id, token);
-            }
-
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-            await client.SendMessageAsync(chatId, "Кнопка удалена",  token);
-        }
-
-        private static List<ButtonSetting> ParseButtonsSettings(IEnumerable<NewsMessage> messages)
-        {
-            var buttons = new List<string>();
-
-            foreach (var message in messages.Where(s => s.TextValue != null))
-            {
-                var values = message.TextValue?.Split(["\r\n", ";"],
-                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Where(s => s != null && s != string.Empty);
-
-                if (values?.Any() == true)
-                {
-                    buttons.AddRange(values);
-                }
-            }
-
-            var numbers = new List<ButtonSetting>();
-            foreach (var item in buttons)
-            {
-                var itemElements = item.Split(":").Select(s => s.Trim()).ToArray();
-                if (int.TryParse(itemElements[0], out int num))
-                {
-                    string? name = null;
-                    int? parent = null;
-                    bool isModer = false;
-                    if (itemElements.Length > 1)
-                    {
-                        name = itemElements[1];
-                    }
-                    if (itemElements.Length > 2)
-                    {
-                        if (int.TryParse(itemElements[2], out int parNum))
-                        {
-                            parent = parNum;
-                        }
-                        else if (itemElements[2] == "m")
-                        {
-                            isModer = true;
-                        }
-                    }
-                    if (itemElements.Length > 3 && itemElements[3] == "m")
-                    {
-                        isModer = true;
-                    }
-
-                    numbers.Add(new ButtonSetting()
-                    {
-                        Number = num,
-                        Name = name,
-                        Parent = parent,
-                        IsModerate = isModer
-                    });
-                }
-            }
-
-            return numbers;
-        }
-
-        private static ButtonSetting? ParseButtonsSettings(NewsMessage? message)
-        {
-
-            var value = message?.TextValue?.Trim();
-
-            if (string.IsNullOrEmpty(value))
-            {
-                return null;
-            }
-
-            var itemElements = value.Split(":").Select(s => s.Trim()).ToArray();
-            if (int.TryParse(itemElements[0], out int num))
-            {
-                string? name = null;
-                int? parent = null;
-                bool isModer = false;
-                if (itemElements.Length > 1)
-                {
-                    name = itemElements[1];
-                }
-                if (itemElements.Length > 2)
-                {
-                    if (int.TryParse(itemElements[2], out int parNum))
-                    {
-                        parent = parNum;
-                    }
-                    else if (itemElements[2] == "m")
-                    {
-                        isModer = true;
-                    }
-                }
-                if (itemElements.Length > 3 && itemElements[3] == "m")
-                {
-                    isModer = true;
-                }
-                return new ButtonSetting()
-                {
-                    Number = num,
-                    Name = name,
-                    Parent = parent,
-                    IsModerate = isModer
-                };
-            }
-            else if (itemElements[0] == "_")
-            {
-                string? name = null;
-                int? parent = null;
-                if (itemElements.Length > 1)
-                {
-                    name = itemElements[1];
-                }
-                else
-                {
-                    name = "_";
-                }
-                if (itemElements.Length > 2 && int.TryParse(itemElements[2], out int parNum))
-                {
-                    parent = parNum;
-                }
-                return new ButtonSetting()
-                {
-                    Name = name,
-                    Parent = parent,
-                    IsParent = true
-                };
-            }
-
-            return null;
-        }
-
-       
-
-        private async Task AddModeratorAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                await client.SendMessageAsync(chatId, "Не отправлено ни одного логина", token);
-                return;
-            }
-
-            await ParseAndSetRole(messages, RoleEnum.moderator, token);
-
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-            await client.SendMessageAsync(chatId, "Модераторы добавлены", token);
-        }
-
-        
-
-        private async Task AddAdminMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет задач на добавление администратора", token);
-        }
-
-        private async Task EditButtonMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет задач на добавление кнопок", token);
-        }
-
-        private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет задач на добавление модератора", token);
-        }
-
                 
-
-        private async Task DeleteNewsMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет неподтвержденных обращений", token);
-        }
-
-        private async Task ApproveNewsMessageNotFound(long chatId, CancellationToken token)
-        {
-            await client.SendMessageAsync(chatId, "Нет неотправленных обращений", token);
-        }
-
-        
-
-        
-
-        
-
-        
-
-        private async Task SendEditButtonsForUserApprove( long chatId, News news, CancellationToken token)
-        {
-            var availableButtons = await _buttonsDataService.GetAllButtons(token);
-            if (availableButtons.Count != 0)
-            {
-                var button1 = new InlineKeyboardButton("Подтвердить")
-                {
-                    CallbackData = "EditButton"
-                };
-                var button2 = new InlineKeyboardButton("Отменить")
-                {
-                    CallbackData = "EditButtonDecline"
-                };
-                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button1, button2
-                    }
-                    });
-
-                ReplyMarkup replyMarkupError = new InlineKeyboardMarkup(
-                    new List<List<InlineKeyboardButton>>()
-                    {
-                    new()
-                    {
-                        button2
-                    }
-                    });
-
-                var buttonsEditResult = await GetButtonsForAccepted(news!, token);
-
-                if (!buttonsEditResult.Item1)
-                {
-                    await client.SendMessageAsync(chatId, $"При обработке задания произошла ошибка: {buttonsEditResult.Item2}." +
-                        $" Повторите сообщение или нажмите кнопку Отмена для отмены задания",
-                    replyMarkup: replyMarkupError,  token);
-                }
-
-                await client.SendMessageAsync(chatId, $"Будут произведены следующие действия с кнопками:  \n{buttonsEditResult}." +
-                    "\nНажмите Подтвердить для сохранения или Отмена для отмены действия.",
-                    replyMarkup: replyMarkup,
-                     token);
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, "Нет доступных кнопок для добавления пользователю. " +
-                    "Для добавления доступных кнопок добавьте бота в группу и отправьте в чат одно сообщение (для разбивки по темам - отправьте по одному сообщению в каждой из тем)." +
-                    "Пользователь, отправляющий сообщения, должен быть администратором бота.",
-                     token);
-            }
-
-        }
-
-        private async Task<(bool, string)> GetButtonsForAccepted(News userNews, CancellationToken token)
-        {
-            var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-
-            if (messages.Count == 0)
-            {
-                return (false, "Не отправлено ни одной кнопки");
-            }
-
-            var settings = ParseButtonsSettings(messages);
-
-            if (settings.Count == 0)
-            {
-                return (false, "Не отправлено ни одной кнопки");
-            }
-
-            var groupped = settings.GroupBy(s => s.Number);
-            if (groupped.Any(s => s.Count() > 1))
-            {
-                return (false, "Для некоторых кнопок отправлено больше одной настройки");
-            }
-
-            var allButtons = await _buttonsDataService.GetAllButtons(token);
-
-            List<string> onButtons = [];
-            List<string> offButtons = new();
-
-            foreach (var button in allButtons)
-            {
-                var newItem = settings.FirstOrDefault(s => s.Number == button.ButtonNumber);
-                if (newItem != null && !button.ToSend)
-                {
-                    onButtons.Add($"{newItem.Number} : {newItem.Name}");
-                }
-
-                if (newItem == null && button.ToSend)
-                {
-                    offButtons.Add($"{button.ButtonNumber} : {button.ButtonName}");
-                }
-            }
-
-            return (true, $"Будут добавлены следующие кнопки: {string.Join(", ", onButtons)}; отключены: {string.Join(", ", offButtons)}.");
-        }
-
-        
-
-        
-
-        
-
-        
-
-        
-
-
-        
-
-        
-
-        private async Task SendNewsMessageApproved( Guid moderatorId, long chatId, News userNews, CancellationToken token)
-        {
-            await _newsDataService.SetNewsApproved(userNews.Id, moderatorId, token);
-
-            if (userNews.GroupId.HasValue)
-            {
-
-
-                await client.SendMessageAsync(chatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", token);
-                await client.SendMessageAsync(userNews.ChatId, $"Обращение №{userNews.Number} в раздел \"{userNews.Title}\" подтверждено", token);
-
-                var messages = await _newsDataService.GetNewsMessages(userNews.Id, token);
-                if (messages.Count != 0)
-                {
-                    await SendForwardMessageTitle(userNews, token);
-                    await client.ForwardMessagesAsync(userNews.GroupId.Value, userNews.ChatId, messages.Select(s => (int)s.TGMessageId), (int?)userNews.ThreadId, token);
-                }
-            }
-            else
-            {
-                await client.SendMessageAsync(chatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", token);
-                await client.SendMessageAsync(userNews.ChatId, $"Нельзя подтвердить обращение №{userNews.Number} в раздел \"{userNews.Title}\": не задано направление. Требуется пересоздание", token);
-            }
-        }
-
-        
-
-        
-
-        
-
-        private async Task SendTestConnectionMessage(Message message, string addInfo, CancellationToken token)
-        {
-            await client.SendMessageAsync(message.Chat.Id, addInfo, token);
-        }
-
-        
-
-        
-
-        
 
         private async Task HandleMyChatMember(ChatMemberUpdated? myChatMember, CancellationToken cancellationToken)
         {
