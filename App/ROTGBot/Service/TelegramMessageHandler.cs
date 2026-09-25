@@ -556,12 +556,6 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendNewsReplyMessageNotFound(long chatId, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        
 
         private async Task AddModeratorHandle( Guid moderatorId, long chatId, News? userNews, CancellationToken token)
         {
@@ -1496,6 +1490,11 @@ namespace ROTGBot.Service
         private async Task SendMessageByNumberMessageNotFound(long chatId, CancellationToken token)
         {
             await client.SendMessageAsync(chatId, "Нет задач на отправку сообщения пользователю", token);
+        }
+
+        private async Task SendNewsReplyMessageNotFound(long chatId, CancellationToken token)
+        {
+            await client.SendMessageAsync(chatId, "Нет задач на ответ на обращение", token);
         }
 
         private async Task AddModeratorMessageNotFound(long chatId, CancellationToken token)

@@ -56,6 +56,15 @@ namespace ROTGBot.Service
             return Map(result);
         }
 
+        public async Task<Contract.Model.News?> GetNewsByNumber(int newsNumber, CancellationToken token)
+        {
+            var result = (await _newsRepo.GetAsync(new Filter<News>()
+            {
+                Selector = s => s.Number == newsNumber
+            }, token)).FirstOrDefault();
+            return Map(result);
+        }
+
         private static Contract.Model.News? Map(News? result)
         {
             if (result == null) return null;
@@ -341,9 +350,6 @@ namespace ROTGBot.Service
             await _newsRepo.UpdateAsync(userNews, true, token);
         }
 
-        public Task<Contract.Model.News?> GetNewsByNumber(int newsNumber, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }
