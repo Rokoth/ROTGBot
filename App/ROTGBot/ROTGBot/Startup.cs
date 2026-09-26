@@ -123,6 +123,8 @@ namespace ROTGBot
             }
             app.UseHttpsRedirection();
 
+            app.MapRazorPages();
+
             app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthorization();
