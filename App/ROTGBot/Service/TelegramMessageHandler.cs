@@ -1766,6 +1766,7 @@ namespace ROTGBot.Service
             if(!int.TryParse(data, out int offset))
             {
                 await client.SendMessageAsync(chatId, "Неверная ссылка кнопки, отмените текущее задание и попробуйте снова", token: token);
+                return false;
             }
 
             offset = Math.Min(offset, allCount - 1);
@@ -1775,6 +1776,7 @@ namespace ROTGBot.Service
             if (userNews != null)
             {
                 await SendNewsMessageForApprove(chatId, userNews, GetExistsPrev(offset), GetExistsNext(offset, allCount), offset, token);
+                return true;
             }
             else
             {
