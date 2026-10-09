@@ -80,12 +80,15 @@ namespace ROTGBot
         /// <returns></returns>
         private static IConfigurationRoot GetConfiguration()
         {
-            return new ConfigurationBuilder()
+            var config = new ConfigurationBuilder()
                                 .SetBasePath(Directory.GetCurrentDirectory())
                                 .AddJsonFile(_appSettingsFileName, optional: false, reloadOnChange: true)
-                                .AddEnvironmentVariables()
-                                .AddDbConfiguration()
-                                .Build();
+                                .AddEnvironmentVariables();
+
+            var conf = config.Build();
+
+            config =  config.AddDbConfiguration(conf.GetConnectionString("MainConnection"));
+            return config.Build();
         }
     }
 }
