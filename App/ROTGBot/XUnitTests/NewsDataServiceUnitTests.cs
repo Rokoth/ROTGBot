@@ -18,6 +18,10 @@ namespace XUnitTests
             configuration = builder.Build();
         }
 
+        /// <summary>
+        /// 0.0.10.2.1
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task AddNewMessageForNews_Ready_Async()
         {
@@ -36,6 +40,10 @@ namespace XUnitTests
             Assert.True(result);
         }
 
+        /// <summary>
+        /// 0.0.10.2.2
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task AddNewMessageForNews_EmptyText_ReturnsFalse_Async()
         {
