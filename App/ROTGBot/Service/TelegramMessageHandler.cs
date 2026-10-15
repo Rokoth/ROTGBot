@@ -1876,7 +1876,7 @@ namespace ROTGBot.Service
             }
             var data = callbackQuery.Data;
             if (data == null) return false;
-            var result = await HandleData(user.ChatId, user, data, token);
+            var result = await _messageHandler.HandleData(user.ChatId, user, data, token);
             await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
             return result;
         }
