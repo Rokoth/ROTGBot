@@ -310,7 +310,7 @@ namespace ROTGBot.Service
                 "UserReglamentEdit" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
                                         (chId, userNews, tk) => SendUserReglamentEditHandle(userId, chId, userNews, tk), token),
                 "UserReglamentEditDecline" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
-                                        (chId, userNews, tk) => SendUserReglamentEditDeclineHandle(chId, user, userNews, tk), token),
+                                        (chId, userNews, tk) => SendUserReglamentEditDeclineHandle(chId, user.Id, userNews, tk), token),
                 "ModeratorReglament" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendModeratorReglament(chId, userNews, tk), token),
                 "ModeratorReglamentEditChoice" => await SendWithCheckRights(user, chatId.Value, RoleEnum.administrator,
@@ -334,10 +334,7 @@ namespace ROTGBot.Service
 
         
 
-        private async Task SendUserReglamentEditDeclineHandle(long chId, Contract.Model.User user, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
@@ -589,6 +586,28 @@ namespace ROTGBot.Service
             {
                 await EditButtonMessageNotFound(chatId, token);
             }
+        }
+
+        private async Task SendUserReglamentEditDeclineHandle(long chatId, Guid userId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendUserReglamentEditDecline(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendUserReglamentEditDeclineNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendUserReglamentEditDeclineNotFound(long chatId, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task SendUserReglamentEditDecline(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
