@@ -354,10 +354,7 @@ namespace ROTGBot.Service
 
         
 
-        private async Task DeclineSendMessageByNumberHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         
 
@@ -651,6 +648,23 @@ namespace ROTGBot.Service
             {
                 await UserSearchByNumberMessageNotFound(chatId, token);
             }
+        }
+
+        private async Task DeclineSendMessageByNumberHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await SendMessageByNumberDeclined(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await SendMessageByNumberMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task SendMessageByNumberDeclined(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task DeclineSendNewsReplyHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
