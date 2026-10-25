@@ -662,10 +662,7 @@ namespace ROTGBot.Service
             }
         }
 
-        private async Task SendMessageByNumberDeclined(Guid userId, long chatId, News userNews, CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task DeclineSendNewsReplyHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
@@ -1455,6 +1452,11 @@ namespace ROTGBot.Service
             await client.SendMessageAsync(chatId, "Задание отменено", token);
         }
 
+        private async Task SendMessageByNumberDeclined(Guid userId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, userId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
 
         private async Task AddModeratorAccepted( Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
