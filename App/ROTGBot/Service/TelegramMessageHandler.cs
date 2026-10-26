@@ -170,7 +170,7 @@ namespace ROTGBot.Service
 
                 if (userNews.Type == "unblockuser")
                 {
-                    await HandleData(user.ChatId, user, "UnBlockUser", cancellationToken);
+                    await HandleData(user.ChatId, user, "UnblockUser", cancellationToken);
                 }
             }
             else if (message.IsTopicMessage != true)
@@ -1047,7 +1047,7 @@ namespace ROTGBot.Service
                         button1
                     }
                     });
-                await client.SendMessageAsync(chatId, "Пользователь не найден, попробуйте еще раз или отмените запрос", token);
+                await client.SendMessageAsync(chatId, "Пользователь не найден, попробуйте еще раз или отмените запрос", replyMarkup, token);
             }
         }
 
@@ -2516,7 +2516,7 @@ namespace ROTGBot.Service
                     },
                     new InlineKeyboardButton("Разблокировать пользователя")
                     {
-                        CallbackData = "UnblockUser"
+                        CallbackData = "UnblockUserChoise"
                     },
                     new InlineKeyboardButton("Отправить сообщение пользователю")
                     {
