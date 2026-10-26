@@ -1,6 +1,8 @@
 ﻿using ROTGBot.Contract.Model;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
+using System.Linq.Dynamic.Core.Tokenizer;
+using Telegram.BotAPI.AvailableTypes;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -156,6 +158,22 @@ namespace ROTGBot.Service
         public Task<List<Contract.Model.User>> GetUsers(int? count, int? daysCount, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> BlockUser(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            user.IsBlocked = true;
+            await _userRepo.UpdateAsync(user, true, token);
+            return true;
+        }
+
+        public async Task<bool> UnBlockUser(Guid userId, CancellationToken token)
+        {
+            var user = await _userRepo.GetAsync(userId, token);
+            user.IsBlocked = false;
+            await _userRepo.UpdateAsync(user, true, token);
+            return true;
         }
     }
 }
