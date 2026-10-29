@@ -35,6 +35,7 @@ namespace XUnitTests
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
             var messageHandler = new Mock<IHandler<Message>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
+            var dataHandler = new Mock<IDataHandler>();
 
             wrapperService.Setup(s => s.GetUpdatesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => [
@@ -47,12 +48,9 @@ namespace XUnitTests
             var tgMainService = new TelegramMessageHandler(
                 logger.Object,
                 groupsDataService.Object,
-                userDataService.Object,
-                newsDataService.Object,
-                buttonDataService.Object,
+                userDataService.Object,              
                 messageHandler.Object,
-                sendmessageWrapper.Object,
-                configuration.Object,
+                dataHandler.Object,               
                 wrapperService.Object);
 
             //todo: test concept
@@ -83,6 +81,7 @@ namespace XUnitTests
             var configuration = new Mock<IConfiguration>();
             var messageHandler = new Mock<IHandler<Message>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
+            var dataHandler = new Mock<IDataHandler>();
 
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
 
@@ -90,14 +89,11 @@ namespace XUnitTests
                 .ReturnsAsync((Message? message) => message != null);
 
             var tgMainService = new TelegramMessageHandler(
-                logger.Object, 
-                groupsDataService.Object, 
-                userDataService.Object, 
-                newsDataService.Object, 
-                buttonDataService.Object,
+                logger.Object,
+                groupsDataService.Object,
+                userDataService.Object,
                 messageHandler.Object,
-                sendmessageWrapper.Object,
-                configuration.Object, 
+                dataHandler.Object,
                 wrapperService.Object);
 
             //todo: test concept
