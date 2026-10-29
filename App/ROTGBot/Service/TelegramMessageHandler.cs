@@ -266,12 +266,16 @@ namespace ROTGBot.Service
                 case CommandEnum.unblock:
                     await UnBlockUser(chatId, commandText, user, type, cancellationToken);
                     break;
+                case CommandEnum.answernews:
+                    await AnswerNews(chatId, commandText, user, type, cancellationToken);
+                    break;
             }
         }
 
-        
-
-        
+        private async Task AnswerNews(long chatId, string commandText, Contract.Model.User user, string type, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
 
         private async Task ShowUsers(long chatId, string commandText, Contract.Model.User user, CancellationToken cancellationToken)
         {
