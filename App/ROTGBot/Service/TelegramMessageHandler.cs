@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
+using System.Linq;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
@@ -304,10 +305,27 @@ namespace ROTGBot.Service
             if(users.Count > (count ?? 10))
             {
                 var news = await _newsDataService.CreateNews(chatId, user.Id, null, null, "showusers", "showusers", false, cancellationToken);
+                var sendButtons = new List<List<InlineKeyboardButton>>()
+                        {
+                            new()
+                            {
+                                new InlineKeyboardButton("Далее...")
+                                {
+                                    CallbackData = "ShowUsers_1"
+                                },
+                                new InlineKeyboardButton("Завершить поиск")
+                                {
+                                    CallbackData = "DeclineShowUsers"
+                                }
+                            }
+                        };
+
+                ReplyMarkup replyMarkup = new InlineKeyboardMarkup(sendButtons);
+                await client.SendMessageAsync(chatId, string.Join("\r\n",users.Take(count ?? 10).Select(s => $"{s.Name}({s.TGLogin})")), replyMarkup, cancellationToken);
             }
             else
             {
-
+                await client.SendMessageAsync(chatId, string.Join("\r\n", users.Select(s => $"{s.Name}({s.TGLogin})")), cancellationToken);
             }
         }
 
