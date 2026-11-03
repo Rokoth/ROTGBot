@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using ROTGBot.Contract.Model;
+
 using System.Linq.Dynamic.Core.Tokenizer;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
@@ -1678,6 +1679,28 @@ namespace ROTGBot.Service
                  token);
         }
 
+        private async Task SendMessageByNumberRemember(long chatId, CancellationToken token)
+        {           
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineSendMessageByNumber"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть необработанная задача на отправку сообщения пользователю." +
+                " Отправьте номер пользователя, которому хотите отправить сообщение, затем само сообщение. Для отмены нажмите кнопку \"Отменить\"",
+                 replyMarkup,
+                 token);
+        }
+
         private async Task SendNewsReplyChoise(long chatId, Guid userId, CancellationToken token)
         {
             await _newsDataService.CreateNews(chatId, userId, null, null, "sendnewsreplychoice", "Ответ на обращение", false, token);
@@ -1744,7 +1767,7 @@ namespace ROTGBot.Service
                 });
 
             await client.SendMessageAsync(chatId,
-                "Отправьте имя или логин для поиска пользователя",
+                "Отправьте номер, имя или логин для поиска пользователя",
                  replyMarkup,
                  token);
         }
@@ -2347,7 +2370,8 @@ namespace ROTGBot.Service
                 "editbutton" => SendEditButtonForAdminRemember(chatId, token),
                 "addbutton" => SendAddButtonForAdminRemember(chatId, token),
                 "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
-                _ => Task.CompletedTask,
+                "sendmessagebynumber" => SendMessageByNumberRemember(chatId, token),
+                _ => throw  new NotImplementedException($"Не реализовано метод SendUserRemember для команды {news?.Type}"),
             };
         }
 
@@ -2566,7 +2590,13 @@ namespace ROTGBot.Service
                 [
                     new InlineKeyboardButton("Информация о пользователе по номеру обращения")
                     {
-                        CallbackData = "UserInfoByNewsNumber"
+                        CallbackData = "UserInfoByNewsNumberChoise"
+                    }
+                ],
+                [
+                    new InlineKeyboardButton("Информация о пользователе по логину, имени, номеру")
+                    {
+                        CallbackData = "UserSearchByNameChoise"
                     }
                 ],
                 EmptyButton(),
