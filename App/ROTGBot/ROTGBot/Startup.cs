@@ -123,8 +123,6 @@ namespace ROTGBot
             }
             app.UseHttpsRedirection();
 
-            app.MapRazorPages();
-
             app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthorization();
@@ -134,11 +132,16 @@ namespace ROTGBot
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
             });
 
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapControllerRoute(
+            //        name: "default",
+            //        pattern: "{controller=Home}/{action=Index}/{id?}");
+            //});
+
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
         }
     }
