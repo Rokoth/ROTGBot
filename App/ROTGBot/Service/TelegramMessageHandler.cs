@@ -350,14 +350,7 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendUserNotImplemented(chId, token), token),
             };
         }
-                
-        
-
-        
-
-        
-
-        
+           
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -1703,7 +1696,7 @@ namespace ROTGBot.Service
 
         private async Task SendNewsReplyChoise(long chatId, Guid userId, CancellationToken token)
         {
-            await _newsDataService.CreateNews(chatId, userId, null, null, "sendnewsreplychoice", "Ответ на обращение", false, token);
+            await _newsDataService.CreateNews(chatId, userId, null, null, "sendnewsreply", "Ответ на обращение", false, token);
 
             var button1 = new InlineKeyboardButton("Отменить")
             {
@@ -2371,8 +2364,74 @@ namespace ROTGBot.Service
                 "addbutton" => SendAddButtonForAdminRemember(chatId, token),
                 "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
                 "sendmessagebynumber" => SendMessageByNumberRemember(chatId, token),
+                "sendnewsreply"=> SendNewsReplyRemember(chatId, token),
+                "searchuserbynews" => SendUserInfoByNewsNumberRemember(chatId, token),
+                "searchuserbyname" => SendUserSearchByNameRemember(chatId, token),
                 _ => throw  new NotImplementedException($"Не реализовано метод SendUserRemember для команды {news?.Type}"),
             };
+        }
+
+        private async Task SendUserSearchByNameRemember(long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineUserSearchByName"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть активная задача на поиск пользователя. Отправьте номер, имя или логин для поиска, либо Отменить для отмены задачи.",
+                 replyMarkup,
+                 token);
+        }
+
+        private async Task SendUserInfoByNewsNumberRemember(long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineUserSearchByNumber"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть активная задача на поиск пользователя по номеру обращения. Отправьте номер обращения для поиска пользователя, либо Отменить для отмены задачи.",
+                 replyMarkup,
+                 token);
+        }
+
+        private async Task SendNewsReplyRemember(long chatId, CancellationToken token)
+        {
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineSendNewsReply"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть активная задача на отправку ответа на обращение.Отправьте номер обращения, на которое хотите отправить ответ, затем само сообщение. Для отмены нажмите кнопку \"Отменить\"",
+                 replyMarkup,
+                 token);
         }
 
         private async Task SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
