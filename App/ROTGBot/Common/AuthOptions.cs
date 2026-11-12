@@ -28,9 +28,10 @@ namespace Common
         /// </summary>
         public int LifeTime { get; set; } = 60;
 
-        public SecurityKey GetSymmetricSecurityKey()
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary>
+        /// получить ключ
+        /// </summary>
+        /// <returns></returns>
+        public SymmetricSecurityKey GetSymmetricSecurityKey() => new(Encoding.ASCII.GetBytes(Key));
     }
 }
