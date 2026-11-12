@@ -38,8 +38,6 @@ namespace ROTGBot
                     options.SaveToken = true;
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        //todo: LifeTime
-
                         //// укзывает, будет ли валидироваться издатель при валидации токена
                         ValidateIssuer = true,
                         //// строка, представляющая издателя
@@ -51,20 +49,27 @@ namespace ROTGBot
                         //// будет ли валидироваться время существования
                         ValidateLifetime = true,
                         // установка ключа безопасности
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(settings.Key)),
+                        IssuerSigningKey = settings.GetSymmetricSecurityKey(),
                         // валидация ключа безопасности
                         ValidateIssuerSigningKey = true,
                     };
+                }).AddCookie("Cookies", options => {
+                    options.LoginPath = new PathString("/Account/Login");
+                    options.LogoutPath = new PathString("/Account/Logout");
                 });
 
             services.AddAuthorization(options =>
             {
-                var defPolicy = new AuthorizationPolicyBuilder()
+                var cookiePolicy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .AddAuthenticationSchemes("Cookies")
+                        .Build();
+                options.AddPolicy("Cookie", cookiePolicy);
+                options.AddPolicy("Token", new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     .AddAuthenticationSchemes("Token")
-                    .Build();
-                options.AddPolicy("Token", defPolicy);
-                options.DefaultPolicy = defPolicy;
+                    .Build());
+                options.DefaultPolicy = cookiePolicy;
             });
 
             services.AddScoped<IRepository<Db.Model.User>, Repository<Db.Model.User>>();                        

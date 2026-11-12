@@ -26,6 +26,11 @@ namespace Common
         /// <summary>
         /// Время жизни токена - 1 минута
         /// </summary>
-        public int LifeTime { get; set; } = 60;        
+        public int LifeTime { get; set; } = 60;
+
+        public SecurityKey GetSymmetricSecurityKey()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
