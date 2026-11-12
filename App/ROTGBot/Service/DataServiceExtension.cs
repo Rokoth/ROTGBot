@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Telegram.BotAPI.AvailableTypes;
 
 namespace ROTGBot.Service
 {
@@ -14,8 +15,10 @@ namespace ROTGBot.Service
             services.AddScoped<ITelegramMainService, TelegramMainService>();
             services.AddScoped<ITelegramMessageHandler, TelegramMessageHandler>();
             services.AddScoped<ITelegramBotWrapper, TelegramBotWrapper>();
-            services.AddScoped<ISendMessageWrapper, SendMessageWrapper>();           
+            services.AddScoped<ISendMessageWrapper, SendMessageWrapper>();
 
+            services.AddScoped<IHandler<Message>, MessageHandler>();
+            services.AddScoped<IHandler<CallbackQuery>, CallbackHandler>();
 
             services.AddHostedService<TelegramHostedService>();
             return services;
