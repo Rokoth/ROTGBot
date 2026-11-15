@@ -155,6 +155,23 @@ namespace ROTGBot.Service
             throw new NotImplementedException();
         }
 
+        public async  Task<List<Contract.Model.User>> GetAllUsers(CancellationToken token)
+        {
+            var result = await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => !s.IsDeleted
+            }, token);
+
+            var users = new List<Contract.Model.User>();
+
+            foreach (var res in result)
+            {
+                users.Add(await Map(res, token));
+            }
+
+            return users;
+        }
+
         public Task<List<Contract.Model.User>> GetUsers(int? count, int? daysCount, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

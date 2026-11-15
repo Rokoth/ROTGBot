@@ -365,7 +365,7 @@ namespace ROTGBot.Service
             var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ")
                 .Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).Distinct();
 
-            var allUsers = await _userDataService.GetUsers(null, null, cancellationToken);
+            var allUsers = await _userDataService.GetAllUsers(cancellationToken);
 
             List<string> names = [];
 
@@ -377,7 +377,7 @@ namespace ROTGBot.Service
 
                 foreach(var item  in fUsers)
                 {
-                    _userDataService.BlockUser(item.Id, cancellationToken);
+                    await _userDataService.BlockUser(item.Id, cancellationToken);
                     names.Add($"{item.Name} ({item.TGLogin})");
                 }
             }
@@ -396,7 +396,7 @@ namespace ROTGBot.Service
             var words = commandText.Replace(",", " ").Replace(".", " ").Replace("  ", " ").Split(" ")
                 .Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).Distinct();
 
-            var allUsers = await _userDataService.GetUsers(null, null, cancellationToken);
+            var allUsers = await _userDataService.GetAllUsers(cancellationToken);
 
             List<string> names = [];
 
@@ -408,7 +408,7 @@ namespace ROTGBot.Service
 
                 foreach (var item in fUsers)
                 {
-                    _userDataService.UnBlockUser(item.Id, cancellationToken);
+                    await _userDataService.UnBlockUser(item.Id, cancellationToken);
                     names.Add($"{item.Name} ({item.TGLogin})");
                 }
             }

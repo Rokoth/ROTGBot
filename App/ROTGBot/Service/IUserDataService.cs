@@ -15,5 +15,6 @@ namespace ROTGBot.Service
         Task<List<User>> GetUsers(int? count, int? daysCount, CancellationToken cancellationToken);
         Task<bool> BlockUser(Guid id, CancellationToken cancellationToken);
         Task<bool> UnBlockUser(Guid id, CancellationToken cancellationToken);
+        Task<List<User>> GetAllUsers(CancellationToken cancellationToken);
     }
 }
