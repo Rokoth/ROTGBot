@@ -5,7 +5,7 @@ VisualStudioVersion = 17.13.35818.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ROTGBot", "ROTGBot\ROTGBot.csproj", "{523389A3-39C5-49DD-AF0D-2B2BC55F18B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{49EB4399-74D5-4714-821A-F8A29FE9AC79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ROTGBot.Common", "Common\ROTGBot.Common.csproj", "{49EB4399-74D5-4714-821A-F8A29FE9AC79}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contract", "Contract\Contract.csproj", "{CD2E46BD-1229-44DA-AEA5-D5EC24BD9F0F}"
 EndProject

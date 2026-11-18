@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Microsoft.Extensions.Configuration;
-using Common;
 using ROTGBot.Service;
 using Microsoft.EntityFrameworkCore;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Repository;
+using ROTGBot.Common;
 
 namespace XUnitTests
 {

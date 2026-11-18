@@ -1,4 +1,4 @@
-﻿namespace Common
+﻿namespace ROTGBot.Common
 {
     /// <summary>
     /// Общие настройки сервиосв

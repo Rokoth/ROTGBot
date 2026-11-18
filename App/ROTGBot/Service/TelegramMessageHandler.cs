@@ -347,11 +347,12 @@ namespace ROTGBot.Service
 
             if(findUser == null)
             {
-
+                await client.SendMessageAsync(chatId, $"Пользователь '{loginOrNumber}' не найден", cancellationToken);
             }
             else
             {
                 await client.SendMessageAsync(findUser.ChatId, commandText[words[0].Length..], cancellationToken);
+                await client.SendMessageAsync(chatId, $"Сообщение пользователю {findUser.Name} ({findUser.TGLogin}) отправлено", cancellationToken);
             }
         }
 

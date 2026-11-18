@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ROTGBot.Common;
 using ROTGBot.Db.Context;
 using ROTGBot.Db.Interface;
 using ROTGBot.Db.Repository;
