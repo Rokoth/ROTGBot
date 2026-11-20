@@ -353,10 +353,7 @@ namespace ROTGBot.Service
             };
         }
 
-        private async Task DeclineUserListHandle(Guid userId, long chId, News? userNews, CancellationToken tk)
-        {
-            throw new NotImplementedException();
-        }
+        
 
         private async Task<bool> SendWithCheckRights(
             Contract.Model.User user,
@@ -627,6 +624,18 @@ namespace ROTGBot.Service
             else
             {
                 await EditButtonMessageNotFound(chatId, token);
+            }
+        }
+
+        private async Task DeclineUserListHandle(Guid moderatorId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await GetUserListDeclined(moderatorId, chatId, userNews, token);
+            }
+            else
+            {
+                await UserListMessageNotFound(chatId, token);
             }
         }
 
@@ -1337,6 +1346,12 @@ namespace ROTGBot.Service
         }
 
         private async Task AddAdminModeratorDeclined( Guid moderatorId, long chatId, News userNews, CancellationToken token)
+        {
+            await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);
+            await client.SendMessageAsync(chatId, "Задание отменено", token);
+        }
+
+        private async Task GetUserListDeclined(Guid moderatorId, long chatId, News userNews, CancellationToken token)
         {
             await _newsDataService.SetNewsDeclined(userNews.Id, moderatorId, token);
             await client.SendMessageAsync(chatId, "Задание отменено", token);
