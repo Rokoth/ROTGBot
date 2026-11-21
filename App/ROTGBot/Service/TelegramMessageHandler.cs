@@ -2018,8 +2018,32 @@ namespace ROTGBot.Service
                 "editbutton" => SendEditButtonForAdminRemember(chatId, token),
                 "addbutton" => SendAddButtonForAdminRemember(chatId, token),
                 "deletebutton" => SendDeleteButtonForAdminRemember(chatId, token),
+                "editmoderatorreglament" => SendEditModeratorReglamentRemember(chatId, token),
+                "edituserreglament" => SendEditUserReglamentRemember(chatId, token),
                 _ => Task.CompletedTask,
             };
+        }
+
+        private async Task SendEditModeratorReglamentRemember(long chatId, CancellationToken token)
+        {            
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "ModeratorReglamentEditDecline"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть неподтвержденный запрос на редактирование регламента модераторов. " +
+                "Отправьте текст регламента для изменения, либо нажмите Отмена для отмены задания. Внимание! После отправки текста отменить действие будет нельзя",
+                replyMarkup,
+                 token);
         }
 
         private async Task SendNewsMessageForUserRemember(News? news, long chatId, CancellationToken token)
