@@ -204,6 +204,14 @@ namespace ROTGBot.Service
             }
             if (user == null)
             {
+                await client.SendMessageAsync(chatId.Value, "Не удалось найти или добавить пользователя, обратитесь к администратору", token);
+                await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
+                return false;
+            }
+            if (user.IsBlocked)
+            {
+                await client.SendMessageAsync(chatId.Value, "Учетная запись заблокирована, обратитесь к администратору", token);
+                await client.AnswerCallbackQueryAsync(new AnswerCallbackQueryArgs(callbackQuery.Id), token: token);
                 return false;
             }
             var data = callbackQuery.Data;

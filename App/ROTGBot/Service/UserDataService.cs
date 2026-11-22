@@ -42,7 +42,8 @@ namespace ROTGBot.Service
                     TGId = tgId,
                     ChatId = chatId.Value,
                     LastSendDate = DateTime.Now.AddHours(-1),
-                    Number = lastUser?.Number ?? 1
+                    Number = lastUser?.Number ?? 1,
+                    IsBlock = false
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
@@ -77,7 +78,8 @@ namespace ROTGBot.Service
                 TGId = user.TGId,
                 TGLogin = user.TGLogin,
                 LastSendDate = user.LastSendDate,
-                Number = user.Number
+                Number = user.Number,
+                IsBlocked = user.IsBlock
             };
         }
 

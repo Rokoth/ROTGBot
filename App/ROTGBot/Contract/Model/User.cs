@@ -17,6 +17,7 @@ namespace ROTGBot.Contract.Model
 
         public DateTime LastSendDate { get; set; }
         public int? Number { get; set; }
+        public bool IsBlocked { get; set; }
     }
 
 }
