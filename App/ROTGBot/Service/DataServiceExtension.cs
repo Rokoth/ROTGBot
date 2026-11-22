@@ -19,6 +19,7 @@ namespace ROTGBot.Service
 
             services.AddScoped<IHandler<Message>, MessageHandler>();
             services.AddScoped<IHandler<CallbackQuery>, CallbackHandler>();
+            services.AddScoped<IHandler<ChatMemberUpdated>, ChatMemberHandler>();
 
             services.AddHostedService<TelegramHostedService>();
             return services;

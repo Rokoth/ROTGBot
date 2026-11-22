@@ -4,25 +4,17 @@ using Telegram.BotAPI.GettingUpdates;
 
 namespace ROTGBot.Service
 {
-
-
     public class TelegramMessageHandler(
-        ILogger<TelegramMessageHandler> logger,
-        IGroupsDataService groupsDataService,
-        IUserDataService userDataService,
+        ILogger<TelegramMessageHandler> logger,       
         IHandler<Message> messageHandler,
         IHandler<CallbackQuery> callbackHandler,
-        IDataHandler dataHandler,
-        ITelegramBotWrapper wrapper) : ITelegramMessageHandler
+        IHandler<ChatMemberUpdated> chatMemberHandler) : ITelegramMessageHandler
     {
         private readonly ILogger<TelegramMessageHandler> _logger = logger;
-
-        private readonly IGroupsDataService _groupsDataService = groupsDataService;
-        private readonly IUserDataService _userDataService = userDataService;
-        private readonly ITelegramBotWrapper client = wrapper;
+                
         private readonly IHandler<Message> _messageHandler = messageHandler;
         private readonly IHandler<CallbackQuery> _callbackHandler = callbackHandler;
-        private readonly IDataHandler _dataHandler = dataHandler;
+        private readonly IHandler<ChatMemberUpdated> _chatMemberHandler = chatMemberHandler;
 
         public async Task<bool> HandleUpdates(IEnumerable<Update> updates, CancellationToken cancellationToken)
         {            
@@ -34,7 +26,7 @@ namespace ROTGBot.Service
                 {
                     await _messageHandler.Handle(update.Message, cancellationToken);
                     await _callbackHandler.Handle(update.CallbackQuery, cancellationToken);
-                    await HandleMyChatMember(update.MyChatMember, cancellationToken);
+                    await _chatMemberHandler.Handle(update.MyChatMember, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -43,20 +35,6 @@ namespace ROTGBot.Service
                 }
             }
             return success;
-        }
-
-        
-
-        private async Task HandleMyChatMember(ChatMemberUpdated? myChatMember, CancellationToken cancellationToken)
-        {
-            if (myChatMember == null)
-                return;
-
-            var chatId = myChatMember.Chat.Id;
-            var description = $"{myChatMember.Chat.Title} : {myChatMember.Chat.FirstName} {myChatMember.Chat.LastName} (@{myChatMember.Chat.Username})";
-            var title = myChatMember.Chat.Title;
-
-            await _groupsDataService.AddGroupIfNotExists(chatId, title, description, cancellationToken);
-        }                
+        }       
     }
 }

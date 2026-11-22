@@ -34,6 +34,7 @@ namespace XUnitTests
             var configuration = new Mock<IConfiguration>();
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
             var messageHandler = new Mock<IHandler<Message>>();
+            var callbackHandler = new Mock<IHandler<CallbackQuery>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
             var dataHandler = new Mock<IDataHandler>();
 
@@ -50,6 +51,7 @@ namespace XUnitTests
                 groupsDataService.Object,
                 userDataService.Object,              
                 messageHandler.Object,
+                callbackHandler.Object,
                 dataHandler.Object,               
                 wrapperService.Object);
 
@@ -80,6 +82,7 @@ namespace XUnitTests
             var buttonDataService = new Mock<IButtonsDataService>();
             var configuration = new Mock<IConfiguration>();
             var messageHandler = new Mock<IHandler<Message>>();
+            var callbackHandler = new Mock<IHandler<CallbackQuery>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
             var dataHandler = new Mock<IDataHandler>();
 
@@ -93,6 +96,7 @@ namespace XUnitTests
                 groupsDataService.Object,
                 userDataService.Object,
                 messageHandler.Object,
+                callbackHandler.Object,
                 dataHandler.Object,
                 wrapperService.Object);
 
