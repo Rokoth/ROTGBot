@@ -656,8 +656,6 @@ namespace ROTGBot.Service
             }
         }
 
-        
-
         private async Task DeclineSendNewsReplyHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
         {
             if (userNews != null)
@@ -1141,11 +1139,11 @@ namespace ROTGBot.Service
                     return;
                 }                
 
-                await client.SendMessageAsync(chatId, $"Отправьте текст сообщения для пользователя {userNumber}: {searchUser.Name} ({searchUser.TGLogin})", token);
+                await client.SendMessageAsync(chatId, $"Отправьте текст сообщения для пользователя {userNumber}: {searchUser?.Name} ({searchUser?.TGLogin})", token);
                 return;
             }
 
-            await client.SendMessageAsync(chatId, $"Сообщение отправлено пользователю {searchUser.Name} ({searchUser.TGLogin}), номер: {searchUser.Number}", token);
+            await client.SendMessageAsync(chatId, $"Сообщение отправлено пользователю {searchUser?.Name} ({searchUser?.TGLogin}), номер: {searchUser?.Number}", token);
 
             await _newsDataService.SetNewsApproved(userNews.Id, userId, token);
         }
