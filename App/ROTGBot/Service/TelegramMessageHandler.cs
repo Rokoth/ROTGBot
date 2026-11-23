@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ROTGBot.Contract.Model;
 using System.Linq;
+using System.Threading;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
@@ -99,7 +100,16 @@ namespace ROTGBot.Service
             var user = await _userDataService.GetOrAddUser(tgUser.Id, tgUser.Username, $"{tgUser.FirstName} {tgUser.LastName} (@{tgUser.Username})", message.Chat.Id, cancellationToken);
 
             if (user == null)
+            {
+                await client.SendMessageAsync(message.Chat.Id, "Не удалось найти или добавить учетную запись, попробуйте позже или обратитесь к администратору", cancellationToken);
                 return;
+            }
+
+            if (user.IsBlocked)
+            {
+                await client.SendMessageAsync(message.Chat.Id, "Учетная запись заблокирована, обратитесь к администратору", cancellationToken);
+                return;
+            }
 
             var userNews = await _newsDataService.GetCurrentNews(user.Id, cancellationToken);
 
@@ -525,6 +535,13 @@ namespace ROTGBot.Service
             }
             if (user == null)
             {
+                await client.SendMessageAsync(chatId.Value, "Не удалось найти или добавить учетную запись, попробуйте позже или обратитесь к администратору", token);
+                return false;
+            }
+
+            if (user.IsBlocked)
+            {
+                await client.SendMessageAsync(chatId.Value, "Учетная запись заблокирована, обратитесь к администратору", token);
                 return false;
             }
             var data = callbackQuery.Data;

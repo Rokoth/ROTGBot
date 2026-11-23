@@ -23,5 +23,7 @@ namespace ROTGBot.Db.Model
         public DateTime LastSendDate { get; set; }
         [ColumnName("isblocked")]
         public bool IsBlocked { get; set; }
+        [ColumnName("number")]
+        public int Number { get; set; }
     }
 }

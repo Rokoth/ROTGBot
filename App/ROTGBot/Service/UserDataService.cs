@@ -3,6 +3,7 @@ using ROTGBot.Db.Interface;
 using ROTGBot.Db.Model;
 using System.Linq.Dynamic.Core.Tokenizer;
 using Telegram.BotAPI.AvailableTypes;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using User = Telegram.BotAPI.AvailableTypes.User;
 
 namespace ROTGBot.Service
@@ -22,6 +23,13 @@ namespace ROTGBot.Service
                 Selector = s => s.TGId == tgId
             }, cancellationToken)).FirstOrDefault();
 
+            var allusers = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => !s.IsDeleted
+            }, cancellationToken));
+
+            var lastNum = allusers.Max(s=>s.Number);
+
             if (user == null)
             {
                 if(chatId == null)
@@ -37,7 +45,8 @@ namespace ROTGBot.Service
                     TGLogin = tgUserName,
                     TGId = tgId,
                     ChatId = chatId.Value,
-                    LastSendDate = DateTime.Now.AddHours(-1)
+                    LastSendDate = DateTime.Now.AddHours(-1),
+                    Number= lastNum+ 1
                 }, true, cancellationToken);
 
                 var userRole = (await _roleRepo.GetAsync(new Filter<Role>() { Selector = s => s.Name == "user" }, cancellationToken)).First();
@@ -71,7 +80,9 @@ namespace ROTGBot.Service
                 Roles = roles,
                 TGId = user.TGId,
                 TGLogin = user.TGLogin,
-                LastSendDate = user.LastSendDate
+                LastSendDate = user.LastSendDate,
+                IsBlocked = user.IsBlocked,
+                Number = user.Number
             };
         }
 
@@ -145,9 +156,14 @@ namespace ROTGBot.Service
             return await Map(user, token);
         }
 
-        public Task<Contract.Model.User> GetUserByNumber(int number, CancellationToken cancellationToken)
+        public async Task<Contract.Model.User> GetUserByNumber(int number, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var user = (await _userRepo.GetAsync(new Filter<Db.Model.User>()
+            {
+                Selector = s => s.Number == number
+            }, token)).FirstOrDefault() ?? throw new ArgumentException($"Пользователь {number} не найден");
+
+            return await Map(user, token);
         }
 
         public Task<Contract.Model.User> GetUserByLogin(string loginOrNumber, CancellationToken cancellationToken)
