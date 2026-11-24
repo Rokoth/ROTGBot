@@ -335,6 +335,8 @@ namespace ROTGBot.Service
                                         (chId, userNews, tk) => SendNewsReplyHandle(userId, chId, userNews, tk), token),
                 "DeclineSendNewsReply" => await SendWithCheckRights(user, chatId.Value, RoleEnum.moderator,
                                         (chId, userNews, tk) => DeclineSendNewsReplyHandle(userId, chId, userNews, tk), token),
+                "DeclineOther" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
+                                        (chId, userNews, tk) => DeclineOtherHandle(userId, chId, userNews, tk), token),
                 "GetPDNOferta" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
                                         (chId, userNews, tk) => SendPDNOferta(chId, userNews, tk), token),
                 "GetDonateQR" => await SendWithCheckRights(user, chatId.Value, RoleEnum.user,
@@ -668,9 +670,17 @@ namespace ROTGBot.Service
             }
         }
 
-        
-
-        
+        private async Task DeclineOtherHandle(Guid userId, long chatId, News? userNews, CancellationToken token)
+        {
+            if (userNews != null)
+            {
+                await DeclineSendNewsReplyDeclined(userId, chatId, userNews, token);
+            }
+            else
+            {
+                await DeclineSendNewsReplyMessageNotFound(chatId, token);
+            }
+        }
 
         private async Task SendPDNOferta( long chatId, News? userNews, CancellationToken token)
         {
@@ -2364,11 +2374,34 @@ namespace ROTGBot.Service
                 "sendmessagebynumber" => SendMessageByNumberRemember(chatId, token),
                 "sendnewsreply"=> SendNewsReplyRemember(chatId, token),
                 "searchuserbynews" => SendUserInfoByNewsNumberRemember(chatId, token),
-                "searchuserbyname" => SendUserSearchByNameRemember(chatId, token),
-                _ => throw  new NotImplementedException($"Не реализовано метод SendUserRemember для команды {news?.Type}"),
+                "searchuserbyname" => SendUserSearchByNameRemember(chatId, token),                
+                _ => SendNotImplementedRemember(chatId, news?.Type, token),
             };
         }
 
+        private async Task SendNotImplementedRemember(long chatId, string newsType, CancellationToken token)
+        {
+            _logger.LogError($"Не реализовано метод SendUserRemember для команды {newsType}");
+            var button1 = new InlineKeyboardButton("Отменить")
+            {
+                CallbackData = "DeclineOther"
+            };
+            ReplyMarkup replyMarkup = new InlineKeyboardMarkup(
+                new List<List<InlineKeyboardButton>>()
+                {
+                    new()
+                    {
+                        button1
+                    }
+                });
+
+            await client.SendMessageAsync(chatId,
+                "У вас есть активная задача неизвестного типа. Возможно, данный тип задач был удален. Нажмите Отменить для отмены задачи и попробуйте вызов снова.",
+                 replyMarkup,
+                 token);
+        }
+
+        
         private async Task SendUserSearchByNameRemember(long chatId, CancellationToken token)
         {
             var button1 = new InlineKeyboardButton("Отменить")
