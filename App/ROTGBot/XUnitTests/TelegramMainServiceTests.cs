@@ -36,6 +36,10 @@ namespace XUnitTests
             Assert.Equal(1, result);
         }
 
+        /// <summary>
+        /// 0.0.18.2.2
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task SetCommands_Success_Async()
         {
