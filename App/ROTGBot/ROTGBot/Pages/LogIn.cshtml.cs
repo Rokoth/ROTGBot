@@ -10,16 +10,26 @@ namespace ROTGBot.Pages
         private readonly IUserDataService _userDataService = userDataService;
         private readonly ITelegramMessageHandler _telegramMessageHandler = telegramMessageHandler;
 
-        public string Error { get; set; } = default!;
-        public string Login { get; set; } = default!;
-        public string Password { get; set; } = default!;
-        public bool LoginSended { get; set; } = false;
-        public bool PasswordSended { get; set; } = false;
-        public bool IsAuth { get; set; } = false;
-        public bool IsError { get; set; } = false;
+
+
+        public string Error { get; set; }
+        public LoginModel LoginModel { get; set; } = new LoginModel()
+        {
+            Login="1",
+            Password=""
+        };
+        public bool LoginSended { get; set; }
+        public bool PasswordSended { get; set; }
+        public bool IsAuth { get; set; }
+        public bool IsError { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
-        {
+        {            
+            IsError = false;
+            IsAuth = false;
+            LoginSended = false;
+            PasswordSended= false;
+
             return Page();
         }
 
@@ -28,7 +38,7 @@ namespace ROTGBot.Pages
             if(!LoginSended)
             {
                 LoginSended = true;
-                (bool success, string result) = await _telegramMessageHandler.CreateAndSendPassword(Login, new CancellationToken());
+                (bool success, string result) = await _telegramMessageHandler.CreateAndSendPassword(LoginModel.Login, new CancellationToken());
                 if (!success)
                 {
                     IsError = true;
@@ -59,7 +69,7 @@ namespace ROTGBot.Pages
 
         private async Task<ClaimsIdentity?> GetIdentity()
         {
-            var user = await _userDataService.GetUser(Login, Password, new CancellationToken());
+            var user = await _userDataService.GetUser(LoginModel.Login, LoginModel.Password, new CancellationToken());
 
             if (user == null)
             {
@@ -77,6 +87,12 @@ namespace ROTGBot.Pages
                 ClaimsIdentity.DefaultRoleClaimType);
             return claimsIdentity;
         }
+    }
+
+    public class LoginModel
+    {
+        public  string   Login { get; set; }
+        public string Password { get; set; }
     }
      
 }
