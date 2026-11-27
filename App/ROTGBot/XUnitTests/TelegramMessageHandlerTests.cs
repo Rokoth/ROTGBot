@@ -35,6 +35,7 @@ namespace XUnitTests
             var logger = new Mock<ILogger<TelegramMessageHandler>>();
             var messageHandler = new Mock<IHandler<Message>>();
             var callbackHandler = new Mock<IHandler<CallbackQuery>>();
+            var chatMemberHandler = new Mock<IHandler<ChatMemberUpdated>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
             var dataHandler = new Mock<IDataHandler>();
 
@@ -47,13 +48,10 @@ namespace XUnitTests
                 ]);
 
             var tgMainService = new TelegramMessageHandler(
-                logger.Object,
-                groupsDataService.Object,
-                userDataService.Object,              
+                logger.Object,                       
                 messageHandler.Object,
                 callbackHandler.Object,
-                dataHandler.Object,               
-                wrapperService.Object);
+                chatMemberHandler.Object);
 
             //todo: test concept
             var result = await tgMainService.HandleUpdates(
@@ -83,6 +81,7 @@ namespace XUnitTests
             var configuration = new Mock<IConfiguration>();
             var messageHandler = new Mock<IHandler<Message>>();
             var callbackHandler = new Mock<IHandler<CallbackQuery>>();
+            var chatMemberHandler = new Mock<IHandler<ChatMemberUpdated>>();
             var sendmessageWrapper = new Mock<ISendMessageWrapper>();
             var dataHandler = new Mock<IDataHandler>();
 
@@ -93,12 +92,9 @@ namespace XUnitTests
 
             var tgMainService = new TelegramMessageHandler(
                 logger.Object,
-                groupsDataService.Object,
-                userDataService.Object,
                 messageHandler.Object,
                 callbackHandler.Object,
-                dataHandler.Object,
-                wrapperService.Object);
+                chatMemberHandler.Object);
 
             //todo: test concept
             var result = await tgMainService.HandleUpdates(
